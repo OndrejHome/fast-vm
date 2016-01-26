@@ -20,8 +20,8 @@ if [ -z "$1" ]; then
 fi
 
 ## fast-vm configuration
-if [ ! -f "~/.fast-vm/config" ]; then
-	echo "[err] no configuration found in ~/.fast-vm"
+if [ ! -f "$HOME/.fast-vm/config" ]; then
+	echo "[err] no configuration found in ~/.fast-vm/config"
 	echo "please generate configuration by using setup-default-configuration.sh"
 	exit 1
 fi
