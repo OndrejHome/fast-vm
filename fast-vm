@@ -79,50 +79,89 @@ case "$1" in
 			echo "[err] missing rhel version"
 			exit 1
 		fi
-		#TBD FIXME check the VM number if it's correct
 
-		rnum=$((20+$RANDOM%200))
-		vm_number=${3:$rnum}
-
-		if [ ! -f "~/.fast-vm/config-${rhel_version}.sh" ]; then
-			echo "[wrn] no hacks for this version, no ~/.fast-vm/config-${rhel_version}.sh found"
-		fi
-		if [ ! -f "~/.fast-vm/config-${rhel_version}.xml" ]; then
-			echo "[err] no VM XML definition for this version, no ~/.fast-vm/config-${rhel_version}.xml found"
-			exit 1
-		fi
-
-		if [ ! -b "/dev/$THINPOOL_VG/$VM_PREFIX-$rhel_version" ]; then
-			echo "[err] Missing image for this rhel version"
-			echo " /dev/$THINPOOL_VG/$VM_PREFIX-$rhel_version not found"
-			echo " first import image using   $0 $rhel_version /path/to/image.gz"
+		if [ ! -f "$HOME/.fast-vm/config-${rhel_version}.xml" ]; then
+			echo "[err] no VM XML definition for this version, no $HOME/.fast-vm/config-${rhel_version}.xml found"
 			exit 2
+		fi
+		if [ ! -b "/dev/$THINPOOL_VG/$VM_PREFIX$rhel_version" ]; then
+			echo "[err] Missing image for this rhel version"
+			echo " /dev/$THINPOOL_VG/$VM_PREFIX$rhel_version not found"
+			echo " first import image using $0 $rhel_version /path/to/image.gz /path/tolibvirt.xml"
+			exit 2
+		fi
+
+		vm_number="$3"
+		if [[ $vm_number =~ ^-?[0-9]+$ ]]
+		then
+			if [ "$vm_number" -lt 20 ] || [ "$vm_number" -gt 220 ];then
+				echo "[err] VM number out of range (20-220)"
+				exit 1
+			fi
+		else
+			if [ "$vm_number" == "clean" ]; then
+				echo "creating clean VM for image"
+			else
+				if [ -z "$vm_number" ]; then
+					vm_number=$((20+$RANDOM%200))
+				else
+					echo "[err] only numbers from range 20-220 and word 'clean' permited here"
+					exit 1
+				fi
+			fi
+		fi
+
+		if [ ! -f "$HOME/.fast-vm/config-${rhel_version}.sh" ]; then
+			echo "[wrn] no hacks for this version, no $HOME/.fast-vm/config-${rhel_version}.sh found"
+		fi
+
+		# special case for creating only clean image
+		if [ "$vm_number" == "clean" ]; then
+			VM_NAME="$VM_PREFIX$rhel_version"
+	
+			sed -e "s/VM_NAME/$VM_PREFIX$rhel_version/g; s/VG_NAME/$THINPOOL_VG/g; s/NET_NAME/$LIBVIRT_NETWORK/g;" ~/.fast-vm/config-${rhel_version}.xml > /tmp/machine.xml
+			virsh define /tmp/machine.xml
+
+			# source file with hacks and apply them
+			if [ -f "$HOME/.fast-vm/config-${rhel_version}.sh" ]; then
+				echo "[info] applying hacks from $HOME/.fast-vm/config-${rhel_version}.sh"
+				. $HOME/.fast-vm/config-${rhel_version}.sh
+			fi
+
+			echo "clean image VM created, to start this VM use 'virsh start $VM_PREFIX$rhel_version'"
+			echo "This VM is used for customizing the base image of '$rhel_version' VMs"
+			echo "All changes you make to this VM would be available in newly created VMs"
+			echo "of that version, this will not affect already existing VMs of same version"
+			exit 0
 		fi
 		
 		## check if the machine doesn't exists already
-		if [ -b "/dev/$THINPOOL_VG/$VM_PREFIX-$rhel_version-$vm_number" ]; then
+		if [ -b "/dev/$THINPOOL_VG/$VM_PREFIX$rhel_version-$vm_number" ]; then
 			echo "[err] there is already disk for this machine, aborting"
 			exit 1
 		fi
 
+		## create regular machine
+		VM_NAME="$VM_PREFIX$rhel_version-$vm_number"
+
 		echo "[info] creating disk ..."
-		echo "lvcreate --ignoreactivationskip -s --thinpool $THINPOOL_VG/$THINPOOL_LV /dev/$THINPOOL_VG/$VM_PREFIX-$rhel_version --name $VM_PREFIX-$rhel_version-$vm_number"
+		lvcreate --ignoreactivationskip -s --thinpool $THINPOOL_VG/$THINPOOL_LV /dev/$THINPOOL_VG/$VM_PREFIX$rhel_version --name $VM_PREFIX$rhel_version-$vm_number
 		echo "[info] defining virtual machine in libvirt ..."
 
-		sed -e "s/VM_NAME/$VM_PREFIX-$rhel_version-$vm_number/g; s/VG_NAME/$THINPOOL_VG/g; s/NET_NAME/$LIBVIRT_NETWORK/g;" ~/.fast-vm/config-${rhel_version}.xml > /tmp/machine.xml
-		echo "virsh define /tmp/machine.xml"
+		sed -e "s/VM_NAME/$VM_PREFIX$rhel_version-$vm_number/g; s/VG_NAME/$THINPOOL_VG/g; s/NET_NAME/$LIBVIRT_NETWORK/g;" ~/.fast-vm/config-${rhel_version}.xml > /tmp/machine.xml
+		virsh define /tmp/machine.xml
 
-		echo "reservating DHCP lease"
-		vm_mac=$(virsh dumpxml "$VM_PREFIX-$rhel_version-$vm_number"|grep 'mac address'|cut -d\' -f 2)
-
-		#FIXME need to gather SUBNET_NUMBER
+		echo "[info] adding static lease into libvirts DHCP"
+		vm_mac=$(virsh dumpxml "$VM_PREFIX$rhel_version-$vm_number"|grep 'mac address'|cut -d\' -f 2)
 		virsh net-update "$LIBVIRT_NETWORK" add-last ip-dhcp-host --xml "<host mac='$vm_mac' ip='192.168.$SUBNET_NUMBER.$vm_number'/>" --live --config
 
 		# source file with hacks and apply them
-		if [ -f "~/.fast-vm/config-${rhel_version}.sh"]; then
-			. ~/.fast-vm/config-${rhel_version}.sh
+		if [ -f "$HOME/.fast-vm/config-${rhel_version}.sh" ]; then
+			echo "[info] applying hacks from $HOME/.fast-vm/config-${rhel_version}.sh"
+			. $HOME/.fast-vm/config-${rhel_version}.sh
 		fi
-		echo "VM '$VM_PREFIX-$rhel_version-$vm_number' created"
+
+		echo "VM '$VM_NAME' created"
 		;;
 
 	start)
@@ -130,12 +169,24 @@ case "$1" in
 		if [ -z "$vm_number" ]; then 
 			echo "[err] VM number missing"
 			exit 1
-		fi	
-		$vm_name=$(virsh list --all |grep "$VM_PREFIX-"|grep "-$VM_NUMBER")
+		fi
+		
+		vm_name=$(virsh list --all |grep "$VM_PREFIX"|awk '{print $2}'|egrep "\-$vm_number$")
 
+		if [ -z "$vm_name" ]; then
+			echo "VM with number '$vm_number' not found"
+			exit 1
+		fi
 		#TBD FIXME activate inative LV
-			
-		virsh start $vm_name
+		
+		# if there is any third argument start VM and console after
+		echo "[info] starting VM $vm_name"
+		if [ -z "$3" ]; then
+			virsh start $vm_name
+		else
+			echo "and connecting to it serial console ..."
+			virsh start $vm_name && virsh console $vm_name
+		fi
 		;;
 	console)
 		vm_number="$2"
@@ -143,7 +194,11 @@ case "$1" in
 			echo "[err] VM number missing"
 			exit 1
 		fi	
-		$vm_name=$(virsh list --all |grep "$VM_PREFIX-"|grep "-$VM_NUMBER")
+		vm_name=$(virsh list --all |grep "$VM_PREFIX"|awk '{print $2}'|egrep "\-$vm_number$")
+		if [ -z "$vm_name" ]; then
+			echo "VM with number '$vm_number' not found"
+			exit 1
+		fi
 
 		virsh console $vm_name
 		;;
@@ -153,14 +208,17 @@ case "$1" in
 			echo "[err] VM number missing"
 			exit 1
 		fi	
-		$vm_name=$(virsh list --all |grep "$VM_PREFIX-"|grep "-$VM_NUMBER")
-	
+		vm_name=$(virsh list --all |grep "$VM_PREFIX"|awk '{print $2}'|egrep "\-$vm_number$")
+		if [ -z "$vm_name" ]; then
+			echo "VM with number '$vm_number' not found"
+			exit 1
+		fi
+
 		virsh destroy $vm_name
 
-		echo "reservating DHCP lease delete"
+		echo "[info] reservating DHCP lease delete"
 		vm_mac=$(virsh dumpxml "$vm_name"|grep 'mac address'|cut -d\' -f 2)
 
-		#FIXME need to gather SUBNET_NUMBER
 		virsh net-update "$LIBVIRT_NETWORK" delete ip-dhcp-host --xml "<host mac='$vm_mac' ip='192.168.$SUBNET_NUMBER.$vm_number'/>" --live --config
 
 		lvremove -f /dev/$THINPOOL_VG/$vm_name
