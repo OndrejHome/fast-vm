@@ -71,4 +71,18 @@ if [ ! -f fast-vm.xml ]; then
 	echo "default fast-vm.xml file missing, exiting"
 	exit 1
 fi
+
+## changing configuration file
+echo "adding values to configuration file ~/.fast-vm/config"
+if [ ! -d "~/.fast-vm"]; then 
+	mkdir ~/.fast-vm 
+else 
+	echo "[err] Error creating configuration directory"
+	exit 1
+fi
+echo "# thin_lvm_setup $(date)" >> ~/.fast-vm/config
+echo "THINPOOL_VG=$vg_of_thin_pool" >> ~/.fast-vm/config
+echo "THINPOOL_LV=$thin_pool_name" >> ~/.fast-vm/config
+echo "" >> ~/.fast-vm/config
+
 echo "### 1 ### DONE"
