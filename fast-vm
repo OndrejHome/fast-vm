@@ -118,9 +118,10 @@ case "$1" in
 		# special case for creating only clean image
 		if [ "$vm_number" == "clean" ]; then
 			VM_NAME="$VM_PREFIX$rhel_version"
-	
-			sed -e "s/VM_NAME/$VM_PREFIX$rhel_version/g; s/VG_NAME/$THINPOOL_VG/g; s/NET_NAME/$LIBVIRT_NETWORK/g;" ~/.fast-vm/config-${rhel_version}.xml > /tmp/machine.xml
-			virsh define /tmp/machine.xml
+			
+			tmp_xml=$(mktemp --suffix=.xml)
+			sed -e "s/VM_NAME/$VM_PREFIX$rhel_version/g; s/VG_NAME/$THINPOOL_VG/g; s/NET_NAME/$LIBVIRT_NETWORK/g;" ~/.fast-vm/config-${rhel_version}.xml > $tmp_xml
+			virsh define $tmp_xml
 
 			# source file with hacks and apply them
 			if [ -f "$HOME/.fast-vm/config-${rhel_version}.sh" ]; then
@@ -148,8 +149,9 @@ case "$1" in
 		lvcreate --ignoreactivationskip -s --thinpool $THINPOOL_VG/$THINPOOL_LV /dev/$THINPOOL_VG/$VM_PREFIX$rhel_version --name $VM_PREFIX$rhel_version-$vm_number
 		echo "[info] defining virtual machine in libvirt ..."
 
-		sed -e "s/VM_NAME/$VM_PREFIX$rhel_version-$vm_number/g; s/VG_NAME/$THINPOOL_VG/g; s/NET_NAME/$LIBVIRT_NETWORK/g;" ~/.fast-vm/config-${rhel_version}.xml > /tmp/machine.xml
-		virsh define /tmp/machine.xml
+		tmp_xml=$(mktemp --suffix=.xml)
+		sed -e "s/VM_NAME/$VM_PREFIX$rhel_version-$vm_number/g; s/VG_NAME/$THINPOOL_VG/g; s/NET_NAME/$LIBVIRT_NETWORK/g;" ~/.fast-vm/config-${rhel_version}.xml > $tmp_xml
+		virsh define $tmp_xml
 
 		echo "[info] adding static lease into libvirts DHCP"
 		vm_mac=$(virsh dumpxml "$VM_PREFIX$rhel_version-$vm_number"|grep 'mac address'|cut -d\' -f 2)
