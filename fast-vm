@@ -146,7 +146,7 @@ case "$1" in
 		VM_NAME="$VM_PREFIX$rhel_version-$vm_number"
 
 		echo "[info] creating disk ..."
-		lvcreate --ignoreactivationskip -s --thinpool $THINPOOL_VG/$THINPOOL_LV /dev/$THINPOOL_VG/$VM_PREFIX$rhel_version --name $VM_PREFIX$rhel_version-$vm_number
+		lvcreate -k n -s --thinpool $THINPOOL_VG/$THINPOOL_LV /dev/$THINPOOL_VG/$VM_PREFIX$rhel_version --name $VM_PREFIX$rhel_version-$vm_number
 		echo "[info] defining virtual machine in libvirt ..."
 
 		tmp_xml=$(mktemp --suffix=.xml)
@@ -179,7 +179,6 @@ case "$1" in
 			echo "VM with number '$vm_number' not found"
 			exit 1
 		fi
-		#TBD FIXME activate inative LV
 		
 		# if there is any third argument start VM and console after
 		echo "[info] starting VM $vm_name"
