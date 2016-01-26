@@ -51,14 +51,11 @@ if [ ! "$?" -eq "0" ]; then
 fi
 ## changing configuration file
 echo "adding values to configuration file ~/.fast-vm/config"
-if [ ! -d "~/.fast-vm"]; then 
-	mkdir ~/.fast-vm 
-else 
-	echo "[err] Error creating configuration directory"
-	exit 1
+if [ ! -d "$HOME/.fast-vm" ]; then 
+	mkdir "$HOME/.fast-vm"
 fi
-echo "# libvirt_setup $(date)" >> ~/.fast-vm/config
-echo "LIBVIRT_NETWORK=$net_name" >> ~/.fast-vm/config
-echo "SUBNET_NUMBER=$subnet_number" >> ~/.fast-vm/config
+echo "# libvirt_setup $(date)" >> $HOME/.fast-vm/config
+echo "LIBVIRT_NETWORK=$net_name" >> $HOME/.fast-vm/config
+echo "SUBNET_NUMBER=$subnet_number" >> $HOME/.fast-vm/config
 
 echo "### 2 ### DONE"
