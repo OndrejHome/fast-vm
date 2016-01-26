@@ -66,11 +66,6 @@ lvconvert --type thin-pool $vg_of_thin_pool/$thin_pool_name
 if [ ! "$?" -eq "0" ]; then 
 	echo "[err] Error while converting LV into thin pool, aborting"
 fi
-###################
-if [ ! -f fast-vm.xml ]; then
-	echo "default fast-vm.xml file missing, exiting"
-	exit 1
-fi
 
 ## changing configuration file
 echo "adding values to configuration file ~/.fast-vm/config"

@@ -11,7 +11,7 @@ function check_empty {
 
 if [ -z "$1" ]; then
 	echo "usage:"
-	echo "$0 import_image rhel_version /path/to/image.gz"
+	echo "$0 import_image rhel_version /path/to/image.gz /path.to/image/libvirt.xml"
 	echo "$0 create rhel_version [VM_number]"
 	echo "$0 start VM_number"
 	echo "$0 console VM_number"
@@ -46,13 +46,32 @@ case "$1" in
 			echo "[err] image file not found"
 			exit 1
 		fi
-			#TBD FIXME
-			echo "creating LV $VM_PREFIX-$rhel_version ..."
-			lvcreate -n $VM_PREFIX-$rhel_version -V 10G --thinpool $THINPOOL_VG/$THINPOOL_LV
+		image_xml_path="$4"
+		if [ ! -f "$image_xml_path" ]; then
+			echo "[err] image xml file not found"
+			exit 1
+		fi
 
-			echo "importing image $image_path into /dev/$THINPOOL_VG/$VM_PREFIX-$rhel_version"
-			gunzip -c "$image_path"| dd of=/dev/$THINPOOL_VG/$VM_PREFIX-$rhel_version bs=1M conv=sparse
+		echo "creating LV $VM_PREFIX$rhel_version ..."
+		lvcreate -n $VM_PREFIX$rhel_version -V 10G --thinpool $THINPOOL_VG/$THINPOOL_LV
+		if [ "$?" != "0" ]; then
+			echo "[err] Error creating thin LV for VM image"
+			exit 1
+		fi
 
+		echo "importing image $image_path into /dev/$THINPOOL_VG/$VM_PREFIX$rhel_version"
+		gunzip -c "$image_path"| dd of=/dev/$THINPOOL_VG/$VM_PREFIX$rhel_version bs=1M conv=sparse
+		if [ "$?" != "0" ]; then
+			echo "[err] Error copying the image into thin LV"
+			exit 1
+		fi
+
+		# copy the XML configuration file
+		if [ ! -d "$HOME/.fast-vm" ]; then 
+			mkdir "$HOME/.fast-vm"
+		fi
+		cp "$image_xml_path" "$HOME/.fast-vm/config-${rhel_version}.xml"
+		echo "[info] image imported"
 		;;
 	create)
 		rhel_version="$2"
