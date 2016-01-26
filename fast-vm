@@ -12,8 +12,8 @@ function check_empty {
 if [ -z "$1" ]; then
 	echo "usage:"
 	echo "$0 import_image rhel_version /path/to/image.gz /path.to/image/libvirt.xml"
-	echo "$0 create rhel_version [VM_number]"
-	echo "$0 start VM_number"
+	echo "$0 create rhel_version [VM_number/clean]"
+	echo "$0 start VM_number [with_console]"
 	echo "$0 console VM_number"
 	echo "$0 delete VM_number"
 	exit 1
@@ -33,6 +33,7 @@ check_empty "VM_PREFIX" "$VM_PREFIX"
 check_empty "LIBVIRT_NETWORK" "$LIBVIRT_NETWORK"
 check_empty "THINPOOL_VG" "$THINPOOL_VG"
 check_empty "THINPOOL_LV" "$THINPOOL_LV"
+check_empty "SUBNET_NUMBER" "$SUBNET_NUMBER"
 
 case "$1" in
 	import_image)
@@ -92,6 +93,7 @@ case "$1" in
 		fi
 
 		vm_number="$3"
+		# validate VM NUMBER
 		if [[ $vm_number =~ ^-?[0-9]+$ ]]
 		then
 			if [ "$vm_number" -lt 20 ] || [ "$vm_number" -gt 220 ];then
