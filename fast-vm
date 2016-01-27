@@ -1,5 +1,10 @@
 #!/bin/bash
 
+if [ "$(whoami)" != "root" ]; then
+	echo "this must be run as root"
+	exit 1
+fi
+
 function check_empty {
 	var_name="$1"
 	var_value="$2"

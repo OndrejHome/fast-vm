@@ -1,5 +1,9 @@
 #!/bin/bash
 
+if [ "$(whoami)" != "root" ]; then
+	echo "this must be run as root"
+	exit 1
+fi
 echo "##==>> fast-vm setup script"
 echo "copying fast-vm into /usr/local/sbin/fast-vm"
 cp fast-vm /usr/local/sbin
