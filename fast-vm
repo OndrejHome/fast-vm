@@ -16,7 +16,7 @@ function check_empty {
 
 if [ -z "$1" ]; then
 	echo "usage:"
-	echo "$0 import_image rhel_version /path/to/image.gz /path.to/image/libvirt.xml"
+	echo "$0 import_image rhel_version /path/to/image.gz /path.to/image/libvirt.xml [/path/to/hack_file.sh]"
 	echo "$0 create rhel_version [VM_number/clean]"
 	echo "$0 start VM_number [with_console]"
 	echo "$0 console VM_number"
@@ -57,6 +57,11 @@ case "$1" in
 			echo "[err] image xml file not found"
 			exit 1
 		fi
+		hack_file="$5"
+		if [ ! -z "$hack_file" ] && [ ! -f "$hack_file" ]; then
+			echo "[err] hack file not found"
+			exit 1
+		fi
 
 		echo "creating LV $VM_PREFIX$rhel_version ..."
 		lvcreate -n $VM_PREFIX$rhel_version -V 10G --thinpool $THINPOOL_VG/$THINPOOL_LV
@@ -77,6 +82,11 @@ case "$1" in
 			mkdir "$HOME/.fast-vm"
 		fi
 		cp "$image_xml_path" "$HOME/.fast-vm/config-${rhel_version}.xml"
+		if [ ! -z "$hack_file" ] && [ -f "$hack_file" ]; then
+			cp "$hack_file" "$HOME/.fast-vm/config-${rhel_version}.sh"
+			chmod +x "$HOME/.fast-vm/config-${rhel_version}.sh"
+		fi
+
 		echo "[info] image imported"
 		;;
 	create)
