@@ -63,11 +63,22 @@ case "$1" in
 			exit 1
 		fi
 
-		echo "creating LV $VM_PREFIX$rhel_version ..."
-		lvcreate -n $VM_PREFIX$rhel_version -V 10G --thinpool $THINPOOL_VG/$THINPOOL_LV
-		if [ "$?" != "0" ]; then
-			echo "[err] Error creating thin LV for VM image"
-			exit 1
+		if [ -b "/dev/$THINPOOL_VG/$VM_PREFIX$rhel_version" ]; then
+			echo "[wrn] base image for '$rhel_version' version already exists"
+			echo "[?] Do you want to overwrite it (y/n): "
+			read answer
+			if [ ! "$answer" == "y" ]; then
+				echo "aborting, no changes made"
+				exit 0
+			fi
+			echo "[info] overwriting LV $VM_PREFIX$rhel_version ..."
+		else
+			echo "creating LV $VM_PREFIX$rhel_version ..."
+			lvcreate -n $VM_PREFIX$rhel_version -V 10G --thinpool $THINPOOL_VG/$THINPOOL_LV
+			if [ "$?" != "0" ]; then
+				echo "[err] Error creating thin LV for VM image"
+				exit 1
+			fi
 		fi
 
 		echo "importing image $image_path into /dev/$THINPOOL_VG/$VM_PREFIX$rhel_version"
