@@ -94,8 +94,8 @@ case "$1" in
 		fi
 		cp "$image_xml_path" "$HOME/.fast-vm/config-${rhel_version}.xml"
 		if [ ! -z "$hack_file" ] && [ -f "$hack_file" ]; then
-			cp "$hack_file" "$HOME/.fast-vm/config-${rhel_version}.sh"
-			chmod +x "$HOME/.fast-vm/config-${rhel_version}.sh"
+			cp "$hack_file" "$HOME/.fast-vm/hacks-${rhel_version}.sh"
+			chmod +x "$HOME/.fast-vm/hacks-${rhel_version}.sh"
 		fi
 
 		echo "[info] image imported"
@@ -139,8 +139,8 @@ case "$1" in
 			fi
 		fi
 
-		if [ ! -f "$HOME/.fast-vm/config-${rhel_version}.sh" ]; then
-			echo "[wrn] no hacks for this version, no $HOME/.fast-vm/config-${rhel_version}.sh found"
+		if [ ! -f "$HOME/.fast-vm/hacks-${rhel_version}.sh" ]; then
+			echo "[wrn] no hacks for this version, no $HOME/.fast-vm/hacks-${rhel_version}.sh found"
 		fi
 
 		# special case for creating only base image
@@ -153,8 +153,8 @@ case "$1" in
 
 			# source file with hacks and apply them
 			if [ -f "$HOME/.fast-vm/config-${rhel_version}.sh" ]; then
-				echo "[info] applying hacks from $HOME/.fast-vm/config-${rhel_version}.sh"
-				. $HOME/.fast-vm/config-${rhel_version}.sh
+				echo "[info] applying hacks from $HOME/.fast-vm/hacks-${rhel_version}.sh"
+				. $HOME/.fast-vm/hacks-${rhel_version}.sh
 			fi
 
 			echo "base image VM created, to start this VM use 'virsh start $VM_PREFIX$rhel_version'"
@@ -186,9 +186,9 @@ case "$1" in
 		virsh net-update "$LIBVIRT_NETWORK" add-last ip-dhcp-host --xml "<host mac='$vm_mac' ip='192.168.$SUBNET_NUMBER.$vm_number'/>" --live --config
 
 		# source file with hacks and apply them
-		if [ -f "$HOME/.fast-vm/config-${rhel_version}.sh" ]; then
-			echo "[info] applying hacks from $HOME/.fast-vm/config-${rhel_version}.sh"
-			. $HOME/.fast-vm/config-${rhel_version}.sh
+		if [ -f "$HOME/.fast-vm/hacks-${rhel_version}.sh" ]; then
+			echo "[info] applying hacks from $HOME/.fast-vm/hacks-${rhel_version}.sh"
+			. $HOME/.fast-vm/hacks-${rhel_version}.sh
 		fi
 
 		echo "VM '$VM_NAME' created"
