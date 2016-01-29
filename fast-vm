@@ -27,7 +27,7 @@ fi
 ## fast-vm configuration
 if [ ! -f "$HOME/.fast-vm/config" ]; then
 	echo "[err] no configuration found in ~/.fast-vm/config"
-	echo "please generate configuration by using setup-default-configuration.sh"
+	echo "please run setup.sh before using fast-vm"
 	exit 1
 fi
 
