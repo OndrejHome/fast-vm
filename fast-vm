@@ -17,7 +17,7 @@ function check_empty {
 if [ -z "$1" ]; then
 	echo "usage:"
 	echo "$0 import_image rhel_version /path/to/image.gz /path.to/image/libvirt.xml [/path/to/hack_file.sh]"
-	echo "$0 create rhel_version [VM_number/clean]"
+	echo "$0 create rhel_version [VM_number/base]"
 	echo "$0 start VM_number [with_console]"
 	echo "$0 console VM_number"
 	echo "$0 delete VM_number"
@@ -127,13 +127,13 @@ case "$1" in
 				exit 1
 			fi
 		else
-			if [ "$vm_number" == "clean" ]; then
-				echo "creating clean VM for image"
+			if [ "$vm_number" == "base" ]; then
+				echo "creating base image VM"
 			else
 				if [ -z "$vm_number" ]; then
 					vm_number=$((20+$RANDOM%200))
 				else
-					echo "[err] only numbers from range 20-220 and word 'clean' permited here"
+					echo "[err] only numbers from range 20-220 and word 'base' permited here"
 					exit 1
 				fi
 			fi
@@ -143,8 +143,8 @@ case "$1" in
 			echo "[wrn] no hacks for this version, no $HOME/.fast-vm/config-${rhel_version}.sh found"
 		fi
 
-		# special case for creating only clean image
-		if [ "$vm_number" == "clean" ]; then
+		# special case for creating only base image
+		if [ "$vm_number" == "base" ]; then
 			VM_NAME="$VM_PREFIX$rhel_version"
 			
 			tmp_xml=$(mktemp --suffix=.xml)
@@ -157,7 +157,7 @@ case "$1" in
 				. $HOME/.fast-vm/config-${rhel_version}.sh
 			fi
 
-			echo "clean image VM created, to start this VM use 'virsh start $VM_PREFIX$rhel_version'"
+			echo "base image VM created, to start this VM use 'virsh start $VM_PREFIX$rhel_version'"
 			echo "This VM is used for customizing the base image of '$rhel_version' VMs"
 			echo "All changes you make to this VM would be available in newly created VMs"
 			echo "of that version, this will not affect already existing VMs of same version"
