@@ -1,7 +1,7 @@
 #!/bin/bash
 
 if [ "$(whoami)" != "root" ]; then
-	echo "this must be run as root"
+	echo "[err] this must be run as root"
 	exit 1
 fi
 
@@ -10,24 +10,34 @@ function check_empty {
 	var_value="$2"
 	if [ -z "$var_value" ]; then
 		echo "[err] variable $var_name not declared in configuration"
+		echo "      consider running setup.sh again or fix manually"
 		exit 2
 	fi
 }
 
-if [ -z "$1" ]; then
+function usage {
 	echo "usage:"
 	echo "$0 import_image rhel_version /path/to/image.gz /path.to/image/libvirt.xml [/path/to/hack_file.sh]"
+	echo " - import VM image to thin LVM storage and define default libvirt XML and optionaly hacks file"
 	echo "$0 create rhel_version [VM_number/base]"
-	echo "$0 start VM_number [with_console]"
+	echo " - creates VM based on image from thin LVM with specified number or 'base VM'"
+	echo "$0 start VM_number [console]"
+	echo " - starts VM with number VM_number, if parameter 'console is passed' it also connects to serial console after start"
 	echo "$0 console VM_number"
+	echo " - connect to serial console of VM with number VM_number"
 	echo "$0 delete VM_number"
+	echo " - delete VM with number VM_number and it's thin LV disk"
+}
+
+if [ -z "$1" ]; then
+	usage
 	exit 1
 fi
 
 ## fast-vm configuration
 if [ ! -f "$HOME/.fast-vm/config" ]; then
 	echo "[err] no configuration found in ~/.fast-vm/config"
-	echo "please run setup.sh before using fast-vm"
+	echo "      please run setup.sh before using fast-vm"
 	exit 1
 fi
 
@@ -65,15 +75,15 @@ case "$1" in
 
 		if [ -b "/dev/$THINPOOL_VG/$VM_PREFIX$rhel_version" ]; then
 			echo "[wrn] base image for '$rhel_version' version already exists"
-			echo "[?] Do you want to overwrite it (y/n): "
+			echo "[???] Do you want to overwrite it (y/n): "
 			read answer
 			if [ ! "$answer" == "y" ]; then
 				echo "aborting, no changes made"
 				exit 0
 			fi
-			echo "[info] overwriting LV $VM_PREFIX$rhel_version ..."
+			echo "[inf] overwriting LV $VM_PREFIX$rhel_version ..."
 		else
-			echo "creating LV $VM_PREFIX$rhel_version ..."
+			echo "[inf] creating LV $VM_PREFIX$rhel_version ..."
 			lvcreate -n $VM_PREFIX$rhel_version -V 10G --thinpool $THINPOOL_VG/$THINPOOL_LV
 			if [ "$?" != "0" ]; then
 				echo "[err] Error creating thin LV for VM image"
@@ -81,7 +91,7 @@ case "$1" in
 			fi
 		fi
 
-		echo "importing image $image_path into /dev/$THINPOOL_VG/$VM_PREFIX$rhel_version"
+		echo "[inf] importing image $image_path into /dev/$THINPOOL_VG/$VM_PREFIX$rhel_version"
 		gunzip -c "$image_path"| dd of=/dev/$THINPOOL_VG/$VM_PREFIX$rhel_version bs=1M conv=sparse
 		if [ "$?" != "0" ]; then
 			echo "[err] Error copying the image into thin LV"
@@ -98,7 +108,7 @@ case "$1" in
 			chmod +x "$HOME/.fast-vm/hacks-${rhel_version}.sh"
 		fi
 
-		echo "[info] image imported"
+		echo "[inf] image imported"
 		;;
 	create)
 		rhel_version="$2"
@@ -113,8 +123,8 @@ case "$1" in
 		fi
 		if [ ! -b "/dev/$THINPOOL_VG/$VM_PREFIX$rhel_version" ]; then
 			echo "[err] Missing image for this rhel version"
-			echo " /dev/$THINPOOL_VG/$VM_PREFIX$rhel_version not found"
-			echo " first import image using $0 $rhel_version /path/to/image.gz /path/tolibvirt.xml"
+			echo "      /dev/$THINPOOL_VG/$VM_PREFIX$rhel_version not found"
+			echo "      first import image using '$0 image_import $rhel_version'"
 			exit 2
 		fi
 
@@ -128,7 +138,7 @@ case "$1" in
 			fi
 		else
 			if [ "$vm_number" == "base" ]; then
-				echo "creating base image VM"
+				echo "[inf] creating base image VM"
 			else
 				if [ -z "$vm_number" ]; then
 					vm_number=$((20+$RANDOM%200))
@@ -157,41 +167,41 @@ case "$1" in
 				. $HOME/.fast-vm/hacks-${rhel_version}.sh
 			fi
 
-			echo "base image VM created, to start this VM use 'virsh start $VM_PREFIX$rhel_version'"
-			echo "This VM is used for customizing the base image of '$rhel_version' VMs"
-			echo "All changes you make to this VM would be available in newly created VMs"
-			echo "of that version, this will not affect already existing VMs of same version"
+			echo "[inf] base image VM created, to start this VM use 'virsh start $VM_PREFIX$rhel_version'"
+			echo "      This VM is used for customizing the base image of '$rhel_version' VMs"
+			echo "      All changes you make to this VM would be available in newly created VMs"
+			echo "      of that version, this will not affect already existing VMs of same version"
 			exit 0
 		fi
 		
 		## check if the machine doesn't exists already
 		if [ -b "/dev/$THINPOOL_VG/$VM_PREFIX$rhel_version-$vm_number" ]; then
-			echo "[err] there is already disk for this machine, aborting"
+			echo "[err] there is already disk for this machine, VM creation aborted"
 			exit 1
 		fi
 
 		## create regular machine
 		VM_NAME="$VM_PREFIX$rhel_version-$vm_number"
 
-		echo "[info] creating disk ..."
+		echo "[inf] creating disk '$VM_PREFIX$rhel_version-$vm_number'"
 		lvcreate -k n -s --thinpool $THINPOOL_VG/$THINPOOL_LV /dev/$THINPOOL_VG/$VM_PREFIX$rhel_version --name $VM_PREFIX$rhel_version-$vm_number
-		echo "[info] defining virtual machine in libvirt ..."
+		echo "[inf] defining virtual machine '$VM_PREFIX$rhel_version-$vm_number' in libvirt"
 
 		tmp_xml=$(mktemp --suffix=.xml)
 		sed -e "s/VM_NAME/$VM_PREFIX$rhel_version-$vm_number/g; s/VG_NAME/$THINPOOL_VG/g; s/NET_NAME/$LIBVIRT_NETWORK/g;" ~/.fast-vm/config-${rhel_version}.xml > $tmp_xml
 		virsh define $tmp_xml
 
-		echo "[info] adding static lease into libvirts DHCP"
+		echo "[inf] adding static lease for 192.168.$SUBNET_NUMBER.$vm_number into libvirts DHCP"
 		vm_mac=$(virsh dumpxml "$VM_PREFIX$rhel_version-$vm_number"|grep 'mac address'|cut -d\' -f 2)
 		virsh net-update "$LIBVIRT_NETWORK" add-last ip-dhcp-host --xml "<host mac='$vm_mac' ip='192.168.$SUBNET_NUMBER.$vm_number'/>" --live --config
 
 		# source file with hacks and apply them
 		if [ -f "$HOME/.fast-vm/hacks-${rhel_version}.sh" ]; then
-			echo "[info] applying hacks from $HOME/.fast-vm/hacks-${rhel_version}.sh"
+			echo "[inf] applying hacks from $HOME/.fast-vm/hacks-${rhel_version}.sh"
 			. $HOME/.fast-vm/hacks-${rhel_version}.sh
 		fi
 
-		echo "VM '$VM_NAME' created"
+		echo "[inf] VM '$VM_NAME' created"
 		;;
 
 	start)
@@ -204,16 +214,16 @@ case "$1" in
 		vm_name=$(virsh list --all |grep "$VM_PREFIX"|awk '{print $2}'|egrep "\-$vm_number$")
 
 		if [ -z "$vm_name" ]; then
-			echo "VM with number '$vm_number' not found"
+			echo "[err] VM with number '$vm_number' not found"
 			exit 1
 		fi
 		
 		# if there is any third argument start VM and console after
-		echo "[info] starting VM $vm_name"
+		echo "[inf] starting VM $vm_name"
 		if [ -z "$3" ]; then
 			virsh start $vm_name
 		else
-			echo "and connecting to it serial console ..."
+			echo "      and connecting to it serial console ..."
 			virsh start $vm_name && virsh console $vm_name
 		fi
 		;;
@@ -225,7 +235,7 @@ case "$1" in
 		fi	
 		vm_name=$(virsh list --all |grep "$VM_PREFIX"|awk '{print $2}'|egrep "\-$vm_number$")
 		if [ -z "$vm_name" ]; then
-			echo "VM with number '$vm_number' not found"
+			echo "[err] VM with number '$vm_number' not found"
 			exit 1
 		fi
 
@@ -239,7 +249,7 @@ case "$1" in
 		fi	
 		vm_name=$(virsh list --all |grep "$VM_PREFIX"|awk '{print $2}'|egrep "\-$vm_number$")
 		if [ -z "$vm_name" ]; then
-			echo "VM with number '$vm_number' not found"
+			echo "[err] VM with number '$vm_number' not found"
 			exit 1
 		fi
 
@@ -248,14 +258,19 @@ case "$1" in
 		echo "[info] reservating DHCP lease delete"
 		vm_mac=$(virsh dumpxml "$vm_name"|grep 'mac address'|cut -d\' -f 2)
 
+		echo "[inf] removing DHCP reservation"
 		virsh net-update "$LIBVIRT_NETWORK" delete ip-dhcp-host --xml "<host mac='$vm_mac' ip='192.168.$SUBNET_NUMBER.$vm_number'/>" --live --config
-
+		
+		echo "[inf] removing VM drive"
 		lvremove -f /dev/$THINPOOL_VG/$vm_name
 
+		echo "[inf] undefining VM from libvirt"
 		virsh undefine $vm_name
 
+		echo "[inf] VM '$vm_name' deleted"
 		;;
 	*) 
 		echo "[err] unknown action"
+		usage
 		;;
 esac	

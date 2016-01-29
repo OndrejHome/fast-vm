@@ -10,6 +10,7 @@ fast-vm is taking care of:
 * libvirt with qemu/kvm 
 * LVM thin pool support
 * preconfigured VM disk images and XML files (downloadable separately)
+** check repository at https://gitlab.cee.redhat.com/ofamera/fast-vm-images.git 
 * LVM VG with reasonable amount of free space
 
 ====== Installation/Setup ======
@@ -42,9 +43,9 @@ assuming you have imported the image of rhel 6.7 using following command
   fast-vm import_image 6_7 rhel6.7.img.gz rhel-6.7.xml
 
 #a) To edit the VM image so the other VMs are created from this edited image
-  # fast-vm create 6_7 clean
+  # fast-vm create 6_7 base
     ...
-    clean image VM created, to start this VM use 'virsh start fastvm-6_7'
+    base image VM created, to start this VM use 'virsh start fastvm-6_7'
     This VM is used for customizing the base image of '6_7' VMs
     All changes you make to this VM would be available in newly created VMs
     of that version, this will not affect already existing VMs of same version
