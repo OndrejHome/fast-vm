@@ -9,9 +9,12 @@ fast-vm is taking care of:
 ====== Requirements ======
 * libvirt with qemu/kvm 
 * LVM thin pool support
+* LVM VG with reasonable amount of free space (to create LV with thin pool)
 * preconfigured VM disk images and XML files (downloadable separately)
 ** check repository at https://gitlab.cee.redhat.com/ofamera/fast-vm-images.git 
-* LVM VG with reasonable amount of free space
+* bash completion for bash completion to work
+* 'pv' to show import progress
+* 'dhcp_release' for proper DHCP static leases release
 
 ====== Installation/Setup ======
 1. Run script 'setup.sh' and answer questions.
@@ -25,9 +28,9 @@ scripts on their own
 
 2. Import some prebuilded VM disk images or use your
 
-fast-vm import_image <rhel_version> </path/to/image.gz> </path/to/vm_template.xml>
+fast-vm import_image <rhel_version> </path/to/image.gz> </path/to/vm_template.xml> <path/to/hacks.sh>
 
-rhel_version - usually something like '6_7', '7' or '7-test' (used for composing 
+rhel_version - usually something like '6.7', '6_7', '7' or '7-test' (used for composing 
                LV name and VM hostname)
 /path/to/image.gz - gzipped VM machine drive in the 'raw' format
 /path/to/vm_template.xml - XML template for creating libvirt VM, check below 
@@ -91,15 +94,14 @@ SUBNET_NUMBER - the XX in the 192.168.XX.0/24 libvirt network created by setup
 
 ====== Known bugs/limitation ======
 * script requires root on the machine
-* script doesn't check (yet) if you have all required requirements installed
 * tested on the Gentoo and Fedora 22
 * VM images are provided separately
-
-== TODO ==
-* document VM hack scripts and provide reasonable links for VMs
-
+* using 'dhcp_release' to remove DHCP static reservation is not the cleanest
+  way of doing so, but there is no other supported way of doing this through libvirt
+  (TODO: make RFE/BUG into libvirt)
+* BUG: sometimes the VM doesn't get designated IP address because the dnsmasq holds
+       the lease for some older MAC address (dhcp_release should be fixing this but
+       it's not 100% working solution)
 
 === Author ===
 Ondrej Famera <ofamera@redhat.com>
-
-

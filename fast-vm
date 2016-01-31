@@ -225,7 +225,7 @@ case "$1" in
 
 			# source file with hacks and apply them
 			if [ -f "$hack_file" ]; then
-				echo "[info] applying hacks from $hack_file"
+				echo "[inf] applying hacks from $hack_file"
 				. $hack_file
 			fi
 
@@ -259,7 +259,7 @@ case "$1" in
 
 		# source file with hacks and apply them
 		if [ -f "$hack_file" ]; then
-			echo "[info] applying hacks from $hack_file"
+			echo "[inf] applying hacks from $hack_file"
 			. $hack_file
 		fi
 
@@ -310,7 +310,7 @@ case "$1" in
 
 		virsh destroy $vm_name
 
-		echo "[info] reservating DHCP lease delete"
+		echo "[inf] reservating DHCP lease delete"
 		vm_mac=$(virsh dumpxml "$vm_name"|grep 'mac address'|cut -d\' -f 2)
 
 		echo "[inf] removing DHCP reservation"
