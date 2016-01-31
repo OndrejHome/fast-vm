@@ -19,7 +19,7 @@ function usage {
 	echo "usage:"
 	echo "$0 import_image rhel_version /path/to/image.gz /path.to/image/libvirt.xml [/path/to/hack_file.sh]"
 	echo " - import VM image to thin LVM storage and define default libvirt XML and optionaly hacks file"
-	echo "$0 create rhel_version [VM_number/base]"
+	echo "$0 create rhel_version VM_number/base"
 	echo " - creates VM based on image from thin LVM with specified number or 'base VM'"
 	echo "$0 start VM_number [console]"
 	echo " - starts VM with number VM_number, if parameter 'console is passed' it also connects to serial console after start"
@@ -140,12 +140,8 @@ case "$1" in
 			if [ "$vm_number" == "base" ]; then
 				echo "[inf] creating base image VM"
 			else
-				if [ -z "$vm_number" ]; then
-					vm_number=$((20+$RANDOM%200))
-				else
-					echo "[err] only numbers from range 20-220 and word 'base' permited here"
-					exit 1
-				fi
+				echo "[err] only numbers from range 20-220 and word 'base' permited here"
+				exit 1
 			fi
 		fi
 
