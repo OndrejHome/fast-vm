@@ -122,7 +122,13 @@ case "$1" in
 		fi
 
 		echo "[inf] importing image $image_path into /dev/$THINPOOL_VG/$VM_PREFIX$rhel_version"
-		gunzip -c "$image_path"| dd of=/dev/$THINPOOL_VG/$VM_PREFIX$rhel_version bs=1M conv=sparse
+		which pv >/dev/null 2>&1 
+		if [ "$?" -eq '0' ]; then
+			gunzip -c "$image_path"| pv | dd of=/dev/$THINPOOL_VG/$VM_PREFIX$rhel_version bs=1M conv=sparse
+		else
+			echo "[inf] please wait while importing image (to show progress, install 'pv')"
+			gunzip -c "$image_path"| dd of=/dev/$THINPOOL_VG/$VM_PREFIX$rhel_version bs=1M conv=sparse
+		fi
 		if [ "$?" != "0" ]; then
 			echo "[err] Error copying the image into thin LV"
 			exit 1
