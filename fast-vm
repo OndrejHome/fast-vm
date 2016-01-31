@@ -29,11 +29,13 @@ function usage {
 			echo "                              (f.e. used for change of hostname)"
 			;;
 		create)
-			echo "fast-vm create <rhel_version> <VM_number>/base"
+			echo "fast-vm create <rhel_version> <VM_number>/base [ <libvirt.xml> ] [ <hack_file.sh> ]"
 			echo "  <rhel_version> - version of rhel to use for this VM (new ones can be defined using import_image)"
 			echo "  <VM_number>/base - number of VM which you use to identify the VM, the VM also gets assigned"
 			echo "                   static DHCP lease in form of 192.168.XX.<VM_number>."
 			echo " 		         - alternatively special value 'base' denotas creation of base VM"
+			echo "  <libvirt.xml> (optional) - alternative libvirt VM xml definition for this VM"
+			echo "  <hack_file.sh> (optional) - alternative bash script executed after creating VM "
 			;;
 		start)
 			echo "fast-vm start <VM_number> [ console ]"
@@ -139,16 +141,46 @@ case "$1" in
 		rhel_version="$2"
 		if [ -z "$rhel_version" ]; then echo "[err] missing rhel version"; usage create; fi
 
+		image_xml_path="$4"
+		if [ ! -z "$image_xml_path" ]; then
+			if [ ! -f "$image_xml_path" ]; then
+				echo "[err] image xml file not found"
+				usage create
+			else
+				echo "[inf] using alternative xml file $image_xml_path"
+			fi
+		else
+			if [ ! -f "$HOME/.fast-vm/config-${rhel_version}.xml" ]; then
+				echo "[err] no VM XML definition for this version, "
+				echo "      $HOME/.fast-vm/config-${rhel_version}.xml not found."
+				echo "      Import image again or supply alternative xml"
+				usage create
+			else
+				image_xml_path="$HOME/.fast-vm/config-${rhel_version}.xml"
+			fi
 		fi
 
-		if [ ! -f "$HOME/.fast-vm/config-${rhel_version}.xml" ]; then
-			echo "[err] no VM XML definition for this version, no $HOME/.fast-vm/config-${rhel_version}.xml found"
-			exit 2
+		hack_file="$5"
+		if [ ! -z "$hack_file" ]; then
+			if [ ! -f "$hack_file" ]; then
+				echo "[err] hack file not found"
+				usage create
+			else
+				echo "[inf] using alternative hack file $hack_file"
+			fi
+		else
+			if [ ! -f "$HOME/.fast-vm/hacks-${rhel_version}.sh" ]; then
+				echo "[wrn] no default hacks file for this version, "
+				echo "      $HOME/.fast-vm/hacks-${rhel_version}.sh not found"
+			else
+				hack_file="$HOME/.fast-vm/hacks-${rhel_version}.sh"
+			fi
 		fi
+
 		if [ ! -b "/dev/$THINPOOL_VG/$VM_PREFIX$rhel_version" ]; then
 			echo "[err] Missing image for this rhel version"
 			echo "      /dev/$THINPOOL_VG/$VM_PREFIX$rhel_version not found"
-			echo "      first import image using '$0 image_import $rhel_version'"
+			echo "      first import image using 'fast-vm image_import $rhel_version'"
 			exit 2
 		fi
 
@@ -169,22 +201,23 @@ case "$1" in
 			fi
 		fi
 
-		if [ ! -f "$HOME/.fast-vm/hacks-${rhel_version}.sh" ]; then
-			echo "[wrn] no hacks for this version, no $HOME/.fast-vm/hacks-${rhel_version}.sh found"
-		fi
 
 		# special case for creating only base image
 		if [ "$vm_number" == "base" ]; then
 			VM_NAME="$VM_PREFIX$rhel_version"
 			
 			tmp_xml=$(mktemp --suffix=.xml)
-			sed -e "s/VM_NAME/$VM_PREFIX$rhel_version/g; s/VG_NAME/$THINPOOL_VG/g; s/NET_NAME/$LIBVIRT_NETWORK/g;" ~/.fast-vm/config-${rhel_version}.xml > $tmp_xml
+			sed -e "s/VM_NAME/$VM_PREFIX$rhel_version/g; s/VG_NAME/$THINPOOL_VG/g; s/NET_NAME/$LIBVIRT_NETWORK/g;" "$image_xml_path" > $tmp_xml
 			virsh define $tmp_xml
+			if [ ! "$?" -eq '0' ]; then
+				echo "[err] defining base VM failed, doesn't exists alreadry?"
+				exit 2
+			fi
 
 			# source file with hacks and apply them
-			if [ -f "$HOME/.fast-vm/config-${rhel_version}.sh" ]; then
-				echo "[info] applying hacks from $HOME/.fast-vm/hacks-${rhel_version}.sh"
-				. $HOME/.fast-vm/hacks-${rhel_version}.sh
+			if [ -f "$hack_file" ]; then
+				echo "[info] applying hacks from $hack_file"
+				. $hack_file
 			fi
 
 			echo "[inf] base image VM created, to start this VM use 'virsh start $VM_PREFIX$rhel_version'"
@@ -208,7 +241,7 @@ case "$1" in
 		echo "[inf] defining virtual machine '$VM_PREFIX$rhel_version-$vm_number' in libvirt"
 
 		tmp_xml=$(mktemp --suffix=.xml)
-		sed -e "s/VM_NAME/$VM_PREFIX$rhel_version-$vm_number/g; s/VG_NAME/$THINPOOL_VG/g; s/NET_NAME/$LIBVIRT_NETWORK/g;" ~/.fast-vm/config-${rhel_version}.xml > $tmp_xml
+		sed -e "s/VM_NAME/$VM_PREFIX$rhel_version-$vm_number/g; s/VG_NAME/$THINPOOL_VG/g; s/NET_NAME/$LIBVIRT_NETWORK/g;" "$image_xml_path" > $tmp_xml
 		virsh define $tmp_xml
 
 		echo "[inf] adding static lease for 192.168.$SUBNET_NUMBER.$vm_number into libvirts DHCP"
@@ -216,9 +249,9 @@ case "$1" in
 		virsh net-update "$LIBVIRT_NETWORK" add-last ip-dhcp-host --xml "<host mac='$vm_mac' ip='192.168.$SUBNET_NUMBER.$vm_number'/>" --live --config
 
 		# source file with hacks and apply them
-		if [ -f "$HOME/.fast-vm/hacks-${rhel_version}.sh" ]; then
-			echo "[inf] applying hacks from $HOME/.fast-vm/hacks-${rhel_version}.sh"
-			. $HOME/.fast-vm/hacks-${rhel_version}.sh
+		if [ -f "$hack_file" ]; then
+			echo "[info] applying hacks from $hack_file"
+			. $hack_file
 		fi
 
 		echo "[inf] VM '$VM_NAME' created"

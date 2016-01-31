@@ -33,10 +33,19 @@ _fast-vm()
 		virsh list --all|awk '{print $2}'|egrep "^${vm_prefix}.*-[0-9]+"|sed 's/.*-\([0-9]\+\)$/\1/'> $number_used
 		seq 20 220 > $number_all
 		number_available=$(comm -2 -3 <(sort $number_all) <(sort $number_used))
-		COMPREPLY=( $( compgen -W "$number_available" -- "$cur" ) )
+		COMPREPLY=( $( compgen -W "base $number_available" -- "$cur" ) )
 		rm $number_all $number_used
 		return 0
 	fi
+	if [ "$cword" -eq 4 ] && [ ${COMP_WORDS[1]} == "create" ]; then
+		_filedir '@(xml)'
+		return 0
+	fi
+	if [ "$cword" -eq 5 ] && [ ${COMP_WORDS[1]} == "create" ]; then
+		_filedir '@(sh)'
+		return 0
+	fi
+
 	case $prev in
 		import_image)
 		return 0
