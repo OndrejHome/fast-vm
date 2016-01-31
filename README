@@ -34,9 +34,9 @@ rhel_version - usually something like '6_7', '7' or '7-test' (used for composing
                            for supported macros
 
 # vm_template.xml macros
-VM_NAME - substituted for VM name
-VG_NAME - THINPOOL_VG from configuration
-NET_NAME - LIBVIRT_NETWORK from configuration
+VM_NAME - substituted for VM name (VM_prefix+rhel_version+vm_number)
+THINPOOL_VG - THINPOOL_VG from configuration
+LIBVIRT_NETWORK - LIBVIRT_NETWORK from configuration
 
 ====== Usage ======
 assuming you have imported the image of rhel 6.7 using following command

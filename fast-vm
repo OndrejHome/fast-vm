@@ -216,7 +216,7 @@ case "$1" in
 			VM_NAME="$VM_PREFIX$rhel_version"
 			
 			tmp_xml=$(mktemp --suffix=.xml)
-			sed -e "s/VM_NAME/$VM_PREFIX$rhel_version/g; s/VG_NAME/$THINPOOL_VG/g; s/NET_NAME/$LIBVIRT_NETWORK/g;" "$image_xml_path" > $tmp_xml
+			sed -e "s/VM_NAME/$VM_PREFIX$rhel_version/g; s/THINPOOL_VG/$THINPOOL_VG/g; s/LIBVIRT_NETWORK/$LIBVIRT_NETWORK/g;" "$image_xml_path" > $tmp_xml
 			virsh define $tmp_xml
 			if [ ! "$?" -eq '0' ]; then
 				echo "[err] defining base VM failed, doesn't exists alreadry?"
@@ -250,7 +250,7 @@ case "$1" in
 		echo "[inf] defining virtual machine '$VM_PREFIX$rhel_version-$vm_number' in libvirt"
 
 		tmp_xml=$(mktemp --suffix=.xml)
-		sed -e "s/VM_NAME/$VM_PREFIX$rhel_version-$vm_number/g; s/VG_NAME/$THINPOOL_VG/g; s/NET_NAME/$LIBVIRT_NETWORK/g;" "$image_xml_path" > $tmp_xml
+		sed -e "s/VM_NAME/$VM_PREFIX$rhel_version-$vm_number/g; s/THINPOOL_VG/$THINPOOL_VG/g; s/LIBVIRT_NETWORK/$LIBVIRT_NETWORK/g;" "$image_xml_path" > $tmp_xml
 		virsh define $tmp_xml
 
 		echo "[inf] adding static lease for 192.168.$SUBNET_NUMBER.$vm_number into libvirts DHCP"
