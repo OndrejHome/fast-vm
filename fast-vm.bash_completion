@@ -1,0 +1,79 @@
+# fast-vm completion                                    -*- shell-script -*-
+
+_fast-vm()
+{
+	local cur prev words cword split thin_lv vm_prefix
+	_init_completion -s || return
+
+	vm_prefix=$(grep VM_PREFIX /root/.fast-vm/config|tail -1 |cut -d\= -f 2)
+	thin_lv=$(grep THINPOOL_LV /root/.fast-vm/config|tail -1 |cut -d\= -f 2)
+
+	if [ "$cword" -eq 3 ] && [ ${COMP_WORDS[1]} == "import_image" ]; then
+		_filedir '@(gz)'
+		return 0
+	fi
+	if [ "$cword" -eq 4 ] && [ ${COMP_WORDS[1]} == "import_image" ]; then
+		_filedir '@(xml)'
+		return 0
+	fi
+	if [ "$cword" -eq 5 ] && [ ${COMP_WORDS[1]} == "import_image" ]; then
+		_filedir '@(sh)'
+		return 0
+	fi
+
+	if [ "$cword" -eq 3 ] && [ ${COMP_WORDS[1]} == "start" ]; then
+	        COMPREPLY=( $( compgen -W "console" -- "$cur" ) )
+		return 0
+	fi
+
+	if [ "$cword" -eq 3 ] && [ ${COMP_WORDS[1]} == "create" ]; then
+		local number_used number_all number_available
+		number_used=$(mktemp)
+		number_all=$(mktemp)
+		virsh list --all|awk '{print $2}'|egrep "^${vm_prefix}.*-[0-9]+"|sed 's/.*-\([0-9]\+\)$/\1/'> $number_used
+		seq 20 220 > $number_all
+		number_available=$(comm -2 -3 <(sort $number_all) <(sort $number_used))
+		COMPREPLY=( $( compgen -W "$number_available" -- "$cur" ) )
+		rm $number_all $number_used
+		return 0
+	fi
+	case $prev in
+		import_image)
+		return 0
+		;;
+	create)
+		local rhel_version
+		rhel_version=$(lvs 2>/dev/null|grep -v 'twi'|grep "$thin_lv"|awk '{print $1}'|sed -e "s/$vm_prefix//; s/-[0-9]\+$//"|uniq)
+
+		COMPREPLY=( $( compgen -W "$rhel_version" -- "$cur" ) )
+		return 0
+		;;
+	start|delete|console)
+		local vm_numbers vm_option
+		case $prev in
+			start)
+				vm_option='--inactive'
+			;;
+			delete)
+				vm_option='--all'
+			;;
+			console)
+				vm_option='--state-running'
+			;;
+		esac
+		vm_numbers=$(virsh list "$vm_option"|awk '{print $2}'|egrep "^${vm_prefix}.*-[0-9]+"|sed 's/.*-\([0-9]\+\)$/\1/')
+		COMPREPLY=( $( compgen -W "$vm_numbers" -- "$cur" ) )
+		return 0
+		;;
+	esac
+
+	$split && return 0
+	if [ "$cword" -lt 2 ]; then
+		COMPREPLY=( $( compgen -W 'import_image create start delete console' -- "$cur" ) )
+		return 0
+	fi
+
+} &&
+complete -F _fast-vm fast-vm
+
+# ex: ts=4 sw=4 et filetype=sh

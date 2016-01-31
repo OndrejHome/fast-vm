@@ -7,6 +7,11 @@ fi
 echo "##==>> fast-vm setup script"
 echo "copying fast-vm into /usr/local/sbin/fast-vm"
 cp fast-vm /usr/local/sbin
+
+bash_completion_dir=$(pkg-config --variable=completionsdir bash-completion 2>/dev/null|head -1)
+if [ -d "$bash_completion_dir" ]; then
+	cp fast-vm.bash_completion $bash_completion_dir/fast-vm
+fi
 echo "## running configuration scripts for initial setup"
 
 cmds="lvcreate lvconvert gunzip virsh virt-edit"
