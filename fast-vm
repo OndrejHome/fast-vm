@@ -260,6 +260,15 @@ case "$1" in
 
 		echo "[inf] removing DHCP reservation"
 		virsh net-update "$LIBVIRT_NETWORK" delete ip-dhcp-host --xml "<host mac='$vm_mac' ip='192.168.$SUBNET_NUMBER.$vm_number'/>" --live --config
+		which dhcp_release >/dev/null 2>&1
+		if [ "$?" -eq '0' ]; then
+			dhcp_release "$LIBVIRT_NETWORK" "192.168.$SUBNET_NUMBER.$vm_number" "$vm_mac"
+		else
+			echo "[wrn] dhcp_release not found, to reause the same VM number you would need"
+			echo "      need to delete DHCP leases file for $LIBVIRT_NETWORK network and"
+			echo "      restart this network in the libvirt"
+			echo "      http://lists.thekelleys.org.uk/pipermail/dnsmasq-discuss/2007q1/001094.html"
+		fi
 		
 		echo "[inf] removing VM drive"
 		lvremove -f /dev/$THINPOOL_VG/$vm_name
