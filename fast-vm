@@ -108,6 +108,9 @@ case "$1" in
 				echo "[inf] aborting, no changes made"
 				exit 0
 			fi
+			echo "[inf] stopping and undefining the bas VM"
+			virsh destroy $VM_PREFIX$rhel_version
+			virsh undefine $VM_PREFIX$rhel_version
 			echo "[inf] overwriting LV $VM_PREFIX$rhel_version ..."
 		else
 			echo "[inf] creating LV $VM_PREFIX$rhel_version ..."
