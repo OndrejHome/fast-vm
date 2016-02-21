@@ -237,7 +237,8 @@ case "$1" in
 		fi
 		
 		## check if the machine doesn't exists already
-		if [ -b "/dev/$THINPOOL_VG/$VM_PREFIX$rhel_version-$vm_number" ]; then
+		vm_disk_test=$(ls /dev/${THINPOOL_VG}/${VM_PREFIX}*-${vm_number} 2>/dev/null|wc -l )
+		if [ "$vm_disk_test" -gt 0 ]; then
 			echo "[err] there is already disk for this machine, VM creation aborted"
 			exit 1
 		fi
