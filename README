@@ -11,7 +11,6 @@ fast-vm is taking care of:
 * LVM thin pool support
 * LVM VG with reasonable amount of free space (to create LV with thin pool)
 * preconfigured VM disk images and XML files (downloadable separately)
-** check repository at https://gitlab.cee.redhat.com/ofamera/fast-vm-images.git 
 * bash completion for bash completion to work
 * 'pv' to show import progress
 * 'dhcp_release' for proper DHCP static leases release
