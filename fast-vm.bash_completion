@@ -2,11 +2,12 @@
 
 _fast-vm()
 {
-	local cur prev words cword split thin_lv vm_prefix
+	local cur prev words cword split thin_lv thin_vg vm_prefix
 	_init_completion -s || return
 
 	vm_prefix=$(grep VM_PREFIX /root/.fast-vm/config|tail -1 |cut -d\= -f 2)
 	thin_lv=$(grep THINPOOL_LV /root/.fast-vm/config|tail -1 |cut -d\= -f 2)
+	thin_vg=$(grep THINPOOL_VG /root/.fast-vm/config|tail -1 |cut -d\= -f 2)
 
 	if [ "$cword" -eq 3 ] && [ ${COMP_WORDS[1]} == "import_image" ]; then
 		_filedir '@(gz)'
@@ -52,7 +53,23 @@ _fast-vm()
 		;;
 	create)
 		local rhel_version
-		rhel_version=$(lvs 2>/dev/null|grep -v 'twi'|grep "$thin_lv"|awk '{print $1}'|sed -e "s/$vm_prefix//; s/-[0-9]\+$//"|uniq)
+		# lets get the dm-XX number of the thinpool
+		double_dash=$(echo "$thin_lv"|sed 's/-/--/') # LVM uses double dash in the /dev/mapper
+		pool_dm=$(ls -l "/dev/mapper/$thin_vg-$double_dash-tpool"|cut -d / -f 5)
+		# from dm-XX of thinpool we can list the LVs inside the thinpool 
+		holders=$(ls /sys/block/$pool_dm/holders)
+		holder_regexp=""
+		for dm in $holders
+		do
+			if [ -z "$holder_regexp" ]; then
+				holder_regexp="$dm"
+			else
+				holder_regexp="$holder_regexp|$dm"
+			fi
+		done
+		holder_regexp="($holder_regexp)"
+		# finaly lets parse the VM image versions from what we have
+		rhel_version=$(ls -l /dev/wd4tb/ |egrep "$holder_regexp"|awk '{print $9}'|grep "$vm_prefix"|sed -e "s/fastvm-//; s/-[0-9]\+$//"|uniq)
 
 		COMPREPLY=( $( compgen -W "$rhel_version" -- "$cur" ) )
 		return 0
