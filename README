@@ -11,9 +11,9 @@ fast-vm is taking care of:
 * LVM thin pool support
 * LVM VG with reasonable amount of free space (to create LV with thin pool)
 * preconfigured VM disk images and XML files (downloadable separately)
-* bash completion for bash completion to work
-* 'pv' to show import progress
 * 'dhcp_release' for proper DHCP static leases release
+* (optional) bash completion for bash completion to work
+* (optional) 'pv' to show import progress
 
 ====== Installation/Setup ======
 1. Run script 'setup.sh' and answer questions.
@@ -27,49 +27,53 @@ scripts on their own
 
 2. Import some prebuilded VM disk images or use your
 
-fast-vm import_image <rhel_version> </path/to/image.gz> </path/to/vm_template.xml> <path/to/hacks.sh>
+fast-vm import_image <vm_image_version> </path/to/image.gz> </path/to/vm_template.xml> </path/to/image-hacks.sh>
 
-rhel_version - usually something like '6.7', '6_7', '7' or '7-test' (used for composing 
-               LV name and VM hostname)
-/path/to/image.gz - gzipped VM machine drive in the 'raw' format
-/path/to/vm_template.xml - XML template for creating libvirt VM, check below 
-                           for supported macros
-
-# vm_template.xml macros
-VM_NAME - substituted for VM name (VM_prefix+rhel_version+vm_number)
-THINPOOL_VG - THINPOOL_VG from configuration
-LIBVIRT_NETWORK - LIBVIRT_NETWORK from configuration
+vm_image_version
+  - usually something like '6.7', '6_7', '7' or '7-test'
+    (used for composing LV name and VM hostname)
+/path/to/image.gz
+  - gzipped VM machine drive in the 'raw' format
+  - to create your own you can use command below
+     gzip -c /dev/some_vg/lv_with_vm_drive > my_vm_drive_image.img.gz
+/path/to/vm_template.xml
+  - XML template for creating libvirt VM, check below for supported macros
+  # vm_template.xml macros
+    VM_NAME - substituted for VM name (VM_prefix+rhel_version+vm_number)
+    THINPOOL_VG - THINPOOL_VG from configuration
+    LIBVIRT_NETWORK - LIBVIRT_NETWORK from configuration
+/path/to/image-hacks.sh
+  - file containing commands that are executed before creating new machine from
+    imported image (typicaly this includes modification to system like change of
+    hostname or serial console setting, check the fast-vm-public-images repo for examples)
 
 ====== Usage ======
-assuming you have imported the image of rhel 6.7 using following command
-  fast-vm import_image 6_7 rhel6.7.img.gz rhel-6.7.xml
+assuming you have imported the image of centos 6.7 using following command
+  # fast-vm import_image 6.7 centosl6.7.img.gz centos-6.3-7.2.xml centos-7-hacks.sh
 
-#a) To edit the VM image so the other VMs are created from this edited image
-  # fast-vm create 6_7 base
+a) To edit the VM image so the other VMs are created from this edited image
+  # fast-vm create 6.7 base
     ...
-    base image VM created, to start this VM use 'virsh start fastvm-6_7'
-    This VM is used for customizing the base image of '6_7' VMs
+    base image VM created, to start this VM use 'virsh start fastvm-6.7'
+    This VM is used for customizing the base image of '6.7' VMs
     All changes you make to this VM would be available in newly created VMs
     of that version, this will not affect already existing VMs of same version
 
-  Here you can for example register your system using subscription manager and
-  add you ssh key for easier access to VM later.
+  Here you can for example register your system, add your ssh key for easier access, etc.
 
-#b) To create new VM based on that image run
-  # fast-vm create 6_7
+b) To create new VM based on that image run
+  # fast-vm create 6.7 113
     ...
-    VM 'fastvm-6_7-113' created
+    VM 'fastvm-6.7-113' created
 
   fast-vm created static IP reservation on 192.168.XX.113 in libvirts DHCP 
-  for VMs mac address. You can now run the VM manually from 
-  virsh/virt-manager/libvirt.
+  for VMs mac address.
 
-  You can specify the VM number manually
-  # fast-vm create 6_7 77
-    ...
-    VM 'fastvm-6_7-77' created
+  You can override the default libvirt.xml and hacks.sh file for new VM
+  by specifing it after VM number
+  # fast-vm create 113 custom_libvirt_for_113.xml custom_hacks_for_113.sh
 
-#c) To start VM - you need to know only VM number from end
+c) To start VM - you need to know only VM number
   # fast-vm start 113
   
   If you specify any third parameter you will get connected to serial console
@@ -77,10 +81,10 @@ assuming you have imported the image of rhel 6.7 using following command
 
   # fast-vm start 113 console
 
-#d) Connect to serial console of VM after the VM is started
+d) Connect to serial console of VM after the VM is started
   # fast-vm console 113
 
-#e) Delete VM - script will try to stop the VM first
+e) Delete VM - note that script will try to stop the VM first before deleting it
   # fast-vm delete 113
 
 ====== Configuration ======
@@ -95,6 +99,7 @@ SUBNET_NUMBER - the XX in the 192.168.XX.0/24 libvirt network created by setup
 * script requires root on the machine
 * tested on the Gentoo and Fedora 22
 * VM images are provided separately
+  - publicaly available images can be found at  https://github.com/OndrejHome/fast-vm-public-images
 * using 'dhcp_release' to remove DHCP static reservation is not the cleanest
   way of doing so, but there is no other supported way of doing this through libvirt
   (TODO: make RFE/BUG into libvirt)
@@ -103,4 +108,4 @@ SUBNET_NUMBER - the XX in the 192.168.XX.0/24 libvirt network created by setup
        it's not 100% working solution)
 
 === Author ===
-Ondrej Famera <ofamera@redhat.com>
+Ondrej Famera <ofamera@redhat.com> or <ondrej-xa2iel8u@famera.cz>
