@@ -41,6 +41,9 @@ if [ -z "$just_upgrade" ] || [ "$just_updagrade" == "yes" ]; then
 fi
 
 echo "## running configuration scripts for initial setup"
-. setup-general.sh
-. setup-thin-lvm.sh
-. setup-libvirt-net.sh
+## new configuration script
+. configure-fast-vm.sh
+## old configuration scripts
+#. setup-general.sh
+#. setup-thin-lvm.sh
+#. setup-libvirt-net.sh
