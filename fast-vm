@@ -50,6 +50,10 @@ function usage {
 			echo "fast-vm delete <VM_number>"
 			echo "  <VM_number> - number of VM to start"
 			;;
+		list)
+			echo "fast-vm list"
+			echo "shows list of fast-vm VMs with their VM numbers and status"
+			;;
 		*)
 			echo "fast-vm <action> <options>"
 			echo "  <action> :"
@@ -333,6 +337,11 @@ case "$1" in
 		virsh undefine $vm_name
 
 		echo "[inf] VM '$vm_name' deleted"
+		;;
+	list)
+		echo "VM#   status     image_name"
+		echo "==========================="
+		virsh list --all |awk '{print $2,$3,$4,$5}'|egrep "^${VM_PREFIX}.*-[0-9]+"|sed "s/${VM_PREFIX}\(.\+\)-\([0-9]\+\) \([a-zA-Z ]\+\)$/\2 - \3 - \1/" |sort -n
 		;;
 	*) 
 		echo "[err] unknown action"
