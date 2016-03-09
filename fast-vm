@@ -63,6 +63,7 @@ function usage {
 			echo "    start - starts VM and optionally also connects to serial console after start"
 			echo "    console - connect to serial console of running VM"
 			echo "    delete - delete VM and its thin LV disk drive"
+			echo "    list - shows list of fast-vm VMs with their VM numbers and status"
 			echo " for more details run 'fast-vm <action>' without options to see more help"
 			echo "== fast-vm version 0.1 <ofamera@redhat.com> =="
 			;;
