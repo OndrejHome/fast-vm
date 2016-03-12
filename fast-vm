@@ -90,12 +90,41 @@ check_empty "THINPOOL_VG" "$THINPOOL_VG"
 check_empty "THINPOOL_LV" "$THINPOOL_LV"
 check_empty "SUBNET_NUMBER" "$SUBNET_NUMBER"
 
+## check if there is curl available so we can fetch images from http/https
+which curl >/dev/null 2>&1
+curl_ok="$?"
+which pv >/dev/null 2>&1
+pv_ok="$?"
+
 case "$1" in
 	import_image)
 		rhel_version="$2"
 		if [ -z "$rhel_version" ]; then echo "[err] missing rhel version"; usage import_image; fi
 		image_path="$3"
-		if [ ! -f "$image_path" ]; then echo "[err] image file not found"; usage import_image; fi
+		image_size="0"
+		if [ "$curl_ok" -eq 0 ] && [ "${image_path:0:4}" == "http" ]; then
+			if [ ! -f "$image_path" ]; then
+				# curl, fetch size of image
+				curl_data=$(curl --head "$3" 2>/dev/null)
+				curl_httpok=$(echo "$curl_data"|grep "200 OK"|wc -l)
+				if [ "$curl_httpok" -eq "1" ]; then
+					image_size=$(echo "$curl_data"|grep "Content-Length:"|awk '{print $2}'|sed 's/[^0-9]*//g')
+					echo "[info] Detected binary file with size $image_size"
+				else
+					echo "[err] error checking the file on the server, we got following information from server"
+					echo "$curl_data"
+					exit 2
+				fi
+			else
+				echo "we have the file"
+			fi
+		else
+			if [ ! -f "$image_path" ]; then
+				echo "[err] image file not found"
+				usage import_image
+			fi
+		fi
+
 		image_xml_path="$4"
 		if [ ! -f "$image_xml_path" ]; then echo "[err] image xml file not found"; usage import_image; fi
 
@@ -127,14 +156,30 @@ case "$1" in
 		fi
 
 		echo "[inf] importing image $image_path into /dev/$THINPOOL_VG/$VM_PREFIX$rhel_version"
-		which pv >/dev/null 2>&1 
-		if [ "$?" -eq '0' ]; then
-			gunzip -c "$image_path"| pv | dd of=/dev/$THINPOOL_VG/$VM_PREFIX$rhel_version bs=1M conv=sparse
+
+		if [ "$image_size" -eq "0" ]; then
+			# import from local file
+			if [ "$pv_ok" -eq '0' ]; then
+				gunzip -c "$image_path"| pv -s 10G | dd of=/dev/$THINPOOL_VG/$VM_PREFIX$rhel_version bs=1M conv=sparse
+				import_exit="$?"
+			else
+				echo "[inf] please wait while importing image (to show progress, install 'pv')"
+				gunzip -c "$image_path"| dd of=/dev/$THINPOOL_VG/$VM_PREFIX$rhel_version bs=1M conv=sparse
+				import_exit="$?"
+			fi
 		else
-			echo "[inf] please wait while importing image (to show progress, install 'pv')"
-			gunzip -c "$image_path"| dd of=/dev/$THINPOOL_VG/$VM_PREFIX$rhel_version bs=1M conv=sparse
+			# import from http(s)
+			if [ "$pv_ok" -eq '0' ]; then
+				curl -s "$image_path" | pv -N download -c -s "$image_size" | gunzip -c | pv -N unpack -c -s 10737418240 | dd of=/dev/$THINPOOL_VG/$VM_PREFIX$rhel_version bs=1M conv=sparse
+				import_exit="$?"
+			else
+				echo "[inf] please wait while importing image (to show image write progress, install 'pv')"
+				curl "$image_path" | gunzip -c | dd of=/dev/$THINPOOL_VG/$VM_PREFIX$rhel_version bs=1M conv=sparse
+				import_exit="$?"
+			fi
+
 		fi
-		if [ "$?" != "0" ]; then
+		if [ "$import_exit" != "0" ]; then
 			echo "[err] Error copying the image into thin LV"
 			exit 1
 		fi
