@@ -51,7 +51,7 @@ _fast-vm()
 		import_image)
 		return 0
 		;;
-	create)
+	create|remove_image)
 		local rhel_version
 		# lets get the dm-XX number of the thinpool
 		double_dash=$(echo "$thin_lv"|sed 's/-/--/g') # LVM uses double dash in the /dev/mapper

@@ -28,6 +28,10 @@ function usage {
 			echo "  <hack_file.sh> (optional) - bash script executed after creating VM "
 			echo "                              (f.e. used for change of hostname)"
 			;;
+		remove_image)
+			echo "fast-vm remove_image <rhel_version>"
+			echo "  <rhel_version> - number for removed rhel version (f.e. 6_7)"
+			;;
 		create)
 			echo "fast-vm create <rhel_version> <VM_number>/base [ <libvirt.xml> ] [ <hack_file.sh> ]"
 			echo "  <rhel_version> - version of rhel to use for this VM (new ones can be defined using import_image)"
@@ -59,6 +63,7 @@ function usage {
 			echo "  <action> :"
 			echo "    import_image - import VM image to thin LVM storage and define default libvirt XML "
 			echo " 	                 and optionaly hacks file"
+			echo "    remove_image - remove VM image from LVM storage, existing machines are NOT affected"
 			echo "    create - creates VM based on image from thin LVM"
 			echo "    start - starts VM and optionally also connects to serial console after start"
 			echo "    console - connect to serial console of running VM"
@@ -135,17 +140,10 @@ case "$1" in
 		fi
 
 		if [ -b "/dev/$THINPOOL_VG/$VM_PREFIX$rhel_version" ]; then
-			echo "[wrn] base image for '$rhel_version' version already exists"
-			echo "[???] Do you want to overwrite it (y/n): "
-			read answer
-			if [ ! "$answer" == "y" ]; then
-				echo "[inf] aborting, no changes made"
-				exit 0
-			fi
-			echo "[inf] stopping and undefining the bas VM"
-			virsh destroy $VM_PREFIX$rhel_version
-			virsh undefine $VM_PREFIX$rhel_version
-			echo "[inf] overwriting LV $VM_PREFIX$rhel_version ..."
+			echo "[err] base image for '$rhel_version' version already exists"
+			echo "      To remove image use 'remove_image' parameter"
+			exit 1
+
 		else
 			echo "[inf] creating LV $VM_PREFIX$rhel_version ..."
 			lvcreate -n $VM_PREFIX$rhel_version -V 10G --thinpool $THINPOOL_VG/$THINPOOL_LV
@@ -195,6 +193,21 @@ case "$1" in
 		fi
 
 		echo "[inf] image imported"
+		;;
+	remove_image)
+		rhel_version="$2"
+		if [ -z "$rhel_version" ]; then echo "[err] missing rhel version"; usage remove_image; fi
+
+		if [ -b "/dev/$THINPOOL_VG/$VM_PREFIX$rhel_version" ]; then
+			echo "[inf] stopping and undefining the base VM"
+			virsh destroy $VM_PREFIX$rhel_version
+			virsh undefine $VM_PREFIX$rhel_version
+			echo "[inf] removing LV $VM_PREFIX$rhel_version ..."
+			lvremove "/dev/$THINPOOL_VG/$VM_PREFIX$rhel_version"
+		else
+			echo "[err] image "$rhel_version" not found"
+			usage remove_image
+		fi
 		;;
 	create)
 		rhel_version="$2"
