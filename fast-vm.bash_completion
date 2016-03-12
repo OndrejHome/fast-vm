@@ -95,7 +95,7 @@ _fast-vm()
 
 	$split && return 0
 	if [ "$cword" -lt 2 ]; then
-		COMPREPLY=( $( compgen -W 'import_image create start delete console list' -- "$cur" ) )
+		COMPREPLY=( $( compgen -W 'import_image remove_image create start delete console list' -- "$cur" ) )
 		return 0
 	fi
 
