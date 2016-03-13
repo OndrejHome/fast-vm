@@ -1,5 +1,5 @@
 #!/bin/bash
-
+DEBUG_LOG=/tmp/fast-vm.debug.log
 if [ "$(whoami)" != "root" ]; then
 	echo "[err] this must be run as root"
 	exit 1
@@ -28,6 +28,10 @@ function usage {
 			echo "  <hack_file.sh> (optional) - bash script executed after creating VM "
 			echo "                              (f.e. used for change of hostname)"
 			;;
+		remove_image)
+			echo "fast-vm remove_image <rhel_version>"
+			echo "  <rhel_version> - number for removed rhel version (f.e. 6_7)"
+			;;
 		create)
 			echo "fast-vm create <rhel_version> <VM_number>/base [ <libvirt.xml> ] [ <hack_file.sh> ]"
 			echo "  <rhel_version> - version of rhel to use for this VM (new ones can be defined using import_image)"
@@ -38,9 +42,10 @@ function usage {
 			echo "  <hack_file.sh> (optional) - alternative bash script executed after creating VM "
 			;;
 		start)
-			echo "fast-vm start <VM_number> [ console ]"
+			echo "fast-vm start <VM_number> [ console|ssh ]"
 			echo "  <VM_number> - number of VM to start"
-			echo "  console (optional) - if present you get connected to VMs serial console after starting it"
+			echo "  console (optional) - connect to serial console after starting VM"
+			echo "  ssh (optional) - connect to VM through SSH as soon as VM is ready"
 			;;
 		console)
 			echo "fast-vm console <VM_number>"
@@ -59,8 +64,9 @@ function usage {
 			echo "  <action> :"
 			echo "    import_image - import VM image to thin LVM storage and define default libvirt XML "
 			echo " 	                 and optionaly hacks file"
+			echo "    remove_image - remove VM image from LVM storage, existing machines are NOT affected"
 			echo "    create - creates VM based on image from thin LVM"
-			echo "    start - starts VM and optionally also connects to serial console after start"
+			echo "    start - starts VM and optionally also connects to serial console or SSH after start"
 			echo "    console - connect to serial console of running VM"
 			echo "    delete - delete VM and its thin LV disk drive"
 			echo "    list - shows list of fast-vm VMs with their VM numbers and status"
@@ -69,6 +75,21 @@ function usage {
 			;;
 	esac
 	exit 1
+}
+
+function wait_for_ssh {
+	vm_number="$1"
+	echo "[inf] checking the 192.168.$SUBNET_NUMBER.$vm_number for active SSH connection"
+	echo "      (ctrl+c to interrupt) "
+	ssh_ready=$(ssh-keyscan -T 1 "192.168.$SUBNET_NUMBER.$vm_number" 2>/dev/null|egrep '(ssh-|ecdsa-)'|wc -l)
+	while [ "$ssh_ready" -eq "0" ];
+	do
+		echo -n "."
+		ssh_ready=$(ssh-keyscan -T 1 "192.168.$SUBNET_NUMBER.$vm_number" 2>/dev/null|egrep '(ssh-|ecdsa-)'|wc -l)
+		sleep 1
+	done
+	echo
+	echo "[inf] SSH ready"
 }
 
 # first parameter is compulsory
@@ -90,12 +111,41 @@ check_empty "THINPOOL_VG" "$THINPOOL_VG"
 check_empty "THINPOOL_LV" "$THINPOOL_LV"
 check_empty "SUBNET_NUMBER" "$SUBNET_NUMBER"
 
+## check if there is curl available so we can fetch images from http/https
+which curl >/dev/null 2>&1
+curl_ok="$?"
+which pv >/dev/null 2>&1
+pv_ok="$?"
+
 case "$1" in
 	import_image)
 		rhel_version="$2"
 		if [ -z "$rhel_version" ]; then echo "[err] missing rhel version"; usage import_image; fi
 		image_path="$3"
-		if [ ! -f "$image_path" ]; then echo "[err] image file not found"; usage import_image; fi
+		image_size="0"
+		if [ "$curl_ok" -eq 0 ] && [ "${image_path:0:4}" == "http" ]; then
+			if [ ! -f "$image_path" ]; then
+				# curl, fetch size of image
+				curl_data=$(curl --head "$3" 2>/dev/null)
+				curl_httpok=$(echo "$curl_data"|grep "200 OK"|wc -l)
+				if [ "$curl_httpok" -eq "1" ]; then
+					image_size=$(echo "$curl_data"|grep "Content-Length:"|awk '{print $2}'|sed 's/[^0-9]*//g')
+					echo "[info] Detected binary file with size $image_size"
+				else
+					echo "[err] error checking the file on the server, we got following information from server"
+					echo "$curl_data"
+					exit 2
+				fi
+			else
+				echo "we have the file"
+			fi
+		else
+			if [ ! -f "$image_path" ]; then
+				echo "[err] image file not found"
+				usage import_image
+			fi
+		fi
+
 		image_xml_path="$4"
 		if [ ! -f "$image_xml_path" ]; then echo "[err] image xml file not found"; usage import_image; fi
 
@@ -106,20 +156,13 @@ case "$1" in
 		fi
 
 		if [ -b "/dev/$THINPOOL_VG/$VM_PREFIX$rhel_version" ]; then
-			echo "[wrn] base image for '$rhel_version' version already exists"
-			echo "[???] Do you want to overwrite it (y/n): "
-			read answer
-			if [ ! "$answer" == "y" ]; then
-				echo "[inf] aborting, no changes made"
-				exit 0
-			fi
-			echo "[inf] stopping and undefining the bas VM"
-			virsh destroy $VM_PREFIX$rhel_version
-			virsh undefine $VM_PREFIX$rhel_version
-			echo "[inf] overwriting LV $VM_PREFIX$rhel_version ..."
+			echo "[err] base image for '$rhel_version' version already exists"
+			echo "      To remove image use 'remove_image' parameter"
+			exit 1
+
 		else
 			echo "[inf] creating LV $VM_PREFIX$rhel_version ..."
-			lvcreate -n $VM_PREFIX$rhel_version -V 10G --thinpool $THINPOOL_VG/$THINPOOL_LV
+			lvcreate -n $VM_PREFIX$rhel_version -V 10G --thinpool $THINPOOL_VG/$THINPOOL_LV >>$DEBUG_LOG 2>&1
 			if [ "$?" != "0" ]; then
 				echo "[err] Error creating thin LV for VM image"
 				exit 1
@@ -127,29 +170,60 @@ case "$1" in
 		fi
 
 		echo "[inf] importing image $image_path into /dev/$THINPOOL_VG/$VM_PREFIX$rhel_version"
-		which pv >/dev/null 2>&1 
-		if [ "$?" -eq '0' ]; then
-			gunzip -c "$image_path"| pv | dd of=/dev/$THINPOOL_VG/$VM_PREFIX$rhel_version bs=1M conv=sparse
+
+		if [ "$image_size" -eq "0" ]; then
+			# import from local file
+			if [ "$pv_ok" -eq '0' ]; then
+				gunzip -c "$image_path"| pv -s 10G | dd of=/dev/$THINPOOL_VG/$VM_PREFIX$rhel_version bs=1M conv=sparse >>$DEBUG_LOG 2>&1
+				import_exit="$?"
+			else
+				echo "[inf] please wait while importing image (to show progress, install 'pv')"
+				gunzip -c "$image_path"| dd of=/dev/$THINPOOL_VG/$VM_PREFIX$rhel_version bs=1M conv=sparse >>$DEBUG_LOG 2>&1
+				import_exit="$?"
+			fi
 		else
-			echo "[inf] please wait while importing image (to show progress, install 'pv')"
-			gunzip -c "$image_path"| dd of=/dev/$THINPOOL_VG/$VM_PREFIX$rhel_version bs=1M conv=sparse
+			# import from http(s)
+			if [ "$pv_ok" -eq '0' ]; then
+				curl -s "$image_path" | pv -N download -c -s "$image_size" | gunzip -c | pv -N unpack -c -s 10737418240 | dd of=/dev/$THINPOOL_VG/$VM_PREFIX$rhel_version bs=1M conv=sparse >>$DEBUG_LOG 2>&1
+				import_exit="$?"
+			else
+				echo "[inf] please wait while importing image (to show image write progress, install 'pv')"
+				curl "$image_path" | gunzip -c | dd of=/dev/$THINPOOL_VG/$VM_PREFIX$rhel_version bs=1M conv=sparse 2>>$DEBUG_LOG
+				import_exit="$?"
+			fi
+
 		fi
-		if [ "$?" != "0" ]; then
+		if [ "$import_exit" != "0" ]; then
 			echo "[err] Error copying the image into thin LV"
 			exit 1
 		fi
 
 		# copy the XML configuration file
 		if [ ! -d "$HOME/.fast-vm" ]; then 
-			mkdir "$HOME/.fast-vm"
+			mkdir "$HOME/.fast-vm" >>$DEBUG_LOG 2>&1
 		fi
-		cp "$image_xml_path" "$HOME/.fast-vm/config-${rhel_version}.xml"
+		cp "$image_xml_path" "$HOME/.fast-vm/config-${rhel_version}.xml" >>$DEBUG_LOG 2>&1
 		if [ ! -z "$hack_file" ] && [ -f "$hack_file" ]; then
-			cp "$hack_file" "$HOME/.fast-vm/hacks-${rhel_version}.sh"
-			chmod +x "$HOME/.fast-vm/hacks-${rhel_version}.sh"
+			cp "$hack_file" "$HOME/.fast-vm/hacks-${rhel_version}.sh" >>$DEBUG_LOG 2>&1
+			chmod +x "$HOME/.fast-vm/hacks-${rhel_version}.sh" >>$DEBUG_LOG 2>&1
 		fi
 
 		echo "[inf] image imported"
+		;;
+	remove_image)
+		rhel_version="$2"
+		if [ -z "$rhel_version" ]; then echo "[err] missing rhel version"; usage remove_image; fi
+
+		if [ -b "/dev/$THINPOOL_VG/$VM_PREFIX$rhel_version" ]; then
+			echo "[inf] stopping and undefining the base VM"
+			virsh destroy $VM_PREFIX$rhel_version >>$DEBUG_LOG 2>&1
+			virsh undefine $VM_PREFIX$rhel_version >>$DEBUG_LOG 2>&1
+			echo "[inf] removing LV $VM_PREFIX$rhel_version ..."
+			lvremove "/dev/$THINPOOL_VG/$VM_PREFIX$rhel_version"
+		else
+			echo "[err] image "$rhel_version" not found"
+			usage remove_image
+		fi
 		;;
 	create)
 		rhel_version="$2"
@@ -222,7 +296,7 @@ case "$1" in
 			
 			tmp_xml=$(mktemp --suffix=.xml)
 			sed -e "s/VM_NAME/$VM_PREFIX$rhel_version/g; s/THINPOOL_VG/$THINPOOL_VG/g; s/LIBVIRT_NETWORK/$LIBVIRT_NETWORK/g;" "$image_xml_path" > $tmp_xml
-			virsh define $tmp_xml
+			virsh define $tmp_xml >>$DEBUG_LOG 2>&1
 			if [ ! "$?" -eq '0' ]; then
 				echo "[err] defining base VM failed, doesn't exists alreadry?"
 				exit 2
@@ -231,7 +305,10 @@ case "$1" in
 			# source file with hacks and apply them
 			if [ -f "$hack_file" ]; then
 				echo "[inf] applying hacks from $hack_file"
-				. $hack_file
+				. $hack_file >>$DEBUG_LOG 2>&1
+				if [ ! "$?" -eq "0" ]; then
+					echo "[wrn] there was issue applying hacks to this machine, check $DEBUG_LOG for more details"
+				fi
 			fi
 
 			echo "[inf] base image VM created, to start this VM use 'virsh start $VM_PREFIX$rhel_version'"
@@ -252,21 +329,24 @@ case "$1" in
 		VM_NAME="$VM_PREFIX$rhel_version-$vm_number"
 
 		echo "[inf] creating disk '$VM_PREFIX$rhel_version-$vm_number'"
-		lvcreate -k n -s --thinpool $THINPOOL_VG/$THINPOOL_LV /dev/$THINPOOL_VG/$VM_PREFIX$rhel_version --name $VM_PREFIX$rhel_version-$vm_number
+		lvcreate -k n -s --thinpool $THINPOOL_VG/$THINPOOL_LV /dev/$THINPOOL_VG/$VM_PREFIX$rhel_version --name $VM_PREFIX$rhel_version-$vm_number >>$DEBUG_LOG 2>&1
 		echo "[inf] defining virtual machine '$VM_PREFIX$rhel_version-$vm_number' in libvirt"
 
 		tmp_xml=$(mktemp --suffix=.xml)
-		sed -e "s/VM_NAME/$VM_PREFIX$rhel_version-$vm_number/g; s/THINPOOL_VG/$THINPOOL_VG/g; s/LIBVIRT_NETWORK/$LIBVIRT_NETWORK/g;" "$image_xml_path" > $tmp_xml
-		virsh define $tmp_xml
+		sed -e "s/VM_NAME/$VM_PREFIX$rhel_version-$vm_number/g; s/THINPOOL_VG/$THINPOOL_VG/g; s/LIBVIRT_NETWORK/$LIBVIRT_NETWORK/g;" "$image_xml_path" > $tmp_xml 2>>$DEBUG_LOG
+		virsh define $tmp_xml >>$DEBUG_LOG 2>&1
 
 		echo "[inf] adding static lease for 192.168.$SUBNET_NUMBER.$vm_number into libvirts DHCP"
 		vm_mac=$(virsh dumpxml "$VM_PREFIX$rhel_version-$vm_number"|grep 'mac address'|cut -d\' -f 2)
-		virsh net-update "$LIBVIRT_NETWORK" add-last ip-dhcp-host --xml "<host mac='$vm_mac' ip='192.168.$SUBNET_NUMBER.$vm_number'/>" --live --config
+		virsh net-update "$LIBVIRT_NETWORK" add-last ip-dhcp-host --xml "<host mac='$vm_mac' ip='192.168.$SUBNET_NUMBER.$vm_number'/>" --live --config >>$DEBUG_LOG 2>&1
 
 		# source file with hacks and apply them
 		if [ -f "$hack_file" ]; then
 			echo "[inf] applying hacks from $hack_file"
-			. $hack_file
+			. $hack_file >>$DEBUG_LOG 2>&1
+			if [ ! "$?" -eq "0" ]; then
+				echo "[wrn] there was issue applying hacks to this machine, check $DEBUG_LOG for more details"
+			fi
 		fi
 
 		echo "[inf] VM '$VM_NAME' created"
@@ -284,13 +364,34 @@ case "$1" in
 		fi
 		
 		# if there is any third argument start VM and console after
-		echo "[inf] starting VM $vm_name"
 		if [ -z "$3" ]; then
-			virsh start $vm_name
+			echo "[inf] starting VM $vm_name"
+			virsh start $vm_name >>$DEBUG_LOG 2>&1
 		else
-			echo "      and connecting to it serial console ..."
-			virsh start $vm_name && virsh console $vm_name
+			case "$3" in
+				console)
+					echo "[inf] starting VM $vm_name"
+					echo "      and connecting to it serial console ..."
+					virsh start $vm_name && virsh console $vm_name 2>>$DEBUG_LOG
+				;;
+				ssh)
+					echo "[inf] starting VM $vm_name"
+					virsh start $vm_name 2>>$DEBUG_LOG
+					wait_for_ssh "$vm_number"
+					ssh -o GlobalKnownHostsFile=/dev/null -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no "root@192.168.$SUBNET_NUMBER.$vm_number"
+				;;
+				*)
+					usage start
+				;;
+			esac
 		fi
+		;;
+	ssh)
+		vm_number="$2"
+		if [ -z "$vm_number" ]; then echo "[err] VM number missing"; usage ssh; fi
+
+		wait_for_ssh "$vm_number"
+		ssh -o GlobalKnownHostsFile=/dev/null -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no "root@192.168.$SUBNET_NUMBER.$vm_number"
 		;;
 	console)
 		vm_number="$2"
@@ -302,7 +403,7 @@ case "$1" in
 			exit 1
 		fi
 
-		virsh console $vm_name
+		virsh console $vm_name 2>>$DEBUG_LOG
 		;;
 	delete)
 		vm_number="$2"
@@ -314,13 +415,12 @@ case "$1" in
 			exit 1
 		fi
 
-		virsh destroy $vm_name
+		virsh destroy $vm_name >>$DEBUG_LOG 2>&1
 
-		echo "[inf] reservating DHCP lease delete"
 		vm_mac=$(virsh dumpxml "$vm_name"|grep 'mac address'|cut -d\' -f 2)
 
 		echo "[inf] removing DHCP reservation"
-		virsh net-update "$LIBVIRT_NETWORK" delete ip-dhcp-host --xml "<host mac='$vm_mac' ip='192.168.$SUBNET_NUMBER.$vm_number'/>" --live --config
+		virsh net-update "$LIBVIRT_NETWORK" delete ip-dhcp-host --xml "<host mac='$vm_mac' ip='192.168.$SUBNET_NUMBER.$vm_number'/>" --live --config >>$DEBUG_LOG 2>&1
 		which dhcp_release >/dev/null 2>&1
 		if [ "$?" -eq '0' ]; then
 			dhcp_release "$LIBVIRT_NETWORK" "192.168.$SUBNET_NUMBER.$vm_number" "$vm_mac"
@@ -332,10 +432,10 @@ case "$1" in
 		fi
 		
 		echo "[inf] removing VM drive"
-		lvremove -f /dev/$THINPOOL_VG/$vm_name
+		lvremove -f /dev/$THINPOOL_VG/$vm_name >>$DEBUG_LOG 2>&1
 
 		echo "[inf] undefining VM from libvirt"
-		virsh undefine $vm_name
+		virsh undefine $vm_name >>$DEBUG_LOG 2>&1
 
 		echo "[inf] VM '$vm_name' deleted"
 		;;
