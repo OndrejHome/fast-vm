@@ -42,9 +42,10 @@ function usage {
 			echo "  <hack_file.sh> (optional) - alternative bash script executed after creating VM "
 			;;
 		start)
-			echo "fast-vm start <VM_number> [ console ]"
+			echo "fast-vm start <VM_number> [ console|ssh ]"
 			echo "  <VM_number> - number of VM to start"
-			echo "  console (optional) - if present you get connected to VMs serial console after starting it"
+			echo "  console (optional) - connect to serial console after starting VM"
+			echo "  ssh (optional) - connect to VM through SSH as soon as VM is ready"
 			;;
 		console)
 			echo "fast-vm console <VM_number>"
@@ -65,7 +66,7 @@ function usage {
 			echo " 	                 and optionaly hacks file"
 			echo "    remove_image - remove VM image from LVM storage, existing machines are NOT affected"
 			echo "    create - creates VM based on image from thin LVM"
-			echo "    start - starts VM and optionally also connects to serial console after start"
+			echo "    start - starts VM and optionally also connects to serial console or SSH after start"
 			echo "    console - connect to serial console of running VM"
 			echo "    delete - delete VM and its thin LV disk drive"
 			echo "    list - shows list of fast-vm VMs with their VM numbers and status"
@@ -74,6 +75,21 @@ function usage {
 			;;
 	esac
 	exit 1
+}
+
+function wait_for_ssh {
+	vm_number="$1"
+	echo "[inf] checking the 192.168.$SUBNET_NUMBER.$vm_number for active SSH connection"
+	echo "      (ctrl+c to interrupt) "
+	ssh_ready=$(ssh-keyscan -T 1 "192.168.$SUBNET_NUMBER.$vm_number" 2>/dev/null|egrep '(ssh-|ecdsa-)'|wc -l)
+	while [ "$ssh_ready" -eq "0" ];
+	do
+		echo -n "."
+		ssh_ready=$(ssh-keyscan -T 1 "192.168.$SUBNET_NUMBER.$vm_number" 2>/dev/null|egrep '(ssh-|ecdsa-)'|wc -l)
+		sleep 1
+	done
+	echo
+	echo "[inf] SSH ready"
 }
 
 # first parameter is compulsory
@@ -348,13 +364,34 @@ case "$1" in
 		fi
 		
 		# if there is any third argument start VM and console after
-		echo "[inf] starting VM $vm_name"
 		if [ -z "$3" ]; then
+			echo "[inf] starting VM $vm_name"
 			virsh start $vm_name >>$DEBUG_LOG 2>&1
 		else
-			echo "      and connecting to it serial console ..."
-			virsh start $vm_name && virsh console $vm_name 2>>$DEBUG_LOG
+			case "$3" in
+				console)
+					echo "[inf] starting VM $vm_name"
+					echo "      and connecting to it serial console ..."
+					virsh start $vm_name && virsh console $vm_name 2>>$DEBUG_LOG
+				;;
+				ssh)
+					echo "[inf] starting VM $vm_name"
+					virsh start $vm_name 2>>$DEBUG_LOG
+					wait_for_ssh "$vm_number"
+					ssh -o GlobalKnownHostsFile=/dev/null -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no "root@192.168.$SUBNET_NUMBER.$vm_number"
+				;;
+				*)
+					usage start
+				;;
+			esac
 		fi
+		;;
+	ssh)
+		vm_number="$2"
+		if [ -z "$vm_number" ]; then echo "[err] VM number missing"; usage ssh; fi
+
+		wait_for_ssh "$vm_number"
+		ssh -o GlobalKnownHostsFile=/dev/null -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no "root@192.168.$SUBNET_NUMBER.$vm_number"
 		;;
 	console)
 		vm_number="$2"

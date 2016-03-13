@@ -23,7 +23,7 @@ _fast-vm()
 	fi
 
 	if [ "$cword" -eq 3 ] && [ ${COMP_WORDS[1]} == "start" ]; then
-	        COMPREPLY=( $( compgen -W "console" -- "$cur" ) )
+	        COMPREPLY=( $( compgen -W "console ssh" -- "$cur" ) )
 		return 0
 	fi
 
@@ -74,7 +74,7 @@ _fast-vm()
 		COMPREPLY=( $( compgen -W "$rhel_version" -- "$cur" ) )
 		return 0
 		;;
-	start|delete|console)
+	start|delete|console|ssh)
 		local vm_numbers vm_option
 		case $prev in
 			start)
@@ -83,7 +83,7 @@ _fast-vm()
 			delete)
 				vm_option='--all'
 			;;
-			console)
+			console|ssh)
 				vm_option='--state-running'
 			;;
 		esac
@@ -95,7 +95,7 @@ _fast-vm()
 
 	$split && return 0
 	if [ "$cword" -lt 2 ]; then
-		COMPREPLY=( $( compgen -W 'import_image remove_image create start delete console list' -- "$cur" ) )
+		COMPREPLY=( $( compgen -W 'import_image remove_image create start delete console ssh list' -- "$cur" ) )
 		return 0
 	fi
 
