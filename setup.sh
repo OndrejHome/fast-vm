@@ -22,6 +22,9 @@ if [ -d "$bash_completion_dir" ]; then
 	cp fast-vm.bash_completion $bash_completion_dir/fast-vm
 fi
 
+if [ ! -d /usr/local/libexec ]; then mkdir /usr/local/libexec; fi
+cp fast-vm-helper.sh /usr/local/libexec/fast-vm-helper.sh
+
 echo "## checking for requirements"
 cmds="lvcreate lvconvert gunzip virsh virt-edit"
 
