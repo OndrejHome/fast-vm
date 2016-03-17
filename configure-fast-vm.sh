@@ -1,12 +1,10 @@
 #!/bin/bash
-config_file="/root/.fast-vm/config"
-if [ ! -d "/root/.fast-vm" ]; then
-	mkdir "/root/.fast-vm"
-	touch $config_file
-fi
+config_file="/etc/fast-vm.conf"
 
 # load defaults and old configuration if exists
-. config.defaults
+if [ -f config.defaults ]; then
+	. config.defaults
+fi
 if [ -f "$config_file" ]; then
 	. $config_file
 fi

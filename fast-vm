@@ -96,14 +96,14 @@ function wait_for_ssh {
 if [ -z "$1" ]; then usage; fi
 
 ## fast-vm configuration
-if [ ! -f "$HOME/.fast-vm/config" ]; then
-	echo "[err] no configuration found in ~/.fast-vm/config"
-	echo "      please run setup.sh before using fast-vm"
+if [ ! -f "/etc/fast-vm.conf" ]; then
+	echo "[err] no global configuration found in /etc/fast-vm.conf"
+	echo "      please run configure-fast-vm.sh as root before using fast-vm"
 	exit 1
 fi
 
 # load and verify configuration
-. ~/.fast-vm/config
+. /etc/fast-vm.conf
 
 check_empty "VM_PREFIX" "$VM_PREFIX"
 check_empty "LIBVIRT_NETWORK" "$LIBVIRT_NETWORK"
