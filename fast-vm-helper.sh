@@ -67,6 +67,14 @@ case "$action" in
 			exit 1
 		fi
 		;;
+	dhcp_release)
+		if [ -z "$arg3" ]; then
+			echo "[err] dhcp_release requires 3 arguments"
+			exit 1
+		fi
+		#FIXME validation of arguments for dhcp_release
+		dhcp_release "$arg1" "$arg2" "$arg3" >>$DEBUG_LOG 2>&1
+		;;
 	*)
 		echo "[err] unknown action"
 		exit 3
