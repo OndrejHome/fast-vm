@@ -97,7 +97,7 @@ do
 	fi
 
 	# check for the libvirt network
-	virsh net-info "$LIBVIRT_NETWORK" 2>&1 >/dev/null
+	virsh --connect qemu:///system net-info "$LIBVIRT_NETWORK" 2>&1 >/dev/null
 	if [ ! "$?" -eq "0" ]; then
 		echo -n "[?] Network $LIBVIRT_NETWORK is not defined in libvirt, define now? (y/n) "
 		read answer
@@ -105,17 +105,17 @@ do
 			echo "[inf] Creating ..."
 			tmp_file=$(mktemp --suffix=.xml)
 			sed -e "s/NET_NAME/$LIBVIRT_NETWORK/g; s/SUBNET_NUMBER/$SUBNET_NUMBER/g" fast-vm.xml > $tmp_file
-			virsh net-define $tmp_file
+			virsh --connect qemu:///system net-define $tmp_file
 			if [ ! "$?" -eq "0" ]; then
 				echo "[err] Error creating libvirt network, aborting"
 				exit 1
 			fi
-			virsh net-autostart "$LIBVIRT_NETWORK"
+			virsh --connect qemu:///system net-autostart "$LIBVIRT_NETWORK"
 			if [ ! "$?" -eq "0" ]; then
 				echo "[err] Error marking libvirt network as autostarted, aborting"
 				exit 1
 			fi
-			virsh net-start "$LIBVIRT_NETWORK"
+			virsh --connect qemu:///system net-start "$LIBVIRT_NETWORK"
 			if [ ! "$?" -eq "0" ]; then
 				echo "[err] Error starting libvirt network, aborting"
 				exit 1
@@ -126,7 +126,7 @@ do
 		fi
 	fi
 
-	is_subnet_number=$(virsh net-dumpxml "$LIBVIRT_NETWORK" 2>/dev/null|grep 'ip address'|cut -d. -f3)
+	is_subnet_number=$(virsh --connect qemu:///system net-dumpxml "$LIBVIRT_NETWORK" 2>/dev/null|grep 'ip address'|cut -d. -f3)
 	if [ "$is_subnet_number" != "$SUBNET_NUMBER" ];then
 		echo "[err] Libvirt network subnet is different from one provided in fast-vm configuration"
 		echo "fix fast-vm configuration or libvirt network configuration"

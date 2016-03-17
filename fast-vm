@@ -216,8 +216,8 @@ case "$1" in
 
 		if [ -b "/dev/$THINPOOL_VG/$VM_PREFIX$rhel_version" ]; then
 			echo "[inf] stopping and undefining the base VM"
-			virsh destroy $VM_PREFIX$rhel_version >>$DEBUG_LOG 2>&1
-			virsh undefine $VM_PREFIX$rhel_version >>$DEBUG_LOG 2>&1
+			virsh --connect qemu:///system destroy $VM_PREFIX$rhel_version >>$DEBUG_LOG 2>&1
+			virsh --connect qemu:///system undefine $VM_PREFIX$rhel_version >>$DEBUG_LOG 2>&1
 			echo "[inf] removing LV $VM_PREFIX$rhel_version ..."
 			lvremove "/dev/$THINPOOL_VG/$VM_PREFIX$rhel_version"
 		else
@@ -296,7 +296,7 @@ case "$1" in
 			
 			tmp_xml=$(mktemp --suffix=.xml)
 			sed -e "s/VM_NAME/$VM_PREFIX$rhel_version/g; s/THINPOOL_VG/$THINPOOL_VG/g; s/LIBVIRT_NETWORK/$LIBVIRT_NETWORK/g;" "$image_xml_path" > $tmp_xml
-			virsh define $tmp_xml >>$DEBUG_LOG 2>&1
+			virsh --connect qemu:///system define $tmp_xml >>$DEBUG_LOG 2>&1
 			if [ ! "$?" -eq '0' ]; then
 				echo "[err] defining base VM failed, doesn't exists alreadry?"
 				exit 2
@@ -311,7 +311,7 @@ case "$1" in
 				fi
 			fi
 
-			echo "[inf] base image VM created, to start this VM use 'virsh start $VM_PREFIX$rhel_version'"
+			echo "[inf] base image VM created, to start this VM use 'virsh --connect qemu:///system start $VM_PREFIX$rhel_version'"
 			echo "      This VM is used for customizing the base image of '$rhel_version' VMs"
 			echo "      All changes you make to this VM would be available in newly created VMs"
 			echo "      of that version, this will not affect already existing VMs of same version"
@@ -334,11 +334,11 @@ case "$1" in
 
 		tmp_xml=$(mktemp --suffix=.xml)
 		sed -e "s/VM_NAME/$VM_PREFIX$rhel_version-$vm_number/g; s/THINPOOL_VG/$THINPOOL_VG/g; s/LIBVIRT_NETWORK/$LIBVIRT_NETWORK/g;" "$image_xml_path" > $tmp_xml 2>>$DEBUG_LOG
-		virsh define $tmp_xml >>$DEBUG_LOG 2>&1
+		virsh --connect qemu:///system define $tmp_xml >>$DEBUG_LOG 2>&1
 
 		echo "[inf] adding static lease for 192.168.$SUBNET_NUMBER.$vm_number into libvirts DHCP"
-		vm_mac=$(virsh dumpxml "$VM_PREFIX$rhel_version-$vm_number"|grep 'mac address'|cut -d\' -f 2)
-		virsh net-update "$LIBVIRT_NETWORK" add-last ip-dhcp-host --xml "<host mac='$vm_mac' ip='192.168.$SUBNET_NUMBER.$vm_number'/>" --live --config >>$DEBUG_LOG 2>&1
+		vm_mac=$(virsh --connect qemu:///system dumpxml "$VM_PREFIX$rhel_version-$vm_number"|grep 'mac address'|cut -d\' -f 2)
+		virsh --connect qemu:///system net-update "$LIBVIRT_NETWORK" add-last ip-dhcp-host --xml "<host mac='$vm_mac' ip='192.168.$SUBNET_NUMBER.$vm_number'/>" --live --config >>$DEBUG_LOG 2>&1
 
 		# source file with hacks and apply them
 		if [ -f "$hack_file" ]; then
@@ -356,7 +356,7 @@ case "$1" in
 		vm_number="$2"
 		if [ -z "$vm_number" ]; then echo "[err] VM number missing"; usage start; fi
 		
-		vm_name=$(virsh list --all |grep "$VM_PREFIX"|awk '{print $2}'|egrep "\-$vm_number$")
+		vm_name=$(virsh --connect qemu:///system list --all |grep "$VM_PREFIX"|awk '{print $2}'|egrep "\-$vm_number$")
 
 		if [ -z "$vm_name" ]; then
 			echo "[err] VM with number '$vm_number' not found"
@@ -366,17 +366,17 @@ case "$1" in
 		# if there is any third argument start VM and console after
 		if [ -z "$3" ]; then
 			echo "[inf] starting VM $vm_name"
-			virsh start $vm_name >>$DEBUG_LOG 2>&1
+			virsh --connect qemu:///system start $vm_name >>$DEBUG_LOG 2>&1
 		else
 			case "$3" in
 				console)
 					echo "[inf] starting VM $vm_name"
 					echo "      and connecting to it serial console ..."
-					virsh start $vm_name && virsh console $vm_name 2>>$DEBUG_LOG
+					virsh --connect qemu:///system start $vm_name && virsh --connect qemu:///system console $vm_name 2>>$DEBUG_LOG
 				;;
 				ssh)
 					echo "[inf] starting VM $vm_name"
-					virsh start $vm_name 2>>$DEBUG_LOG
+					virsh --connect qemu:///system start $vm_name 2>>$DEBUG_LOG
 					wait_for_ssh "$vm_number"
 					ssh -o GlobalKnownHostsFile=/dev/null -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no "root@192.168.$SUBNET_NUMBER.$vm_number"
 				;;
@@ -397,30 +397,30 @@ case "$1" in
 		vm_number="$2"
 		if [ -z "$vm_number" ]; then echo "[err] VM number missing"; usage console; fi
 
-		vm_name=$(virsh list --all |grep "$VM_PREFIX"|awk '{print $2}'|egrep "\-$vm_number$")
+		vm_name=$(virsh --connect qemu:///system list --all |grep "$VM_PREFIX"|awk '{print $2}'|egrep "\-$vm_number$")
 		if [ -z "$vm_name" ]; then
 			echo "[err] VM with number '$vm_number' not found"
 			exit 1
 		fi
 
-		virsh console $vm_name 2>>$DEBUG_LOG
+		virsh --connect qemu:///system console $vm_name 2>>$DEBUG_LOG
 		;;
 	delete)
 		vm_number="$2"
 		if [ -z "$vm_number" ]; then echo "[err] VM number missing"; usage delete; fi
 
-		vm_name=$(virsh list --all |grep "$VM_PREFIX"|awk '{print $2}'|egrep "\-$vm_number$")
+		vm_name=$(virsh --connect qemu:///system list --all |grep "$VM_PREFIX"|awk '{print $2}'|egrep "\-$vm_number$")
 		if [ -z "$vm_name" ]; then
 			echo "[err] VM with number '$vm_number' not found"
 			exit 1
 		fi
 
-		virsh destroy $vm_name >>$DEBUG_LOG 2>&1
+		virsh --connect qemu:///system destroy $vm_name >>$DEBUG_LOG 2>&1
 
-		vm_mac=$(virsh dumpxml "$vm_name"|grep 'mac address'|cut -d\' -f 2)
+		vm_mac=$(virsh --connect qemu:///system dumpxml "$vm_name"|grep 'mac address'|cut -d\' -f 2)
 
 		echo "[inf] removing DHCP reservation"
-		virsh net-update "$LIBVIRT_NETWORK" delete ip-dhcp-host --xml "<host mac='$vm_mac' ip='192.168.$SUBNET_NUMBER.$vm_number'/>" --live --config >>$DEBUG_LOG 2>&1
+		virsh --connect qemu:///system net-update "$LIBVIRT_NETWORK" delete ip-dhcp-host --xml "<host mac='$vm_mac' ip='192.168.$SUBNET_NUMBER.$vm_number'/>" --live --config >>$DEBUG_LOG 2>&1
 		which dhcp_release >/dev/null 2>&1
 		if [ "$?" -eq '0' ]; then
 			dhcp_release "$LIBVIRT_NETWORK" "192.168.$SUBNET_NUMBER.$vm_number" "$vm_mac"
@@ -435,14 +435,14 @@ case "$1" in
 		lvremove -f /dev/$THINPOOL_VG/$vm_name >>$DEBUG_LOG 2>&1
 
 		echo "[inf] undefining VM from libvirt"
-		virsh undefine $vm_name >>$DEBUG_LOG 2>&1
+		virsh --connect qemu:///system undefine $vm_name >>$DEBUG_LOG 2>&1
 
 		echo "[inf] VM '$vm_name' deleted"
 		;;
 	list)
 		echo "VM#   status     image_name"
 		echo "==========================="
-		virsh list --all |awk '{print $2,$3,$4,$5}'|egrep "^${VM_PREFIX}.*-[0-9]+"|sed "s/${VM_PREFIX}\(.\+\)-\([0-9]\+\) \([a-zA-Z ]\+\)$/\2 - \3 - \1/" |sort -n
+		virsh --connect qemu:///system list --all |awk '{print $2,$3,$4,$5}'|egrep "^${VM_PREFIX}.*-[0-9]+"|sed "s/${VM_PREFIX}\(.\+\)-\([0-9]\+\) \([a-zA-Z ]\+\)$/\2 - \3 - \1/" |sort -n
 		;;
 	*) 
 		echo "[err] unknown action"
