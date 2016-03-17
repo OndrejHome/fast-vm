@@ -31,8 +31,13 @@ cp fast-vm-helper.sh /usr/local/libexec/fast-vm-helper.sh
 
 cp fast-vm-sudoers /etc/sudoers.d/fast-vm-sudoers
 
+echo "!! IMPORTANT !!"
+echo "User that would use fast-vm must be in group 'libvirt'."
+echo "You can easily add user to libvirt group using command below"
+echo "  # usermod -a -G libvirt <user>"
+
 echo "## checking for requirements"
-cmds="lvcreate lvconvert gunzip virsh virt-edit"
+cmds="lvcreate lvconvert gunzip virsh virt-edit sudo"
 
 for i in $cmds
 do

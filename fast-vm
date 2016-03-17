@@ -1,6 +1,13 @@
 #!/bin/bash
 DEBUG_LOG=/tmp/fast-vm.debug.log
 
+if [ $(id |grep '(libvirt)'|wc -l) -eq 0 ]; then
+	echo "[err] User runnign fast-vm must be member of group 'libivrt'."
+	echo "You can easily add user to libvirt group using command below"
+	echo "  # usermod -a -G libvirt <user>"
+	exit 1
+fi
+
 function check_empty {
 	var_name="$1"
 	var_value="$2"
