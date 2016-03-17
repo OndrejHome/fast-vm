@@ -49,7 +49,7 @@ do
 	fi
 done
 
-if [ -z "$just_upgrade" ] || [ "$just_updagrade" == "yes" ]; then
+if [ -f /etc/fast-vm.conf ] && [ -z "$just_upgrade" ] || [ "$just_updagrade" == "yes" ]; then
 	echo "[info] Update complete"
 	exit 0
 fi
