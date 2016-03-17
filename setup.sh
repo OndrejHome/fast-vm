@@ -43,7 +43,3 @@ fi
 echo "## running configuration scripts for initial setup"
 ## new configuration script
 . configure-fast-vm.sh
-## old configuration scripts
-#. setup-general.sh
-#. setup-thin-lvm.sh
-#. setup-libvirt-net.sh
