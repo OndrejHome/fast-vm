@@ -69,5 +69,6 @@ case "$action" in
 		;;
 	*)
 		echo "[err] unknown action"
+		exit 3
 		;;
 esac

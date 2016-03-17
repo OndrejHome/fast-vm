@@ -1,9 +1,5 @@
 #!/bin/bash
 DEBUG_LOG=/tmp/fast-vm.debug.log
-if [ "$(whoami)" != "root" ]; then
-	echo "[err] this must be run as root"
-	exit 1
-fi
 
 function check_empty {
 	var_name="$1"
@@ -162,7 +158,7 @@ case "$1" in
 
 		else
 			echo "[inf] creating LV $VM_PREFIX$rhel_version ..."
-			lvcreate -n $VM_PREFIX$rhel_version -V 10G --thinpool $THINPOOL_VG/$THINPOOL_LV >>$DEBUG_LOG 2>&1
+			echo "lvcreate" "base" "$rhel_version" | sudo /usr/local/libexec/fast-vm-helper.sh
 			if [ "$?" != "0" ]; then
 				echo "[err] Error creating thin LV for VM image"
 				exit 1
@@ -170,6 +166,7 @@ case "$1" in
 		fi
 
 		echo "[inf] importing image $image_path into /dev/$THINPOOL_VG/$VM_PREFIX$rhel_version"
+		echo "chgrp" "/dev/$THINPOOL_VG/$VM_PREFIX$rhel_version" | sudo --non-interactive /usr/local/libexec/fast-vm-helper.sh
 
 		if [ "$image_size" -eq "0" ]; then
 			# import from local file
@@ -219,7 +216,7 @@ case "$1" in
 			virsh --connect qemu:///system destroy $VM_PREFIX$rhel_version >>$DEBUG_LOG 2>&1
 			virsh --connect qemu:///system undefine $VM_PREFIX$rhel_version >>$DEBUG_LOG 2>&1
 			echo "[inf] removing LV $VM_PREFIX$rhel_version ..."
-			lvremove "/dev/$THINPOOL_VG/$VM_PREFIX$rhel_version"
+			echo "lvremove" "/dev/$THINPOOL_VG/$VM_PREFIX$rhel_version" | sudo --non-interactive /usr/local/libexec/fast-vm-helper.sh
 		else
 			echo "[err] image "$rhel_version" not found"
 			usage remove_image
@@ -329,7 +326,8 @@ case "$1" in
 		VM_NAME="$VM_PREFIX$rhel_version-$vm_number"
 
 		echo "[inf] creating disk '$VM_PREFIX$rhel_version-$vm_number'"
-		lvcreate -k n -s --thinpool $THINPOOL_VG/$THINPOOL_LV /dev/$THINPOOL_VG/$VM_PREFIX$rhel_version --name $VM_PREFIX$rhel_version-$vm_number >>$DEBUG_LOG 2>&1
+		echo "lvcreate" "newvm" "$rhel_version" "$rhel_version-$vm_number" | sudo --non-interactive /usr/local/libexec/fast-vm-helper.sh
+		echo "chgrp" "/dev/$THINPOOL_VG/$VM_PREFIX$rhel_version-$vm_number" | sudo --non-interactive /usr/local/libexec/fast-vm-helper.sh
 		echo "[inf] defining virtual machine '$VM_PREFIX$rhel_version-$vm_number' in libvirt"
 
 		tmp_xml=$(mktemp --suffix=.xml)
@@ -432,7 +430,8 @@ case "$1" in
 		fi
 		
 		echo "[inf] removing VM drive"
-		lvremove -f /dev/$THINPOOL_VG/$vm_name >>$DEBUG_LOG 2>&1
+#		lvremove -f /dev/$THINPOOL_VG/$vm_name >>$DEBUG_LOG 2>&1
+		echo "lvremove" "/dev/$THINPOOL_VG/$vm_name" | sudo --non-interactive /usr/local/libexec/fast-vm-helper.sh
 
 		echo "[inf] undefining VM from libvirt"
 		virsh --connect qemu:///system undefine $vm_name >>$DEBUG_LOG 2>&1

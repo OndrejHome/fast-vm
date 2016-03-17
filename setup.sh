@@ -25,6 +25,8 @@ fi
 if [ ! -d /usr/local/libexec ]; then mkdir /usr/local/libexec; fi
 cp fast-vm-helper.sh /usr/local/libexec/fast-vm-helper.sh
 
+cp fast-vm-sudoers /etc/sudoers.d/fast-vm-sudoers
+
 echo "## checking for requirements"
 cmds="lvcreate lvconvert gunzip virsh virt-edit"
 
