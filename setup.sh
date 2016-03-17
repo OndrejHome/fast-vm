@@ -6,16 +6,20 @@ if [ "$(whoami)" != "root" ]; then
 fi
 echo "##==>> fast-vm setup script"
 
-if [ -f "/usr/local/sbin/fast-vm" ]; then
-	echo "[??] File /usr/local/sbin/fast-vm already present, do you want to just update fast-vm without running configuration? [yes] "
+if [ -f "/usr/local/bin/fast-vm" ]; then
+	echo "[??] File /usr/local/bin/fast-vm already present, do you want to just update fast-vm without running configuration? [yes] "
 	read just_upgrade
 
 	if [ -z "$just_upgrade" ] || [ "$just_updagrade" == "yes" ]; then
 		echo "[info] setup will only update fast-vm scripts and then exit without reconfiguration"
 	fi
 fi
-echo "copying fast-vm into /usr/local/sbin/fast-vm"
-cp fast-vm /usr/local/sbin
+if [ -f "/usr/local/sbin/fast-vm" ]; then
+	echo "[info] removing old root-only version of fast-vm from /usr/local/sbin/fast-vm"
+	rm -f /usr/local/sbin/fast-vm
+fi
+echo "copying fast-vm into /usr/local/bin/fast-vm"
+cp fast-vm /usr/local/bin/fast-vm
 
 bash_completion_dir=$(pkg-config --variable=completionsdir bash-completion 2>/dev/null|head -1)
 if [ -d "$bash_completion_dir" ]; then
