@@ -7,6 +7,8 @@ if [ -f config.defaults ]; then
 fi
 if [ -f "$config_file" ]; then
 	. $config_file
+else
+	touch $config_file
 fi
 
 function ask_question {
