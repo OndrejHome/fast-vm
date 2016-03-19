@@ -20,6 +20,7 @@ if [ -f "/usr/local/sbin/fast-vm" ]; then
 fi
 echo "copying fast-vm into /usr/local/bin/fast-vm"
 cp fast-vm /usr/local/bin/fast-vm
+cp configure-fast-vm.sh /usr/local/sbin/configure-fast-vm
 
 bash_completion_dir=$(pkg-config --variable=completionsdir bash-completion 2>/dev/null|head -1)
 if [ -d "$bash_completion_dir" ]; then
