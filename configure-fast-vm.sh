@@ -28,7 +28,7 @@ function ask_question {
 	done
 
 	# and write the output into configuration file
-	sed -ie "/^$config_variable=/d" $config_file
+	sed -i "/^$config_variable=/d" $config_file
 	if [ -z "$answer" ]; then
 		echo "$config_variable=$default_value" >> $config_file
 	else
