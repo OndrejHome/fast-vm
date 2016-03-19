@@ -12,19 +12,22 @@ fast-vm is taking care of:
 * LVM VG with reasonable amount of free space (to create LV with thin pool)
 * preconfigured VM disk images and XML files (downloadable separately)
 * 'dhcp_release' for proper DHCP static leases release
-* (optional) bash completion for bash completion to work
+* (optional) 'bash-completion' for bash completion to work
 * (optional) 'pv' to show import progress
+* (optional) 'curl' to pass http(s) link for image_import
 
 ====== Installation/Setup ======
+## As root
 1. Run script 'setup.sh' and answer questions.
 Script will:
 - create default configuration file from your answers
 - create LVM thin pool with name and size of your choice
 - libvirt NAT network for VMs
 
-If you there is any error you can run just part of configuration invoking ./setup-*.sh 
-scripts on their own
+If you interrupt configuration of fast-vm ro if you want to change configuration
+run ./configure-fast-vm.sh
 
+## As normal user (normal user must be member of 'libvirt' group)
 2. Import some prebuilded VM disk images or use your
 
 fast-vm import_image <vm_image_version> </path/to/image.gz> </path/to/vm_template.xml> </path/to/image-hacks.sh>
@@ -32,7 +35,7 @@ fast-vm import_image <vm_image_version> </path/to/image.gz> </path/to/vm_templat
 vm_image_version
   - usually something like '6.7', '6_7', '7' or '7-test'
     (used for composing LV name and VM hostname)
-/path/to/image.gz
+/path/to/image.gz | http://somewhere.on.the.net/path/to/image.tar.gz
   - gzipped VM machine drive in the 'raw' format
   - to create your own you can use command below
      gzip -c /dev/some_vg/lv_with_vm_drive > my_vm_drive_image.img.gz
@@ -75,9 +78,9 @@ b) To create new VM based on that image run
 
 c) To start VM - you need to know only VM number
   # fast-vm start 113
-  
-  If you specify any third parameter you will get connected to serial console
-  of the VM just after it starts
+
+  As thir paramter you can specify 'console' for connecting to serial console
+  of 'ssh' to wait for ssh on VM to come up and connect as root.
 
   # fast-vm start 113 console
 
@@ -96,7 +99,7 @@ LIBVIRT_NETWORK - name of the libvirt network and bridge adapter for NAT network
 SUBNET_NUMBER - the XX in the 192.168.XX.0/24 libvirt network created by setup
 
 ====== Known bugs/limitation ======
-* script requires root on the machine
+* initial setup requires root
 * tested on the Gentoo and Fedora 22
 * VM images are provided separately
   - publicaly available images can be found at  https://github.com/OndrejHome/fast-vm-public-images
@@ -106,6 +109,16 @@ SUBNET_NUMBER - the XX in the 192.168.XX.0/24 libvirt network created by setup
 * BUG: sometimes the VM doesn't get designated IP address because the dnsmasq holds
        the lease for some older MAC address (dhcp_release should be fixing this but
        it's not 100% working solution)
+
+===== Upgrading from the 0.2 to 0.3 =====
+* version 0.2 required root to run, 0.3 doesn't require root for normal operations
+* first copy /root/.fast-vm/config into /etc/fast-vm.conf (this is new central configuration file)
+* update hack files and libvirt definitions:
+** due to some changes to way how to connect to libvirt you will have to download new "hack files" for the
+version taht you have imported or you can just re-import images and hack files would get updateed 
+  or
+** copy all '.xml' and '.sh' files from /root/.fast-vm/ into your user $HOME/.fast-vm/ to be able to use 
+images that are already imported
 
 === Author ===
 Ondrej Famera <ofamera@redhat.com> or <ondrej-xa2iel8u@famera.cz>
