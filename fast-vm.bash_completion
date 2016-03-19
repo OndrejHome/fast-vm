@@ -52,7 +52,7 @@ _fast-vm()
 		return 0
 		;;
 	create|remove_image)
-		local rhel_version
+		local image_name
 		# lets get the dm-XX number of the thinpool
 		double_dash=$(echo "$thin_lv"|sed 's/-/--/g') # LVM uses double dash in the /dev/mapper
 		pool_dm=$(ls -l "/dev/mapper/$thin_vg-$double_dash-tpool"|cut -d / -f 5)
@@ -69,9 +69,9 @@ _fast-vm()
 		done
 		holder_regexp="($holder_regexp)"
 		# finaly lets parse the VM image versions from what we have
-		rhel_version=$(ls -l /dev/$thin_vg/ |egrep "$holder_regexp"|awk '{print $9}'|grep "$vm_prefix"|sed -e "s/$vm_prefix//; s/-[0-9]\+$//"|uniq)
+		image_name=$(ls -l /dev/$thin_vg/ |egrep "$holder_regexp"|awk '{print $9}'|grep "$vm_prefix"|sed -e "s/$vm_prefix//; s/-[0-9]\+$//"|uniq)
 
-		COMPREPLY=( $( compgen -W "$rhel_version" -- "$cur" ) )
+		COMPREPLY=( $( compgen -W "$image_name" -- "$cur" ) )
 		return 0
 		;;
 	start|delete|console|ssh)
