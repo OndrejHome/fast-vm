@@ -27,53 +27,65 @@ function check_empty {
 check_empty "VM_PREFIX" "$VM_PREFIX"
 check_empty "THINPOOL_VG" "$THINPOOL_VG"
 check_empty "THINPOOL_LV" "$THINPOOL_LV"
+check_empty "LIBVIRT_NETWORK" "$LIBVIRT_NETWORK"
+check_empty "SUBNET_NUMBER" "$SUBNET_NUMBER"
 
 read action arg1 arg2 arg3
 
 case "$action" in
 	lvcreate)
+		arg2=$(echo "$arg2"|egrep '^[a-zA-Z0-9.-]+$')
 		if [ -z "$arg2" ]; then
-			echo "[err] lvcreate requires 2/3 arguments"
+			echo "[err] LV name validation failed"
 			exit 1
 		fi
-		if [ "$arg1" == "base" ]; then
-			lvcreate -n $VM_PREFIX$arg2 -V 10G --thinpool $THINPOOL_VG/$THINPOOL_LV >>$DEBUG_LOG 2>&1
+		arg3=$(echo "$arg3"|egrep '^[a-zA-Z0-9.-]+$')
+		if [ "$arg1" == "newvm" ]; then
+			if  [ -z "$arg3" ] || [ ! -b "/dev/$THINPOOL_VG/$VM_PREFIX$arg2" ]; then
+				echo "[err] newvm LV name validation failed"
+				exit 1
+			fi
 		fi
-		if [ "$arg1" == "newvm" ] && [ ! -z "$arg3" ]; then
-			lvcreate -k n -s --thinpool $THINPOOL_VG/$THINPOOL_LV /dev/$THINPOOL_VG/$VM_PREFIX$arg2 --name $VM_PREFIX$arg3 >>$DEBUG_LOG 2>&1
-		fi
+
+		case "$arg1" in
+			base)
+				lvcreate -n $VM_PREFIX$arg2 -V 10G --thinpool $THINPOOL_VG/$THINPOOL_LV >>$DEBUG_LOG 2>&1
+			;;
+			newvm)
+				lvcreate -k n -s --thinpool $THINPOOL_VG/$THINPOOL_LV /dev/$THINPOOL_VG/$VM_PREFIX$arg2 --name $VM_PREFIX$arg3 >>$DEBUG_LOG 2>&1
+			;;
+			*)
+				echo "[err] wrong action for lvcreate"
+				exit 1
+		esac
 		;;
 	lvremove)
-		if [ ! -b "$arg1" ]; then
-			echo "[err] LV not found or not a block device"
+		arg1=$(echo "$arg1" | egrep "/dev/$THINPOOL_VG/$VM_PREFIX[a-zA-Z0-9.-]+$")
+		if [ -z "$arg1" ] || [ ! -b "$arg1" ]; then
+			echo "[err] LV not found, not a block device or not allowed to be removed"
 			exit 1
 		fi
-		if [[ "$arg1" =~ /dev/$THINPOOL_VG/$VM_PREFIX ]]; then
-			lvremove -f "$arg1" >>$DEBUG_LOG 2>&1
-		else
-			echo "[err] selected block device is not allowed to be removed"
-			exit 1
-		fi
+
+		lvremove -f "$arg1" >>$DEBUG_LOG 2>&1
 		;;
 	chgrp)
-		if [ ! -b "$arg1" ]; then
-			echo "[err] LV not found or not a block device"
+		arg1=$(echo "$arg1" | egrep "/dev/$THINPOOL_VG/$VM_PREFIX[a-zA-Z0-9.-]+$")
+		if [ -z "$arg1" ] || [ ! -b "$arg1" ]; then
+			echo "[err] LV not found, not a block device or not allowed to be chgrp"
 			exit 1
 		fi
-		if [[ "$arg1" =~ /dev/$THINPOOL_VG/$VM_PREFIX ]]; then
-			chgrp libvirt "$arg1" >>$DEBUG_LOG 2>&1
-		else
-			echo "[err] selected block device is not allowed for group change"
-			exit 1
-		fi
+
+		chgrp libvirt "$arg1" >>$DEBUG_LOG 2>&1
 		;;
 	dhcp_release)
-		if [ -z "$arg3" ]; then
-			echo "[err] dhcp_release requires 3 arguments"
+		arg1=$(echo "$arg1"| egrep '^[0-9]+$')
+		arg2=$(echo "$arg2"| egrep '^[a-f0-9]{2,2}:[a-f0-9]{2,2}:[a-f0-9]{2,2}:[a-f0-9]{2,2}:[a-f0-9]{2,2}:[a-f0-9]{2,2}$')
+		if [ -z "$arg1" ] || [ -z "$arg2" ] || [ "$arg1" -lt 20 ] || [ "$arg1" -gt 220 ]; then
+			echo "[err] validation of VM number or mac address failed"
 			exit 1
 		fi
-		#FIXME validation of arguments for dhcp_release
-		dhcp_release "$arg1" "$arg2" "$arg3" >>$DEBUG_LOG 2>&1
+
+		dhcp_release "$LIBVIRT_NETWORK" "192.168.$SUBNET_NUMBER.$arg1" "$arg2" >>$DEBUG_LOG 2>&1
 		;;
 	*)
 		echo "[err] unknown action"
