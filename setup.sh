@@ -6,8 +6,8 @@ if [ "$(whoami)" != "root" ]; then
 fi
 echo "##==>> fast-vm setup script"
 
-if [ -f "/usr/local/bin/fast-vm" ]; then
-	echo "[??] File /usr/local/bin/fast-vm already present, do you want to just update fast-vm without running configuration? [yes] "
+if [ -f "/usr/bin/fast-vm" ]; then
+	echo "[??] File /usr/bin/fast-vm already present, do you want to just update fast-vm without running configuration? [yes] "
 	read just_upgrade
 
 	if [ -z "$just_upgrade" ] || [ "$just_updagrade" == "yes" ]; then
@@ -18,17 +18,17 @@ if [ -f "/usr/local/sbin/fast-vm" ]; then
 	echo "[info] removing old root-only version of fast-vm from /usr/local/sbin/fast-vm"
 	rm -f /usr/local/sbin/fast-vm
 fi
-echo "copying fast-vm into /usr/local/bin/fast-vm"
-cp fast-vm /usr/local/bin/fast-vm
-cp configure-fast-vm.sh /usr/local/sbin/configure-fast-vm
+echo "copying fast-vm into /usr/bin/fast-vm"
+cp fast-vm /usr/bin/fast-vm
+cp configure-fast-vm.sh /usr/sbin/configure-fast-vm
 
 bash_completion_dir=$(pkg-config --variable=completionsdir bash-completion 2>/dev/null|head -1)
 if [ -d "$bash_completion_dir" ]; then
 	cp fast-vm.bash_completion $bash_completion_dir/fast-vm
 fi
 
-if [ ! -d /usr/local/libexec ]; then mkdir /usr/local/libexec; fi
-cp fast-vm-helper.sh /usr/local/libexec/fast-vm-helper.sh
+if [ ! -d /usr/libexec ]; then mkdir /usr/libexec; fi
+cp fast-vm-helper.sh /usr/libexec/fast-vm-helper.sh
 
 cp fast-vm-sudoers /etc/sudoers.d/fast-vm-sudoers
 

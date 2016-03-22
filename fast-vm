@@ -1,6 +1,6 @@
 #!/bin/bash
 DEBUG_LOG=/tmp/fast-vm.debug.log
-FASTVM_HELPER=/usr/local/libexec/fast-vm-helper.sh
+FASTVM_HELPER=/usr/libexec/fast-vm-helper.sh
 
 if [ $(id |grep '(libvirt)'|wc -l) -eq 0 ] && [ $(whoami) != "root" ]; then
 	echo "[err] User runnign fast-vm must be member of group 'libivrt'."
