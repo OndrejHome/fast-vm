@@ -1,3 +1,5 @@
+## these are defaults that are used when configuring fast-vm
+## values are overriden by content of the /etc/fast-vm.conf
 VM_PREFIX=fastvm-
 LIBVIRT_NETWORK=fastvm-nat
 SUBNET_NUMBER=22

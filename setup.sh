@@ -6,24 +6,44 @@ if [ "$(whoami)" != "root" ]; then
 fi
 echo "##==>> fast-vm setup script"
 
-if [ -f "/usr/local/sbin/fast-vm" ]; then
-	echo "[??] File /usr/local/sbin/fast-vm already present, do you want to just update fast-vm without running configuration? [yes] "
+if [ -f "/usr/bin/fast-vm" ]; then
+	echo "[??] File /usr/bin/fast-vm already present, do you want to just update fast-vm without running configuration? [yes] "
 	read just_upgrade
 
 	if [ -z "$just_upgrade" ] || [ "$just_updagrade" == "yes" ]; then
 		echo "[info] setup will only update fast-vm scripts and then exit without reconfiguration"
 	fi
 fi
-echo "copying fast-vm into /usr/local/sbin/fast-vm"
-cp fast-vm /usr/local/sbin
+if [ -f "/usr/local/sbin/fast-vm" ]; then
+	echo "[info] removing old root-only version of fast-vm from /usr/local/sbin/fast-vm"
+	rm -f /usr/local/sbin/fast-vm
+fi
+echo "copying fast-vm into /usr/bin/fast-vm"
+cp fast-vm /usr/bin/fast-vm
+cp configure-fast-vm /usr/sbin/configure-fast-vm
 
 bash_completion_dir=$(pkg-config --variable=completionsdir bash-completion 2>/dev/null|head -1)
 if [ -d "$bash_completion_dir" ]; then
 	cp fast-vm.bash_completion $bash_completion_dir/fast-vm
 fi
 
+if [ ! -d /usr/libexec ]; then mkdir /usr/libexec; fi
+cp fast-vm-helper.sh /usr/libexec/fast-vm-helper.sh
+
+if [ ! -d /etc/sudoers.d ]; then mkdir /etc/sudoers.d; fi
+cp fast-vm-sudoers /etc/sudoers.d/fast-vm-sudoers
+
+if [ ! -d /usr/share/fast-vm ]; then mkdir /usr/share/fast-vm; fi
+cp config.defaults /usr/share/fast-vm/fast-vm.conf.defaults
+cp fast-vm-network.xml /usr/share/fast-vm/fast-vm-network.xml
+
+echo "!! IMPORTANT !!"
+echo "User that would use fast-vm must be in group 'libvirt'."
+echo "You can easily add user to libvirt group using command below"
+echo "  # usermod -a -G libvirt <user>"
+
 echo "## checking for requirements"
-cmds="lvcreate lvconvert gunzip virsh virt-edit"
+cmds="lvcreate lvconvert gunzip virsh virt-edit sudo"
 
 for i in $cmds
 do
@@ -35,15 +55,11 @@ do
 	fi
 done
 
-if [ -z "$just_upgrade" ] || [ "$just_updagrade" == "yes" ]; then
+if [ -f /etc/fast-vm.conf ] && [ -z "$just_upgrade" ] || [ "$just_updagrade" == "yes" ]; then
 	echo "[info] Update complete"
 	exit 0
 fi
 
-echo "## running configuration scripts for initial setup"
-## new configuration script
-. configure-fast-vm.sh
-## old configuration scripts
-#. setup-general.sh
-#. setup-thin-lvm.sh
-#. setup-libvirt-net.sh
+echo "## running configuration script for initial setup"
+## run configuration script
+/usr/sbin/configure-fast-vm

@@ -1,0 +1,4 @@
+## fast-vm helper script
+%libvirt ALL=(root) NOPASSWD: /usr/libexec/fast-vm-helper.sh
+## access to lvdisplay for initial fast-vm configuration
+%libvirt ALL=(root) NOPASSWD: /sbin/lvdisplay

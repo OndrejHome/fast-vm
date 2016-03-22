@@ -5,9 +5,9 @@ _fast-vm()
 	local cur prev words cword split thin_lv thin_vg vm_prefix
 	_init_completion -s || return
 
-	vm_prefix=$(grep VM_PREFIX /root/.fast-vm/config|tail -1 |cut -d\= -f 2)
-	thin_lv=$(grep THINPOOL_LV /root/.fast-vm/config|tail -1 |cut -d\= -f 2)
-	thin_vg=$(grep THINPOOL_VG /root/.fast-vm/config|tail -1 |cut -d\= -f 2)
+	vm_prefix=$(grep VM_PREFIX /etc/fast-vm.conf|tail -1 |cut -d\= -f 2)
+	thin_lv=$(grep THINPOOL_LV /etc/fast-vm.conf|tail -1 |cut -d\= -f 2)
+	thin_vg=$(grep THINPOOL_VG /etc/fast-vm.conf|tail -1 |cut -d\= -f 2)
 
 	if [ "$cword" -eq 3 ] && [ ${COMP_WORDS[1]} == "import_image" ]; then
 		_filedir '@(gz)'
@@ -31,7 +31,7 @@ _fast-vm()
 		local number_used number_all number_available
 		number_used=$(mktemp)
 		number_all=$(mktemp)
-		virsh list --all|awk '{print $2}'|egrep "^${vm_prefix}.*-[0-9]+"|sed 's/.*-\([0-9]\+\)$/\1/'> $number_used
+		virsh --connect qemu:///system list --all|awk '{print $2}'|egrep "^${vm_prefix}.*-[0-9]+"|sed 's/.*-\([0-9]\+\)$/\1/'> $number_used
 		seq 20 220 > $number_all
 		number_available=$(comm -2 -3 <(sort $number_all) <(sort $number_used))
 		COMPREPLY=( $( compgen -W "base $number_available" -- "$cur" ) )
@@ -52,7 +52,7 @@ _fast-vm()
 		return 0
 		;;
 	create|remove_image)
-		local rhel_version
+		local image_name
 		# lets get the dm-XX number of the thinpool
 		double_dash=$(echo "$thin_lv"|sed 's/-/--/g') # LVM uses double dash in the /dev/mapper
 		pool_dm=$(ls -l "/dev/mapper/$thin_vg-$double_dash-tpool"|cut -d / -f 5)
@@ -69,9 +69,9 @@ _fast-vm()
 		done
 		holder_regexp="($holder_regexp)"
 		# finaly lets parse the VM image versions from what we have
-		rhel_version=$(ls -l /dev/$thin_vg/ |egrep "$holder_regexp"|awk '{print $9}'|grep "$vm_prefix"|sed -e "s/$vm_prefix//; s/-[0-9]\+$//"|uniq)
+		image_name=$(ls -l /dev/$thin_vg/ |egrep "$holder_regexp"|awk '{print $9}'|grep "$vm_prefix"|sed -e "s/$vm_prefix//; s/-[0-9]\+$//"|uniq)
 
-		COMPREPLY=( $( compgen -W "$rhel_version" -- "$cur" ) )
+		COMPREPLY=( $( compgen -W "$image_name" -- "$cur" ) )
 		return 0
 		;;
 	start|delete|console|ssh)
@@ -87,7 +87,7 @@ _fast-vm()
 				vm_option='--state-running'
 			;;
 		esac
-		vm_numbers=$(virsh list "$vm_option"|awk '{print $2}'|egrep "^${vm_prefix}.*-[0-9]+"|sed 's/.*-\([0-9]\+\)$/\1/')
+		vm_numbers=$(virsh --connect qemu:///system list "$vm_option"|awk '{print $2}'|egrep "^${vm_prefix}.*-[0-9]+"|sed 's/.*-\([0-9]\+\)$/\1/')
 		COMPREPLY=( $( compgen -W "$vm_numbers" -- "$cur" ) )
 		return 0
 		;;
