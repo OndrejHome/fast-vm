@@ -42,7 +42,7 @@ vm_image_version
 /path/to/vm_template.xml
   - XML template for creating libvirt VM, check below for supported macros
   # vm_template.xml macros
-    VM_NAME - substituted for VM name (VM_prefix+rhel_version+vm_number)
+    VM_NAME - substituted for VM name (VM_prefix+image_name+vm_number)
     THINPOOL_VG - THINPOOL_VG from configuration
     LIBVIRT_NETWORK - LIBVIRT_NETWORK from configuration
 /path/to/image-hacks.sh

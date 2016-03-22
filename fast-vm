@@ -123,7 +123,7 @@ pv_ok="$?"
 case "$1" in
 	import_image)
 		image_name="$2"
-		if [ -z "$image_name" ]; then echo "[err] missing rhel version"; usage import_image; fi
+		if [ -z "$image_name" ]; then echo "[err] missing image name"; usage import_image; fi
 		image_path="$3"
 		image_size="0"
 		if [ "$curl_ok" -eq 0 ] && [ "${image_path:0:4}" == "http" ]; then
@@ -216,7 +216,7 @@ case "$1" in
 		;;
 	remove_image)
 		image_name="$2"
-		if [ -z "$image_name" ]; then echo "[err] missing rhel version"; usage remove_image; fi
+		if [ -z "$image_name" ]; then echo "[err] missing image name"; usage remove_image; fi
 
 		if [ -b "/dev/$THINPOOL_VG/$VM_PREFIX$image_name" ]; then
 			echo "[inf] stopping and undefining the base VM"
@@ -231,7 +231,7 @@ case "$1" in
 		;;
 	create)
 		image_name="$2"
-		if [ -z "$image_name" ]; then echo "[err] missing rhel version"; usage create; fi
+		if [ -z "$image_name" ]; then echo "[err] missing image name"; usage create; fi
 
 		image_xml_path="$4"
 		if [ ! -z "$image_xml_path" ]; then
@@ -270,7 +270,7 @@ case "$1" in
 		fi
 
 		if [ ! -b "/dev/$THINPOOL_VG/$VM_PREFIX$image_name" ]; then
-			echo "[err] Missing image for this rhel version"
+			echo "[err] Missing image for this image name"
 			echo "      /dev/$THINPOOL_VG/$VM_PREFIX$image_name not found"
 			echo "      first import image using 'fast-vm image_import $image_name'"
 			exit 2
