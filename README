@@ -25,7 +25,7 @@ Script will:
 - libvirt NAT network for VMs
 
 If you interrupt configuration of fast-vm or if you want to change configuration
-run /usr/sbin/configure-fast-vm.sh as root
+run /usr/sbin/configure-fast-vm as root
 
 ## As normal user (normal user must be member of 'libvirt' group)
 2. Import some prebuilded VM disk images or use your

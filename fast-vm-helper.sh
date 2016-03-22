@@ -19,7 +19,7 @@ function check_empty {
 	var_value="$2"
 	if [ -z "$var_value" ]; then
 		echo "[err] variable $var_name not declared in global configuration"
-		echo "      run configure-fast-vm.sh again or fix manually"
+		echo "      run configure-fast-vm again or fix manually"
 		exit 2
 	fi
 }
