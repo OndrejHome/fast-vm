@@ -33,6 +33,9 @@ cp fast-vm-helper.sh /usr/libexec/fast-vm-helper.sh
 if [ ! -d /etc/sudoers.d ]; then mkdir /etc/sudoers.d; fi
 cp fast-vm-sudoers /etc/sudoers.d/fast-vm-sudoers
 
+if [ ! -d /usr/share/fast-vm ]; then mkdir /usr/share/fast-vm; fi
+cp config.defaults /usr/share/fast-vm/fast-vm.conf.defaults
+
 echo "!! IMPORTANT !!"
 echo "User that would use fast-vm must be in group 'libvirt'."
 echo "You can easily add user to libvirt group using command below"

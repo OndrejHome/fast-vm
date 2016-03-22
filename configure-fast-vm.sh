@@ -2,8 +2,8 @@
 config_file="/etc/fast-vm.conf"
 
 # load defaults and old configuration if exists
-if [ -f config.defaults ]; then
-	. config.defaults
+if [ -f /usr/share/fast-vm/fast-vm.conf.defaults ]; then
+	. /usr/share/fast-vm/fast-vm.conf.defaults
 fi
 if [ -f "$config_file" ]; then
 	. $config_file
