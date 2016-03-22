@@ -20,13 +20,15 @@ function ask_question {
 	success=0
 	while [ "$success" -eq 0 ];
 	do
-		echo -n "[?] $question [$default_value]: "
+		echo -e "[?] $question"
+		echo -n "[$default_value]: "
 		read answer
 		if [ -z "$default_value" ] && [ -z "$answer" ]; then
 			echo "[err] You must provide value"
 		else
 			success=1
 		fi
+		echo
 	done
 
 	# and write the output into configuration file
@@ -38,17 +40,23 @@ function ask_question {
 	fi
 }
 
+echo "==>> fast-vm configuration script"
+echo "You can run this script repeatadily and interrupt it with ctrl+c."
+echo "Script will always recheck all configuration options."
+echo "fast-vm system configuration will be saved in /etc/fast-vm.conf."
+echo
+
 success=0
 while [ "$success" -eq 0 ];
 do
 
-	ask_question "VM name prefix in libvirt" "$VM_PREFIX" "VM_PREFIX"
+	ask_question "VG for LVM thin pool\n fast-vm is using LVM thin LV to store VM images and data.\n On which existing VG should be this thin LV?" "$THINPOOL_VG" "THINPOOL_VG"
+	ask_question "LVM thin pool name\n Name the thin LV on which data would be stored." "$THINPOOL_LV" "THINPOOL_LV"
+	ask_question "LVM thin pool size\n You can use units understood by LVM like M,G,T.\n NOTE: This applies only when thin LV doesn't exists yet." "$THINPOOL_SIZE" "THINPOOL_SIZE"
 
-	ask_question "VG for LVM thin pool" "$THINPOOL_VG" "THINPOOL_VG"
-	ask_question "LVM thin pool name" "$THINPOOL_LV" "THINPOOL_LV"
-	ask_question "LVM thin pool size" "$THINPOOL_SIZE" "THINPOOL_SIZE"
+	ask_question "VM name prefix in libvirt\n Prefix is used in VM names and VM drive names." "$VM_PREFIX" "VM_PREFIX"
 
-	ask_question "Libvirt network (bridge) name" "$LIBVIRT_NETWORK" "LIBVIRT_NETWORK"
+	ask_question "Libvirt network (bridge) name\n This configuration will create a libvirt \n network with this name providing NAT for VMs." "$LIBVIRT_NETWORK" "LIBVIRT_NETWORK"
 	ask_question "Libvirt subnet number (192.168.XX.0/24)" "$SUBNET_NUMBER" "SUBNET_NUMBER"
 
 	## reload the configuration file and check the system for changes
