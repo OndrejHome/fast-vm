@@ -30,6 +30,7 @@ fi
 if [ ! -d /usr/libexec ]; then mkdir /usr/libexec; fi
 cp fast-vm-helper.sh /usr/libexec/fast-vm-helper.sh
 
+if [ ! -d /etc/sudoers.d ]; then mkdir /etc/sudoers.d; fi
 cp fast-vm-sudoers /etc/sudoers.d/fast-vm-sudoers
 
 echo "!! IMPORTANT !!"
@@ -55,6 +56,6 @@ if [ -f /etc/fast-vm.conf ] && [ -z "$just_upgrade" ] || [ "$just_updagrade" == 
 	exit 0
 fi
 
-echo "## running configuration scripts for initial setup"
-## new configuration script
-. configure-fast-vm.sh
+echo "## running configuration script for initial setup"
+## run configuration script
+/usr/sbin/configure-fast-vm

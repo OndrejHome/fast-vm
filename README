@@ -24,8 +24,8 @@ Script will:
 - create LVM thin pool with name and size of your choice
 - libvirt NAT network for VMs
 
-If you interrupt configuration of fast-vm ro if you want to change configuration
-run ./configure-fast-vm.sh
+If you interrupt configuration of fast-vm or if you want to change configuration
+run /usr/sbin/configure-fast-vm.sh as root
 
 ## As normal user (normal user must be member of 'libvirt' group)
 2. Import some prebuilded VM disk images or use your
@@ -119,6 +119,13 @@ version taht you have imported or you can just re-import images and hack files w
   or
 ** copy all '.xml' and '.sh' files from /root/.fast-vm/ into your user $HOME/.fast-vm/ to be able to use 
 images that are already imported
+
+====== Where the files get installed ======
+/usr/bin/fast-vm
+/usr/sbin/configure-fast-vm
+/usr/libexec/fast-vm-helper.sh
+<bash_completion_dir>/fast-vm
+/etc/sudoers.d/fast-vm-sudoers
 
 === Author ===
 Ondrej Famera <ofamera@redhat.com> or <ondrej-xa2iel8u@famera.cz>
