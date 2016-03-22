@@ -127,6 +127,7 @@ images that are already imported
 <bash_completion_dir>/fast-vm
 /etc/sudoers.d/fast-vm-sudoers
 /usr/share/fast-vm/fast-vm.conf.defaults
+/usr/share/fast-vm/fast-vm-network.xml
 
 === Author ===
 Ondrej Famera <ofamera@redhat.com> or <ondrej-xa2iel8u@famera.cz>

@@ -104,7 +104,7 @@ do
 		if [ "$answer" == "y" ]; then
 			echo "[inf] Creating ..."
 			tmp_file=$(mktemp --suffix=.xml)
-			sed -e "s/NET_NAME/$LIBVIRT_NETWORK/g; s/SUBNET_NUMBER/$SUBNET_NUMBER/g" fast-vm.xml > $tmp_file
+			sed -e "s/NET_NAME/$LIBVIRT_NETWORK/g; s/SUBNET_NUMBER/$SUBNET_NUMBER/g" /usr/share/fast-vm/fast-vm-network.xml > $tmp_file
 			virsh --connect qemu:///system net-define $tmp_file
 			if [ ! "$?" -eq "0" ]; then
 				echo "[err] Error creating libvirt network, aborting"

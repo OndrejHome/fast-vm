@@ -35,6 +35,7 @@ cp fast-vm-sudoers /etc/sudoers.d/fast-vm-sudoers
 
 if [ ! -d /usr/share/fast-vm ]; then mkdir /usr/share/fast-vm; fi
 cp config.defaults /usr/share/fast-vm/fast-vm.conf.defaults
+cp fast-vm-network.xml /usr/share/fast-vm/fast-vm-network.xml
 
 echo "!! IMPORTANT !!"
 echo "User that would use fast-vm must be in group 'libvirt'."
