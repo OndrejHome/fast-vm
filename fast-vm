@@ -1,5 +1,6 @@
 #!/bin/bash
 DEBUG_LOG=/tmp/fast-vm.debug.log
+FASTVM_HELPER=/usr/local/libexec/fast-vm-helper.sh
 
 if [ $(id |grep '(libvirt)'|wc -l) -eq 0 ] && [ $(whoami) != "root" ]; then
 	echo "[err] User runnign fast-vm must be member of group 'libivrt'."
@@ -165,7 +166,7 @@ case "$1" in
 
 		else
 			echo "[inf] creating LV $VM_PREFIX$image_name ..."
-			echo "lvcreate" "base" "$image_name" | sudo /usr/local/libexec/fast-vm-helper.sh
+			echo "lvcreate" "base" "$image_name" | sudo --non-interactive $FASTVM_HELPER
 			if [ "$?" != "0" ]; then
 				echo "[err] Error creating thin LV for VM image"
 				exit 1
@@ -173,7 +174,7 @@ case "$1" in
 		fi
 
 		echo "[inf] importing image $image_path into /dev/$THINPOOL_VG/$VM_PREFIX$image_name"
-		echo "chgrp" "/dev/$THINPOOL_VG/$VM_PREFIX$image_name" | sudo --non-interactive /usr/local/libexec/fast-vm-helper.sh
+		echo "chgrp" "/dev/$THINPOOL_VG/$VM_PREFIX$image_name" | sudo --non-interactive $FASTVM_HELPER
 
 		if [ "$image_size" -eq "0" ]; then
 			# import from local file
@@ -223,7 +224,7 @@ case "$1" in
 			virsh --connect qemu:///system destroy $VM_PREFIX$image_name >>$DEBUG_LOG 2>&1
 			virsh --connect qemu:///system undefine $VM_PREFIX$image_name >>$DEBUG_LOG 2>&1
 			echo "[inf] removing LV $VM_PREFIX$image_name ..."
-			echo "lvremove" "/dev/$THINPOOL_VG/$VM_PREFIX$image_name" | sudo --non-interactive /usr/local/libexec/fast-vm-helper.sh
+			echo "lvremove" "/dev/$THINPOOL_VG/$VM_PREFIX$image_name" | sudo --non-interactive $FASTVM_HELPER
 		else
 			echo "[err] image "$image_name" not found"
 			usage remove_image
@@ -333,8 +334,8 @@ case "$1" in
 		VM_NAME="$VM_PREFIX$image_name-$vm_number"
 
 		echo "[inf] creating disk '$VM_PREFIX$image_name-$vm_number'"
-		echo "lvcreate" "newvm" "$image_name" "$image_name-$vm_number" | sudo --non-interactive /usr/local/libexec/fast-vm-helper.sh
-		echo "chgrp" "/dev/$THINPOOL_VG/$VM_PREFIX$image_name-$vm_number" | sudo --non-interactive /usr/local/libexec/fast-vm-helper.sh
+		echo "lvcreate" "newvm" "$image_name" "$image_name-$vm_number" | sudo --non-interactive $FASTVM_HELPER
+		echo "chgrp" "/dev/$THINPOOL_VG/$VM_PREFIX$image_name-$vm_number" | sudo --non-interactive $FASTVM_HELPER
 		echo "[inf] defining virtual machine '$VM_PREFIX$image_name-$vm_number' in libvirt"
 
 		tmp_xml=$(mktemp --suffix=.xml)
@@ -428,7 +429,7 @@ case "$1" in
 		virsh --connect qemu:///system net-update "$LIBVIRT_NETWORK" delete ip-dhcp-host --xml "<host mac='$vm_mac' ip='192.168.$SUBNET_NUMBER.$vm_number'/>" --live --config >>$DEBUG_LOG 2>&1
 		PATH="$PATH:/usr/sbin" which dhcp_release >/dev/null 2>&1
 		if [ "$?" -eq '0' ]; then
-			echo "dhcp_release" "$LIBVIRT_NETWORK" "192.168.$SUBNET_NUMBER.$vm_number" "$vm_mac" | sudo --non-interactive /usr/local/libexec/fast-vm-helper.sh
+			echo "dhcp_release" "$LIBVIRT_NETWORK" "192.168.$SUBNET_NUMBER.$vm_number" "$vm_mac" | sudo --non-interactive $FASTVM_HELPER
 		else
 			echo "[wrn] dhcp_release not found, to reause the same VM number you would need"
 			echo "      need to delete DHCP leases file for $LIBVIRT_NETWORK network and"
@@ -438,7 +439,7 @@ case "$1" in
 		
 		echo "[inf] removing VM drive"
 #		lvremove -f /dev/$THINPOOL_VG/$vm_name >>$DEBUG_LOG 2>&1
-		echo "lvremove" "/dev/$THINPOOL_VG/$vm_name" | sudo --non-interactive /usr/local/libexec/fast-vm-helper.sh
+		echo "lvremove" "/dev/$THINPOOL_VG/$vm_name" | sudo --non-interactive $FASTVM_HELPER
 
 		echo "[inf] undefining VM from libvirt"
 		virsh --connect qemu:///system undefine $vm_name >>$DEBUG_LOG 2>&1
