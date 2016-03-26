@@ -156,6 +156,20 @@ case "$1" in
 			fi
 		fi
 
+		image_extension="${image_path##*.}"
+		case "$image_extension" in
+			gz)
+				decompress_cmd="gunzip -c"
+				;;
+			xz)
+				decompress_cmd="xz -d -c"
+				;;
+			*)
+				echo "[err] unknown image file extension $image_extension, (supported: xz, gz)"
+				exit 1
+				;;
+		esac
+
 		image_xml_path="$4"
 		if [ ! -f "$image_xml_path" ]; then echo "[err] image xml file not found"; usage import_image; fi
 
@@ -185,21 +199,21 @@ case "$1" in
 		if [ "$image_size" -eq "0" ]; then
 			# import from local file
 			if [ "$pv_ok" -eq '0' ]; then
-				gunzip -c "$image_path"| pv -s 10G | dd of=/dev/$THINPOOL_VG/$VM_PREFIX$image_name bs=1M conv=sparse >>$DEBUG_LOG 2>&1
+				$decompress_cmd "$image_path"| pv -s 10G | dd of=/dev/$THINPOOL_VG/$VM_PREFIX$image_name bs=1M conv=sparse >>$DEBUG_LOG 2>&1
 				import_exit="$?"
 			else
 				echo "[inf] please wait while importing image (to show progress, install 'pv')"
-				gunzip -c "$image_path"| dd of=/dev/$THINPOOL_VG/$VM_PREFIX$image_name bs=1M conv=sparse >>$DEBUG_LOG 2>&1
+				$decompress_cmd "$image_path"| dd of=/dev/$THINPOOL_VG/$VM_PREFIX$image_name bs=1M conv=sparse >>$DEBUG_LOG 2>&1
 				import_exit="$?"
 			fi
 		else
 			# import from http(s)
 			if [ "$pv_ok" -eq '0' ]; then
-				curl -s "$image_path" | pv -N download -c -s "$image_size" | gunzip -c | pv -N unpack -c -s 10737418240 | dd of=/dev/$THINPOOL_VG/$VM_PREFIX$image_name bs=1M conv=sparse >>$DEBUG_LOG 2>&1
+				curl -s "$image_path" | pv -N download -c -s "$image_size" | $decompress_cmd | pv -N unpack -c -s 10737418240 | dd of=/dev/$THINPOOL_VG/$VM_PREFIX$image_name bs=1M conv=sparse >>$DEBUG_LOG 2>&1
 				import_exit="$?"
 			else
 				echo "[inf] please wait while importing image (to show image write progress, install 'pv')"
-				curl "$image_path" | gunzip -c | dd of=/dev/$THINPOOL_VG/$VM_PREFIX$image_name bs=1M conv=sparse 2>>$DEBUG_LOG
+				curl "$image_path" | $decompress_cmd | dd of=/dev/$THINPOOL_VG/$VM_PREFIX$image_name bs=1M conv=sparse 2>>$DEBUG_LOG
 				import_exit="$?"
 			fi
 
