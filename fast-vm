@@ -375,18 +375,30 @@ case "$1" in
 		if [ -z "$3" ]; then
 			echo "[inf] starting VM $vm_name"
 			virsh --connect qemu:///system start $vm_name >>$DEBUG_LOG 2>&1
+			if [ "$?" != '0' ]; then
+				echo "[err] failed to start VM, check $DEBUG_LOG for more information"
+			fi
 		else
 			case "$3" in
 				console)
 					echo "[inf] starting VM $vm_name"
 					echo "      and connecting to it serial console ..."
-					virsh --connect qemu:///system start $vm_name && virsh --connect qemu:///system console $vm_name 2>>$DEBUG_LOG
+					virsh --connect qemu:///system start $vm_name 2>>$DEBUG_LOG
+					if [ "$?" != '0' ]; then
+						echo "[err] failed to start VM, check $DEBUG_LOG for more information"
+					else
+						virsh --connect qemu:///system console $vm_name 2>>$DEBUG_LOG
+					fi
 				;;
 				ssh)
 					echo "[inf] starting VM $vm_name"
 					virsh --connect qemu:///system start $vm_name 2>>$DEBUG_LOG
-					wait_for_ssh "$vm_number"
-					ssh -o GlobalKnownHostsFile=/dev/null -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no "root@192.168.$SUBNET_NUMBER.$vm_number"
+					if [ "$?" != '0' ]; then
+						echo "[err] failed to start VM, check $DEBUG_LOG for more information"
+					else
+						wait_for_ssh "$vm_number"
+						ssh -o GlobalKnownHostsFile=/dev/null -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no "root@192.168.$SUBNET_NUMBER.$vm_number"
+					fi
 				;;
 				*)
 					usage start
