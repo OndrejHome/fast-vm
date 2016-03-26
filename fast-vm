@@ -429,7 +429,7 @@ case "$1" in
 		virsh --connect qemu:///system net-update "$LIBVIRT_NETWORK" delete ip-dhcp-host --xml "<host mac='$vm_mac' ip='192.168.$SUBNET_NUMBER.$vm_number'/>" --live --config >>$DEBUG_LOG 2>&1
 		PATH="$PATH:/usr/sbin" which dhcp_release >/dev/null 2>&1
 		if [ "$?" -eq '0' ]; then
-			echo "dhcp_release" "$LIBVIRT_NETWORK" "192.168.$SUBNET_NUMBER.$vm_number" "$vm_mac" | sudo --non-interactive $FASTVM_HELPER
+			echo "dhcp_release" "$LIBVIRT_NETWORK" "$vm_number" "$vm_mac" | sudo --non-interactive $FASTVM_HELPER
 		else
 			echo "[wrn] dhcp_release not found, to reause the same VM number you would need"
 			echo "      need to delete DHCP leases file for $LIBVIRT_NETWORK network and"
