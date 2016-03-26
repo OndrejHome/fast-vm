@@ -46,14 +46,20 @@ function usage {
 			echo "  <hack_file.sh> (optional) - alternative bash script executed after creating VM "
 			;;
 		start)
-			echo "fast-vm start <VM_number> [ console|ssh ]"
+			echo "fast-vm start <VM_number> [ console|ssh  /path/to/custom_cmd]"
 			echo "  <VM_number> - number of VM to start"
 			echo "  console (optional) - connect to serial console after starting VM"
 			echo "  ssh (optional) - connect to VM through SSH as soon as VM is ready"
+			echo "  /path/to/custom_cmd - path to custom command to be executed instead of ssh after VM is reachable via SSH"
 			;;
 		console)
 			echo "fast-vm console <VM_number>"
-			echo "  <VM_number> - number of VM to start"
+			echo "  <VM_number> - number of VM to connect to"
+			;;
+		ssh)
+			echo "fast-vm ssh <VM_number> [/path/to/custom_cmd]"
+			echo "  <VM_number> - number of VM to connect to"
+			echo "  /path/to/custom_cmd - path to custom command to be executed instead of ssh after VM is reachable via SSH"
 			;;
 		delete)
 			echo "fast-vm delete <VM_number>"
@@ -397,7 +403,11 @@ case "$1" in
 						echo "[err] failed to start VM, check $DEBUG_LOG for more information"
 					else
 						wait_for_ssh "$vm_number"
-						ssh -o GlobalKnownHostsFile=/dev/null -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no "root@192.168.$SUBNET_NUMBER.$vm_number"
+						if [ ! -z "$4" ] && [ -x "$4" ]; then
+							eval "$4 192.168.$SUBNET_NUMBER.$vm_number"
+						else
+							ssh -o GlobalKnownHostsFile=/dev/null -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no "root@192.168.$SUBNET_NUMBER.$vm_number"
+						fi
 					fi
 				;;
 				*)
@@ -411,7 +421,11 @@ case "$1" in
 		if [ -z "$vm_number" ]; then echo "[err] VM number missing"; usage ssh; fi
 
 		wait_for_ssh "$vm_number"
-		ssh -o GlobalKnownHostsFile=/dev/null -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no "root@192.168.$SUBNET_NUMBER.$vm_number"
+		if [ ! -z "$3" ] && [ -x "$3" ]; then
+			eval "$3 192.168.$SUBNET_NUMBER.$vm_number"
+		else
+			ssh -o GlobalKnownHostsFile=/dev/null -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no "root@192.168.$SUBNET_NUMBER.$vm_number"
+		fi
 		;;
 	console)
 		vm_number="$2"
