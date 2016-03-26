@@ -440,7 +440,6 @@ case "$1" in
 		fi
 		
 		echo "[inf] removing VM drive"
-#		lvremove -f /dev/$THINPOOL_VG/$vm_name >>$DEBUG_LOG 2>&1
 		echo "lvremove" "/dev/$THINPOOL_VG/$vm_name" | sudo --non-interactive $FASTVM_HELPER
 
 		echo "[inf] undefining VM from libvirt"
