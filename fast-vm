@@ -310,10 +310,11 @@ case "$1" in
 			# source file with hacks and apply them
 			if [ -f "$hack_file" ]; then
 				echo "[inf] applying hacks from $hack_file"
-				. $hack_file >>$DEBUG_LOG 2>&1
+				. $hack_file
 				if [ ! "$?" -eq "0" ]; then
 					echo "[wrn] there was issue applying hacks to this machine, check $DEBUG_LOG for more details"
 				fi
+				echo "[inf] applying hacks finished"
 			fi
 
 			echo "[inf] base image VM created, to start this VM use 'virsh --connect qemu:///system start $VM_PREFIX$image_name'"
@@ -349,10 +350,11 @@ case "$1" in
 		# source file with hacks and apply them
 		if [ -f "$hack_file" ]; then
 			echo "[inf] applying hacks from $hack_file"
-			. $hack_file >>$DEBUG_LOG 2>&1
+			. $hack_file
 			if [ ! "$?" -eq "0" ]; then
 				echo "[wrn] there was issue applying hacks to this machine, check $DEBUG_LOG for more details"
 			fi
+			echo "[inf] applying hacks finished"
 		fi
 
 		echo "[inf] VM '$VM_NAME' created"
