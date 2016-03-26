@@ -101,6 +101,10 @@ SUBNET_NUMBER - the XX in the 192.168.XX.0/24 libvirt network created by setup
 ====== Known bugs/limitation ======
 * initial setup requires root
 * tested on the Gentoo and Fedora 22
+* Gentoo libvirt special requirements in /etc/libvirt/libvirtd.conf
+** unix_sock_group = "libvirt"
+** unix_sock_rw_perms = "0770"
+* Gentoo might require user to be in group 'kvm' to use guestfish from hacks files
 * VM images are provided separately
   - publicaly available images can be found at  https://github.com/OndrejHome/fast-vm-public-images
 * using 'dhcp_release' to remove DHCP static reservation is not the cleanest
