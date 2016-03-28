@@ -2,7 +2,7 @@
 %global debug_package %{nil}
 %global __os_install_post /usr/lib/rpm/brp-compress %{nil}
 Name:	fast-vm	
-Version:	0.3	
+Version:	0.4
 Release:	22%{?dist}
 Summary:	 'fast-vm' is a script for defining VMs from images provided in thin LVM pool.
 
@@ -29,6 +29,7 @@ fast-vm is taking care of:
 rm -rf %{buildroot}
 mkdir -p %{buildroot}%{_bindir}/
 cp -p fast-vm %{buildroot}%{_bindir}/%{name}
+cp -p fast-vm-net-cleanup %{buildroot}%{_bindir}/
 mkdir -p %{buildroot}%{_sbindir}
 cp -p configure-fast-vm %{buildroot}%{_sbindir}
 mkdir -p %{buildroot}%{_libexecdir}

@@ -81,7 +81,7 @@ function usage {
 			echo "    delete - delete VM and its thin LV disk drive"
 			echo "    list - shows list of fast-vm VMs with their VM numbers and status"
 			echo " for more details run 'fast-vm <action>' without options to see more help"
-			echo "== fast-vm version 0.3 <ofamera@redhat.com> =="
+			echo "== fast-vm version 0.4 <ofamera@redhat.com> =="
 			;;
 	esac
 	exit 1
