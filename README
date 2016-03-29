@@ -117,6 +117,8 @@ SUBNET_NUMBER - the XX in the 192.168.XX.0/24 libvirt network created by setup
 ** unix_sock_group = "libvirt"
 ** unix_sock_rw_perms = "0770"
 * Gentoo might require user to be in group 'kvm' to use guestfish from hacks files
+* Fedora 22 BUG: libvirt-daemon shipped on installation media doesn't create the 'libivrt' group.
+  updating the package solves the problem
 * VM images are provided separately
   - publicaly available images can be found at  https://github.com/OndrejHome/fast-vm-public-images
 * using 'dhcp_release' to remove DHCP static reservation is not the cleanest
