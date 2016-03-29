@@ -1,0 +1,27 @@
+#!/bin/bash
+if [ ! -f '/etc/fast-vm.conf' ]; then
+        echo "[err] global configuration file /etc/fast-vm.conf not found"
+        exit 1
+fi
+# load global configuration file
+. /etc/fast-vm.conf
+
+echo "[inf] fixing fast-vm network $LIBVIRT_NETWORK"
+while read mac ip; do
+	mac=$(echo $mac|cut -d\' -f2)
+	ip=$(echo $ip|cut -d\' -f2)
+	vm_number=$(echo $ip|cut -d. -f4)
+	vm_name=$(virsh --connect qemu:///system list --all|awk '{print $2}'|egrep "^${VM_PREFIX}.*-$vm_number"|head -1)
+
+	if [ -z "$vm_name" ]; then
+		echo "[inf] deleting reservation for non-existing VM number $vm_number"
+		echo "dhcp_release" "$LIBVIRT_NETWORK" "$vm_number" "$mac" | sudo --non-interactive $FASTVM_HELPER
+                virsh --connect qemu:///system net-update "$LIBVIRT_NETWORK" delete ip-dhcp-host --xml "<host mac='$mac' ip='$ip'/>" --live --config
+
+	fi
+
+done < <(virsh --connect qemu:///system net-dumpxml fast-vm-nat|grep 'host mac'|awk '{print $2,$3}')
+
+# TODO
+# - regenerate missing DHCP reservations for existing fastvm VMs
+# - delete wrong DHCP leases where existing VM MAC is having non-assigned address

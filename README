@@ -16,16 +16,28 @@ fast-vm is taking care of:
 * (optional) 'pv' to show import progress
 * (optional) 'curl' to pass http(s) link for image_import
 
-====== Installation/Setup ======
+====== Installation ======
+=== From source
 ## As root
-1. Run script 'setup.sh' and answer questions.
+1. Run script 'setup.sh' which will copy files to proper locations.
+2. Continue with 'FAST-VM Configuration'
+
+=== From RPM
+## As root
+1. Install RPM
+  # dnf install fast-vm-*.rpm
+2. Continue with 'FAST-VM Configuration'
+
+====== FAST-VM Configuration ======
+## As root user
+1. Run 'configure-fast-vm' script (/usr/sbin/configure-fast-vm
 Script will:
 - create default configuration file from your answers
 - create LVM thin pool with name and size of your choice
 - libvirt NAT network for VMs
 
-If you interrupt configuration of fast-vm or if you want to change configuration
-run /usr/sbin/configure-fast-vm as root
+You can interrupt scriptat anytime and run it again to continue
+or to validate the settings.
 
 ## As normal user (normal user must be member of 'libvirt' group)
 2. Import some prebuilded VM disk images or use your
@@ -101,6 +113,12 @@ SUBNET_NUMBER - the XX in the 192.168.XX.0/24 libvirt network created by setup
 ====== Known bugs/limitation ======
 * initial setup requires root
 * tested on the Gentoo and Fedora 22
+* Gentoo libvirt special requirements in /etc/libvirt/libvirtd.conf
+** unix_sock_group = "libvirt"
+** unix_sock_rw_perms = "0770"
+* Gentoo might require user to be in group 'kvm' to use guestfish from hacks files
+* Fedora 22 BUG: libvirt-daemon shipped on installation media doesn't create the 'libivrt' group.
+  updating the package solves the problem
 * VM images are provided separately
   - publicaly available images can be found at  https://github.com/OndrejHome/fast-vm-public-images
 * using 'dhcp_release' to remove DHCP static reservation is not the cleanest

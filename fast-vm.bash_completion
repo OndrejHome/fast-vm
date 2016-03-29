@@ -10,7 +10,7 @@ _fast-vm()
 	thin_vg=$(grep THINPOOL_VG /etc/fast-vm.conf|tail -1 |cut -d\= -f 2)
 
 	if [ "$cword" -eq 3 ] && [ ${COMP_WORDS[1]} == "import_image" ]; then
-		_filedir '@(gz)'
+		_filedir '@(gz|xz)'
 		return 0
 	fi
 	if [ "$cword" -eq 4 ] && [ ${COMP_WORDS[1]} == "import_image" ]; then

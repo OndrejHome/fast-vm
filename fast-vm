@@ -3,7 +3,7 @@ DEBUG_LOG=/tmp/fast-vm.debug.log
 FASTVM_HELPER=/usr/libexec/fast-vm-helper.sh
 
 if [ $(id |grep '(libvirt)'|wc -l) -eq 0 ] && [ $(whoami) != "root" ]; then
-	echo "[err] User runnign fast-vm must be member of group 'libivrt'."
+	echo "[err] User running fast-vm must be member of group 'libvirt'."
 	echo "You can easily add user to libvirt group using command below"
 	echo "  # usermod -a -G libvirt <user>"
 	exit 1
@@ -46,14 +46,20 @@ function usage {
 			echo "  <hack_file.sh> (optional) - alternative bash script executed after creating VM "
 			;;
 		start)
-			echo "fast-vm start <VM_number> [ console|ssh ]"
+			echo "fast-vm start <VM_number> [ console|ssh  /path/to/custom_cmd]"
 			echo "  <VM_number> - number of VM to start"
 			echo "  console (optional) - connect to serial console after starting VM"
 			echo "  ssh (optional) - connect to VM through SSH as soon as VM is ready"
+			echo "  /path/to/custom_cmd - path to custom command to be executed instead of ssh after VM is reachable via SSH"
 			;;
 		console)
 			echo "fast-vm console <VM_number>"
-			echo "  <VM_number> - number of VM to start"
+			echo "  <VM_number> - number of VM to connect to"
+			;;
+		ssh)
+			echo "fast-vm ssh <VM_number> [/path/to/custom_cmd]"
+			echo "  <VM_number> - number of VM to connect to"
+			echo "  /path/to/custom_cmd - path to custom command to be executed instead of ssh after VM is reachable via SSH"
 			;;
 		delete)
 			echo "fast-vm delete <VM_number>"
@@ -75,7 +81,7 @@ function usage {
 			echo "    delete - delete VM and its thin LV disk drive"
 			echo "    list - shows list of fast-vm VMs with their VM numbers and status"
 			echo " for more details run 'fast-vm <action>' without options to see more help"
-			echo "== fast-vm version 0.3 <ofamera@redhat.com> =="
+			echo "== fast-vm version 0.4 <ofamera@redhat.com> =="
 			;;
 	esac
 	exit 1
@@ -150,6 +156,20 @@ case "$1" in
 			fi
 		fi
 
+		image_extension="${image_path##*.}"
+		case "$image_extension" in
+			gz)
+				decompress_cmd="gunzip -c"
+				;;
+			xz)
+				decompress_cmd="xz -d -c"
+				;;
+			*)
+				echo "[err] unknown image file extension $image_extension, (supported: xz, gz)"
+				exit 1
+				;;
+		esac
+
 		image_xml_path="$4"
 		if [ ! -f "$image_xml_path" ]; then echo "[err] image xml file not found"; usage import_image; fi
 
@@ -179,21 +199,21 @@ case "$1" in
 		if [ "$image_size" -eq "0" ]; then
 			# import from local file
 			if [ "$pv_ok" -eq '0' ]; then
-				gunzip -c "$image_path"| pv -s 10G | dd of=/dev/$THINPOOL_VG/$VM_PREFIX$image_name bs=1M conv=sparse >>$DEBUG_LOG 2>&1
+				$decompress_cmd "$image_path"| pv -s 10G | dd of=/dev/$THINPOOL_VG/$VM_PREFIX$image_name bs=1M conv=sparse >>$DEBUG_LOG 2>&1
 				import_exit="$?"
 			else
 				echo "[inf] please wait while importing image (to show progress, install 'pv')"
-				gunzip -c "$image_path"| dd of=/dev/$THINPOOL_VG/$VM_PREFIX$image_name bs=1M conv=sparse >>$DEBUG_LOG 2>&1
+				$decompress_cmd "$image_path"| dd of=/dev/$THINPOOL_VG/$VM_PREFIX$image_name bs=1M conv=sparse >>$DEBUG_LOG 2>&1
 				import_exit="$?"
 			fi
 		else
 			# import from http(s)
 			if [ "$pv_ok" -eq '0' ]; then
-				curl -s "$image_path" | pv -N download -c -s "$image_size" | gunzip -c | pv -N unpack -c -s 10737418240 | dd of=/dev/$THINPOOL_VG/$VM_PREFIX$image_name bs=1M conv=sparse >>$DEBUG_LOG 2>&1
+				curl -s "$image_path" | pv -N download -c -s "$image_size" | $decompress_cmd | pv -N unpack -c -s 10737418240 | dd of=/dev/$THINPOOL_VG/$VM_PREFIX$image_name bs=1M conv=sparse >>$DEBUG_LOG 2>&1
 				import_exit="$?"
 			else
 				echo "[inf] please wait while importing image (to show image write progress, install 'pv')"
-				curl "$image_path" | gunzip -c | dd of=/dev/$THINPOOL_VG/$VM_PREFIX$image_name bs=1M conv=sparse 2>>$DEBUG_LOG
+				curl "$image_path" | $decompress_cmd | dd of=/dev/$THINPOOL_VG/$VM_PREFIX$image_name bs=1M conv=sparse 2>>$DEBUG_LOG
 				import_exit="$?"
 			fi
 
@@ -310,10 +330,11 @@ case "$1" in
 			# source file with hacks and apply them
 			if [ -f "$hack_file" ]; then
 				echo "[inf] applying hacks from $hack_file"
-				. $hack_file >>$DEBUG_LOG 2>&1
+				. $hack_file
 				if [ ! "$?" -eq "0" ]; then
 					echo "[wrn] there was issue applying hacks to this machine, check $DEBUG_LOG for more details"
 				fi
+				echo "[inf] applying hacks finished"
 			fi
 
 			echo "[inf] base image VM created, to start this VM use 'virsh --connect qemu:///system start $VM_PREFIX$image_name'"
@@ -349,10 +370,11 @@ case "$1" in
 		# source file with hacks and apply them
 		if [ -f "$hack_file" ]; then
 			echo "[inf] applying hacks from $hack_file"
-			. $hack_file >>$DEBUG_LOG 2>&1
+			. $hack_file
 			if [ ! "$?" -eq "0" ]; then
 				echo "[wrn] there was issue applying hacks to this machine, check $DEBUG_LOG for more details"
 			fi
+			echo "[inf] applying hacks finished"
 		fi
 
 		echo "[inf] VM '$VM_NAME' created"
@@ -373,18 +395,34 @@ case "$1" in
 		if [ -z "$3" ]; then
 			echo "[inf] starting VM $vm_name"
 			virsh --connect qemu:///system start $vm_name >>$DEBUG_LOG 2>&1
+			if [ "$?" != '0' ]; then
+				echo "[err] failed to start VM, check $DEBUG_LOG for more information"
+			fi
 		else
 			case "$3" in
 				console)
 					echo "[inf] starting VM $vm_name"
 					echo "      and connecting to it serial console ..."
-					virsh --connect qemu:///system start $vm_name && virsh --connect qemu:///system console $vm_name 2>>$DEBUG_LOG
+					virsh --connect qemu:///system start $vm_name 2>>$DEBUG_LOG
+					if [ "$?" != '0' ]; then
+						echo "[err] failed to start VM, check $DEBUG_LOG for more information"
+					else
+						virsh --connect qemu:///system console $vm_name 2>>$DEBUG_LOG
+					fi
 				;;
 				ssh)
 					echo "[inf] starting VM $vm_name"
 					virsh --connect qemu:///system start $vm_name 2>>$DEBUG_LOG
-					wait_for_ssh "$vm_number"
-					ssh -o GlobalKnownHostsFile=/dev/null -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no "root@192.168.$SUBNET_NUMBER.$vm_number"
+					if [ "$?" != '0' ]; then
+						echo "[err] failed to start VM, check $DEBUG_LOG for more information"
+					else
+						wait_for_ssh "$vm_number"
+						if [ ! -z "$4" ] && [ -x "$4" ]; then
+							eval "$4 192.168.$SUBNET_NUMBER.$vm_number"
+						else
+							ssh -o GlobalKnownHostsFile=/dev/null -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no "root@192.168.$SUBNET_NUMBER.$vm_number"
+						fi
+					fi
 				;;
 				*)
 					usage start
@@ -397,7 +435,11 @@ case "$1" in
 		if [ -z "$vm_number" ]; then echo "[err] VM number missing"; usage ssh; fi
 
 		wait_for_ssh "$vm_number"
-		ssh -o GlobalKnownHostsFile=/dev/null -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no "root@192.168.$SUBNET_NUMBER.$vm_number"
+		if [ ! -z "$3" ] && [ -x "$3" ]; then
+			eval "$3 192.168.$SUBNET_NUMBER.$vm_number"
+		else
+			ssh -o GlobalKnownHostsFile=/dev/null -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no "root@192.168.$SUBNET_NUMBER.$vm_number"
+		fi
 		;;
 	console)
 		vm_number="$2"
@@ -438,7 +480,6 @@ case "$1" in
 		fi
 		
 		echo "[inf] removing VM drive"
-#		lvremove -f /dev/$THINPOOL_VG/$vm_name >>$DEBUG_LOG 2>&1
 		echo "lvremove" "/dev/$THINPOOL_VG/$vm_name" | sudo --non-interactive $FASTVM_HELPER
 
 		echo "[inf] undefining VM from libvirt"
