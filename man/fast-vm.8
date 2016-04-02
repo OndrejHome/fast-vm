@@ -1,0 +1,151 @@
+.TH FAST-VM 8 "fast-vm 0.4 (2016-04-02)" "fast-vm" "fast-vm" \" -*- nroff -*-
+.SH NAME
+fast-vm \(em script for defining VMs from images provided in thin LVM pool
+.SH SYNOPSIS
+.B fast-vm
+.RB <action>
+.RB <options>
+.br
+
+.B fast-vm
+.BR import_image
+.IR ImageName
+.IR PathToImage
+.IR PathToLibvirtXML 
+.RI [ PathToHacksFile ]
+.br
+
+.B fast-vm
+.BR remove_image
+.IR ImageName
+.br
+
+.B fast-vm
+.B create 
+.I ImageName
+.RB < base 
+.RI | VmNumber >
+.RI [ PathToLibvirtXML ]
+.RI [ PathToHacksFile ]
+.br
+
+.B fast-vm
+.B delete
+.I ImageName
+.br
+
+.B fast-vm
+.B list
+.br
+
+.B fast-vm
+.BI "start " VmNumber
+.RB [ console | ssh 
+.RI [ /path/to/custom/script ]]
+.br
+
+.B fast-vm
+.BI "console " VmNumber
+.br
+
+.B fast-vm
+.BI "ssh " VmNumber
+.RI [ /path/to/custom/script ]
+.br
+
+.SH DESCRIPTION
+fast-vm is provides command-line interface to create virtual machines (VMs) in 
+libvirt based on imported disks in LVM and XML templates.
+
+Templates of VM disk drives are stored in LVM thinpool LV for space efficency.
+Templates for VM are just libvirt XMLs with few macros from fast-vm.
+When creating a VM, fast-vm will create new writable LVM snapshot of disk drive, 
+define libvirt VM for it and make a static DHCP reservation for libvirt network 
+on which VM will be.
+Optionaly fast-vm allows to do some customization of disk drive of new machine
+before starting VM using the 'hack files'.
+
+.RB "To start using fast-vm you need to configure it first using command " configure-fast-vm 
+.RB "and add users that will fast-vm into " libvirt " system group.
+Configuration command will create thinpool LV and libvirt network for you or you can use
+existing ones.
+
+Primary use case of fast-vm is creation of scratch VMs on single local machine.
+
+.SH OPTIONS
+
+.TP
+.B ImageName
+Name of image imported in the fast-vm. It should contain only alpha-numberical characters.
+.B ImageName 
+is part of the LV name and libvirt machine name.
+
+.TP
+.BI "PathToImage " /path/to/image.{gz,xz}
+.TP
+.BI "PathToImage " http://url/to/image.{gz,xz}
+Local path or http/https URL to image file in GZIP or XZ format.
+
+.TP
+.BI "PathToLibvirtXML " /path/to/libvirt.xml
+Local path to libvirt VM XML template. Check the 
+.B TEMPLATE MACROS
+for list of supported macros.
+
+.TP 
+.BI "PathToHacksFile " /path/to/hacks.sh
+Local path to shell script which will be executed after creation of the VM and allows
+to access the disk drive of the VM before first running it. 
+
+.TP
+.B VmNumber
+Number identifying the VM. Currently limited to range 20-220 to allow to be used as last octet of the IP address and leave some space static addresses.
+
+.TP
+.I /path/to/custom/script
+Local path to script which will be executed as soon as the VM is started and reachable by SSH via its IP address assigned by DHCP.
+
+.SH TEMPLATE MACROS
+In the libvirt XML and hack files you variables from 
+.BR fast-vm.conf (5)
+and another special macros below.
+
+.TP
+.B IMAGE_NAME
+.RI "Contains value of " ImageName " ."
+
+.TP
+.B VM_NUMBER
+.RI "Contains value of " VmNumber " ."
+
+.TP
+.B VM_NAME
+Name of the VM composed from 
+.BR "VM_PREFIX IMAGE_NAME VM_NUMBER" .
+
+.SH EXAMPLES
+Import local image into fast-vm
+.sp
+.BI "fast-vm import_image " "6.7 /tmp/centosl6.7.img.gz /tmp/centos-6.3\-7.2.xml /tmp/centos\-7\-hacks.sh"
+
+Create VM from '6.7' image with number 42
+.sp
+.BI "fast-vm create " "6.7 42"
+
+Start VM number 42 and connect to it's serial console
+.sp
+.BI "fast-vm start " "42 console"
+
+Start VM number 42 connect to it via SSH as root when SSH to machine is ready
+.sp
+.BI "fast-vm start " "42 ssh"
+
+Create machine with custom definition and hack file. Start it and after it's SSH connection is ready execute custom script 'test.sh'.
+.sp
+.BI "fast-vm create " "6.7 42 /tmp/custom\-libvirt.xml /tmp/custom\-hacks.sh"
+&& 
+.BI "fast-vm start " "42 ssh /tmp/test.sh"
+
+.SH SEE ALSO
+.BR fast-vm.conf (5),
+.BR configure-fast-vm (8)
