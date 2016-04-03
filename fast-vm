@@ -364,8 +364,9 @@ case "$1" in
 		virsh --connect qemu:///system define $tmp_xml >>$DEBUG_LOG 2>&1
 
 		echo "[inf] adding static lease for 192.168.$SUBNET_NUMBER.$vm_number into libvirts DHCP"
-		vm_mac=$(virsh --connect qemu:///system dumpxml "$VM_PREFIX$image_name-$vm_number"|grep 'mac address'|cut -d\' -f 2)
-		virsh --connect qemu:///system net-update "$LIBVIRT_NETWORK" add-last ip-dhcp-host --xml "<host mac='$vm_mac' ip='192.168.$SUBNET_NUMBER.$vm_number'/>" --live --config >>$DEBUG_LOG 2>&1
+		VM_MAC=$(virsh --connect qemu:///system dumpxml "$VM_PREFIX$image_name-$vm_number"|grep 'mac address'|cut -d\' -f 2)
+		virsh --connect qemu:///system net-update "$LIBVIRT_NETWORK" add-last ip-dhcp-host --xml "<host mac='$VM_MAC' ip='192.168.$SUBNET_NUMBER.$vm_number'/>" --live --config >>$DEBUG_LOG 2>&1
+		vm_mac="$VM_MAC" # temporary transition variable
 
 		# source file with hacks and apply them
 		if [ -f "$hack_file" ]; then
@@ -465,13 +466,13 @@ case "$1" in
 
 		virsh --connect qemu:///system destroy $vm_name >>$DEBUG_LOG 2>&1
 
-		vm_mac=$(virsh --connect qemu:///system dumpxml "$vm_name"|grep 'mac address'|cut -d\' -f 2)
+		VM_MAC=$(virsh --connect qemu:///system dumpxml "$vm_name"|grep 'mac address'|cut -d\' -f 2)
 
 		echo "[inf] removing DHCP reservation"
-		virsh --connect qemu:///system net-update "$LIBVIRT_NETWORK" delete ip-dhcp-host --xml "<host mac='$vm_mac' ip='192.168.$SUBNET_NUMBER.$vm_number'/>" --live --config >>$DEBUG_LOG 2>&1
+		virsh --connect qemu:///system net-update "$LIBVIRT_NETWORK" delete ip-dhcp-host --xml "<host mac='$VM_MAC' ip='192.168.$SUBNET_NUMBER.$vm_number'/>" --live --config >>$DEBUG_LOG 2>&1
 		PATH="$PATH:/usr/sbin" which dhcp_release >/dev/null 2>&1
 		if [ "$?" -eq '0' ]; then
-			echo "dhcp_release" "$LIBVIRT_NETWORK" "$vm_number" "$vm_mac" | sudo --non-interactive $FASTVM_HELPER
+			echo "dhcp_release" "$LIBVIRT_NETWORK" "$vm_number" "$VM_MAC" | sudo --non-interactive $FASTVM_HELPER
 		else
 			echo "[wrn] dhcp_release not found, to reause the same VM number you would need"
 			echo "      need to delete DHCP leases file for $LIBVIRT_NETWORK network and"
