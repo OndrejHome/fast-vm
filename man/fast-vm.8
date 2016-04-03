@@ -123,6 +123,41 @@ and another special macros below.
 Name of the VM composed from 
 .BR "VM_PREFIX IMAGE_NAME VM_NUMBER" .
 
+.SH CREATING CUSTOM IMAGES
+Currently fast-vm expects that all images are 10GB in size (this can change in future).
+There 2-3 steps for creating the custom image.
+
+.TP
+.B 1. Compressing disk image
+If you have a 10GB disk image for example at
+.I /dev/mystuff/cool_image
+, then you just need to first compress the image using GZIP or XZ preferably using commands with arguments below.
+
+.B xz -c -k --best --block-size=16777216 -T 0 /dev/mystuff/cool_image > cool_image.xz
+
+.B gzip -c /dev/mystuff/cool_image > cool_image.gz
+
+To make image as small as possible try to first remove unnecesary things from the VM such as cache files, logs. If the OS supports it,
+try to send TRIM (ATA devices) or UNMAP (SCSI devices) so the storage can mark free space as free. YOu can try command
+.BR fstrim .
+
+.TP
+.B 2. Creating libvirt XML template
+If possible try to reuse the templates from the fast-vm-public-images repository where the libvirt XML images are already quite small.
+If this is not possible the here are some guidelines in creating good libvirt XML:
+.nf
+.RB "\(bu Use " "TEMPLATE MACROS" " to describe paths and names. Avoid hardcoding path to single drive to prevenc concurrent access to it."
+\(bu Remove the exact hardware addresses where possible to let the destination libvirt decide where the devices should be assigned.
+.fi
+
+.TP
+.B 3. (optional) Creating hack file
+Hack files allows you to change some thing in the image at the time when new fast-vm VM is created and when you know for example the VmNumber.
+This is used in fast-vm-public-images to setup the hostname of the machine to match the fast-vm VM_NAME and also to alter the MAC address to match
+the one that got assigned by libvirt to new VM. fast-vm-public-images hack files are also doing some changes on the filesystem before the VM
+is run to setup serial console or SSH keys. Check those hack files for inspiration on what is possible. Note that hack files are run in context of
+user running the fast-vm command and they usually don't have root permissions (you can still use sudo).
+
 .SH EXAMPLES
 Import local image into fast-vm
 .sp
