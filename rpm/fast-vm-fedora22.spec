@@ -26,21 +26,7 @@ Requires:	lvm2,sudo,pv,curl,bash,bash-completion,dnsmasq-utils,libguestfs-tools-
 %build
 
 %install
-rm -rf %{buildroot}
-mkdir -p %{buildroot}%{_bindir}/
-cp -p %{name} %{buildroot}%{_bindir}/%{name}
-cp -p %{name}-net-cleanup %{buildroot}%{_bindir}/
-mkdir -p %{buildroot}%{_sbindir}
-cp -p configure-%{name} %{buildroot}%{_sbindir}
-mkdir -p %{buildroot}%{_libexecdir}
-cp -p %{name}-helper.sh %{buildroot}%{_libexecdir}
-mkdir -p %{buildroot}%{_datadir}/%{name}
-cp -p %{name}-network.xml %{buildroot}%{_datadir}/%{name}
-cp -p config.defaults %{buildroot}%{_datadir}/%{name}/%{name}.conf.defaults
-mkdir -p %{buildroot}%{_sysconfdir}/sudoers.d/
-cp -p %{name}-sudoers %{buildroot}%{_sysconfdir}/sudoers.d/
-mkdir -p %{buildroot}/%{_datadir}/bash-completion/completions
-cp -p %{name}.bash_completion %{buildroot}/%{_datadir}/bash-completion/completions/%{name}
+%make_install
 
 %files
 %doc README
@@ -51,5 +37,6 @@ cp -p %{name}.bash_completion %{buildroot}/%{_datadir}/bash-completion/completio
 %{_datadir}/%{name}/*
 %{_datadir}/bash-completion/completions/%{name}
 %{_sysconfdir}/sudoers.d/*
+%{_mandir}/*
 
 %changelog
