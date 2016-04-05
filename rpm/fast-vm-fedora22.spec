@@ -6,12 +6,12 @@ Version:	0.4
 Release:	22%{?dist}
 Summary:	 '%{name}' is a script for defining VMs from images provided in thin LVM pool.
 
-Group:		Unspecified
 License:	GPLv3
 URL:		https://github.com/OndrejHome/%{name}/
 Source0:	https://github.com/OndrejHome/%{name}/archive/%{version}.tar.gz
 
-BuildRequires:	bash
+BuildArch: 	noarch
+BuildRequires:	coreutils
 Requires:	lvm2,sudo,pv,curl,bash,bash-completion,dnsmasq-utils,libguestfs-tools-c,libvirt,qemu-kvm
 
 %description
