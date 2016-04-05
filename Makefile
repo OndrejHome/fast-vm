@@ -6,14 +6,14 @@ sysconfdir=/etc
 
 install:
 	mkdir -p ${DESTDIR}/${bindir}
-	install -pm 755 fast-vm ${DESTDIR}/${bindir}/fast-vm
-	install -pm 755 fast-vm-net-cleanup ${DESTDIR}/${bindir}/fast-vm-net-cleanup
+	install -pm 755 fast-vm ${DESTDIR}/${bindir}/
+	install -pm 755 fast-vm-net-cleanup ${DESTDIR}/${bindir}/
 	mkdir -p ${DESTDIR}/${sbindir}
-	install -pm 755 configure-fast-vm ${DESTDIR}/${sbindir}
+	install -pm 755 configure-fast-vm ${DESTDIR}/${sbindir}/
 	mkdir -p ${DESTDIR}/${libexecdir}
-	install -pm 750 fast-vm-helper.sh ${DESTDIR}/${libexecdir}
+	install -pm 750 fast-vm-helper.sh ${DESTDIR}/${libexecdir}/
 	mkdir -p ${DESTDIR}/${datadir}/fast-vm
-	install -pm 644 fast-vm-network.xml ${DESTDIR}/${datadir}/fast-vm
+	install -pm 644 fast-vm-network.xml ${DESTDIR}/${datadir}/fast-vm/
 	install -pm 644 fast-vm.conf.defaults ${DESTDIR}/${datadir}/fast-vm/
 	mkdir -p ${DESTDIR}/${sysconfdir}/sudoers.d/
 	install -pm 640 fast-vm-sudoers ${DESTDIR}/${sysconfdir}/sudoers.d/
