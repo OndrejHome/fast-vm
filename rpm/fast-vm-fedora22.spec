@@ -4,7 +4,7 @@
 Name:	fast-vm	
 Version:	0.4
 Release:	1%{?dist}
-Summary:	 '%{name}' is a script for defining VMs from images provided in thin LVM pool.
+Summary:	script for defining VMs from images provided in thin LVM pool
 
 License:	GPLv3
 URL:		https://github.com/OndrejHome/%{name}/
