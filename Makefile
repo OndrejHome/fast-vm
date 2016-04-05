@@ -14,7 +14,7 @@ install:
 	install -pm 750 fast-vm-helper.sh ${DESTDIR}/${libexecdir}
 	mkdir -p ${DESTDIR}/${datadir}/fast-vm
 	install -pm 644 fast-vm-network.xml ${DESTDIR}/${datadir}/fast-vm
-	install -pm 644 config.defaults ${DESTDIR}/${datadir}/fast-vm/fast-vm.conf.defaults
+	install -pm 644 fast-vm.conf.defaults ${DESTDIR}/${datadir}/fast-vm/
 	mkdir -p ${DESTDIR}/${sysconfdir}/sudoers.d/
 	install -pm 640 fast-vm-sudoers ${DESTDIR}/${sysconfdir}/sudoers.d/
 	mkdir -p ${DESTDIR}/${datadir}/bash-completion/completions
