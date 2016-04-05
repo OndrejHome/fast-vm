@@ -163,6 +163,19 @@ the one that got assigned by libvirt to new VM. fast-vm-public-images hack files
 is run to setup serial console or SSH keys. Check those hack files for inspiration on what is possible. Note that hack files are run in context of
 user running the fast-vm command and they usually don't have root permissions (you can still use sudo).
 
+.SH CUSTOMIZING IMPORTED IMAGE
+You can further customize the disk image imported into fast-vm thinpool. This is practical if you are for example importing some systems that requires
+registration or some other repetitive task that is hard to put into hacks file. To begin customizing imported image create the 'base' VM using command below.
+
+.BI "fast-vm create " ImageName " base"
+
+Above command will define VM which will be able to directly alter the imported disk image. The VM will be created using default libvirt XML and fast-vm will
+apply hacks file on it. However as the 'base' is not a number, the VM will not be assigned the static DHCP lease by libvirt so it might be needed to connect
+to VM by ther means that through network to figure out its IP address.
+
+It is save to alter imported image after you have created fast-vm VMs that are based on it. THe changes you do to the imported image will be present only
+in the newly created VMs. It's strongly discouraged to create VMs based on imported image when the base VM is running.
+
 .SH EXAMPLES
 Import local image into fast-vm
 .sp
