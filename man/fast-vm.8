@@ -57,12 +57,12 @@ fast-vm \(em script for defining VMs from images provided in thin LVM pool
 fast-vm is provides command-line interface to create virtual machines (VMs) in 
 libvirt based on imported disks in LVM and XML templates.
 
-Templates of VM disk drives are stored in LVM thinpool LV for space efficency.
+Templates of VM disk drives are stored in LVM thinpool LV for space efficiency.
 Templates for VM are just libvirt XMLs with few macros from fast-vm.
 When creating a VM, fast-vm will create new writable LVM snapshot of disk drive, 
 define libvirt VM for it and make a static DHCP reservation for libvirt network 
 on which VM will be.
-Optionaly fast-vm allows to do some customization of disk drive of new machine
+Optionally fast-vm allows to do some customization of disk drive of new machine
 before starting VM using the 'hack files'.
 
 .RB "To start using fast-vm you need to configure it first using command " configure-fast-vm 
@@ -76,7 +76,7 @@ Primary use case of fast-vm is creation of scratch VMs on single local machine.
 
 .TP
 .B ImageName
-Name of image imported in the fast-vm. It should contain only alpha-numberical characters.
+Name of image imported in the fast-vm. It should contain only alpha-numerical characters.
 .B ImageName 
 is part of the LV name and libvirt machine name.
 
@@ -171,9 +171,9 @@ registration or some other repetitive task that is hard to put into hacks file. 
 
 Above command will define VM which will be able to directly alter the imported disk image. The VM will be created using default libvirt XML and fast-vm will
 apply hacks file on it. However as the 'base' is not a number, the VM will not be assigned the static DHCP lease by libvirt so it might be needed to connect
-to VM by ther means that through network to figure out its IP address.
+to VM by other means that through network to figure out its IP address.
 
-It is save to alter imported image after you have created fast-vm VMs that are based on it. THe changes you do to the imported image will be present only
+It is save to alter imported image after you have created fast-vm VMs that are based on it. The changes you do to the imported image will be present only
 in the newly created VMs. It's strongly discouraged to create VMs based on imported image when the base VM is running.
 
 .SH EXAMPLES
