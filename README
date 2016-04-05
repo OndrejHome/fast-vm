@@ -19,7 +19,7 @@ fast-vm is taking care of:
 ====== Installation ======
 === From source
 ## As root
-1. Run script 'setup.sh' which will copy files to proper locations.
+1. Install using command 'make install'
 2. Continue with 'FAST-VM Configuration'
 
 === From RPM
