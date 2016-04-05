@@ -1,10 +1,15 @@
 == FAST-VM ==
-'fast-vm' is a script for defining VMs from images provided in thin LVM pool.
+fast-vm — script for defining VMs from images provided in thin LVM pool
 
-fast-vm is taking care of:
-- defining the VMs from provided XML in libvirt
-- creating thin LV thin snaphost as storage devices for VMs
-- making static IP DHCP reservation in libvirt network definition for MAC address of VM
+fast-vm is provides command-line interface to create virtual machines (VMs) in libvirt,
+based on imported disks in LVM and XML templates.
+
+Templates of VM disk drives are stored in LVM thinpool LV for space efficiency. Templates
+for VMs are just libvirt XMLs with few macros from fast-vm. When creating a VM, fast-vm will
+create new writable LVM snapshot of disk drive, define libvirt VM for it and make a static
+DHCP reservation for libvirt network on which VM will be.
+Optionally fast-vm allows to do some customization of disk drive of new machine before
+starting VM using the 'hack files'.
 
 ====== Requirements ======
 * libvirt with qemu/kvm 
