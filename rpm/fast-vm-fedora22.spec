@@ -7,7 +7,7 @@ License:	GPLv3+
 URL:		https://github.com/OndrejHome/%{name}/
 Source0:	https://github.com/OndrejHome/%{name}/archive/%{version}.tar.gz
 
-BuildArch: 	noarch
+BuildArch:	noarch
 BuildRequires:	coreutils
 BuildRequires:	bash-completion
 Requires:	bash
