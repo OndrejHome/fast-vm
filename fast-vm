@@ -61,7 +61,7 @@ fast-vm start VmNumber [console|ssh [/path/to/custom/script]]
 fast-vm console VmNumber
 fast-vm ssh VmNumber [/path/to/custom/script]
 
-== fast-vm version 0.4 <ofamera@redhat.com> ==
+== fast-vm version 0.5 <ofamera@redhat.com> ==
 EOF
 			;;
 	esac

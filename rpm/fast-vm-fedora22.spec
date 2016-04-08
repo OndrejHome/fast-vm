@@ -2,7 +2,7 @@
 %global debug_package %{nil}
 %global __os_install_post /usr/lib/rpm/brp-compress %{nil}
 Name:	fast-vm	
-Version:	0.4
+Version:	0.5
 Release:	1%{?dist}
 Summary:	script for defining VMs from images provided in thin LVM pool
 
