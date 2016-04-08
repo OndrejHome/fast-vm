@@ -1,0 +1,37 @@
+.TH FAST-VM.CONF 5 "fast-vm 0.5 (2016-04-08)" "fast-vm" "/etc/fast-vm.conf" \" -*- nroff -*-
+.SH NAME
+.IR /etc/fast-vm.conf " \(em global configuration file for fast-vm"
+
+.SH DESCRIPTION
+.RB "This manual page describes the format of the " fast-vm " (8) configuration file."
+
+the /etc/fast-vm.conf must exist to fast-vm function properly. On first configuration the default 
+values are taken from file /usr/share/fast-vm/fast-vm.conf.defaults.
+
+File is loaded as shell script that provides variables to fast-vm script.
+
+Following variables are defined
+
+.TP
+.B VM_PREFIX
+Prefix for LV disk name and libvirt machine name.
+
+.TP 
+.B THINPOOL_VG
+Name of Volume Group (VG) on which is the thin LV for fast-vm.
+
+.TP
+.B THINPOOL_LV
+Name of Thinpool Logical Volume (LV) for fast-vm.
+
+.TP
+.B LIBVIRT_NETWORK
+Name of the libvirt network and bridge adapter for NAT networking.
+
+.TP
+.B SUBNET_NUMBER
+The XX in the 192.168.XX.0/24 libvirt network created by setup.
+
+.SH SEE ALSO
+.BR fast-vm (8),
+.BR configure-fast-vm (8)

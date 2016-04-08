@@ -1,0 +1,27 @@
+.TH FAST-VM 8 "configure-fast-vm 0.5 (2016-04-08)" "fast-vm" "configure-fast-vm" \" -*- nroff -*-
+.SH NAME
+configure-fast-vm \(em script for (re)configuring fast-vm
+.SH SYNOPSIS
+.B configure-fast-vm
+.br
+
+.SH DESCRIPTION
+configure-fast-vm is used to setup the fast-vm environment or to change it's configuration.
+Script is interactive and will ask series of question regarding fast-vm providing current or
+default values (default values are provided when no configuration exists).
+
+It is save to interrupt script and run it again. 
+
+.BR configure-fast-vm " needs to be run as root, but it will ask before altering configuration of system."
+.BR fast-vm " is intended to be run by normal users in " libvirt " system group." 
+.RB "You can add user to " libvirt " group by using command below:"
+.sp
+.BI "# usermod \-a \-G " user
+
+This script is able to create the thinpool LV needed for LV storage and it can also
+define the libvirt network for fast-vm. Template for libvirt network is in file
+.IR /usr/share/fast-vm/fast-vm-network.xml .
+
+.SH SEE ALSO
+.BR fast-vm.conf (5),
+.BR fast-vm (8)

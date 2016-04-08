@@ -1,10 +1,15 @@
 == FAST-VM ==
-'fast-vm' is a script for defining VMs from images provided in thin LVM pool.
+fast-vm — script for defining VMs from images provided in thin LVM pool
 
-fast-vm is taking care of:
-- defining the VMs from provided XML in libvirt
-- creating thin LV thin snaphost as storage devices for VMs
-- making static IP DHCP reservation in libvirt network definition for MAC address of VM
+fast-vm is provides command-line interface to create virtual machines (VMs) in libvirt,
+based on imported disks in LVM and XML templates.
+
+Templates of VM disk drives are stored in LVM thinpool LV for space efficiency. Templates
+for VMs are just libvirt XMLs with few macros from fast-vm. When creating a VM, fast-vm will
+create new writable LVM snapshot of disk drive, define libvirt VM for it and make a static
+DHCP reservation for libvirt network on which VM will be.
+Optionally fast-vm allows to do some customization of disk drive of new machine before
+starting VM using the 'hack files'.
 
 ====== Requirements ======
 * libvirt with qemu/kvm 
@@ -19,7 +24,7 @@ fast-vm is taking care of:
 ====== Installation ======
 === From source
 ## As root
-1. Run script 'setup.sh' which will copy files to proper locations.
+1. Install using command 'make install'
 2. Continue with 'FAST-VM Configuration'
 
 === From RPM
@@ -36,79 +41,13 @@ Script will:
 - create LVM thin pool with name and size of your choice
 - libvirt NAT network for VMs
 
-You can interrupt scriptat anytime and run it again to continue
-or to validate the settings.
-
-## As normal user (normal user must be member of 'libvirt' group)
-2. Import some prebuilded VM disk images or use your
-
-fast-vm import_image <vm_image_version> </path/to/image.gz> </path/to/vm_template.xml> </path/to/image-hacks.sh>
-
-vm_image_version
-  - usually something like '6.7', '6_7', '7' or '7-test'
-    (used for composing LV name and VM hostname)
-/path/to/image.gz | http://somewhere.on.the.net/path/to/image.tar.gz
-  - gzipped VM machine drive in the 'raw' format
-  - to create your own you can use command below
-     gzip -c /dev/some_vg/lv_with_vm_drive > my_vm_drive_image.img.gz
-/path/to/vm_template.xml
-  - XML template for creating libvirt VM, check below for supported macros
-  # vm_template.xml macros
-    VM_NAME - substituted for VM name (VM_prefix+image_name+vm_number)
-    THINPOOL_VG - THINPOOL_VG from configuration
-    LIBVIRT_NETWORK - LIBVIRT_NETWORK from configuration
-/path/to/image-hacks.sh
-  - file containing commands that are executed before creating new machine from
-    imported image (typicaly this includes modification to system like change of
-    hostname or serial console setting, check the fast-vm-public-images repo for examples)
+2. Add users that will be using to the 'libvirt' group
 
 ====== Usage ======
-assuming you have imported the image of centos 6.7 using following command
-  # fast-vm import_image 6.7 centosl6.7.img.gz centos-6.3-7.2.xml centos-7-hacks.sh
-
-a) To edit the VM image so the other VMs are created from this edited image
-  # fast-vm create 6.7 base
-    ...
-    base image VM created, to start this VM use 'virsh start fastvm-6.7'
-    This VM is used for customizing the base image of '6.7' VMs
-    All changes you make to this VM would be available in newly created VMs
-    of that version, this will not affect already existing VMs of same version
-
-  Here you can for example register your system, add your ssh key for easier access, etc.
-
-b) To create new VM based on that image run
-  # fast-vm create 6.7 113
-    ...
-    VM 'fastvm-6.7-113' created
-
-  fast-vm created static IP reservation on 192.168.XX.113 in libvirts DHCP 
-  for VMs mac address.
-
-  You can override the default libvirt.xml and hacks.sh file for new VM
-  by specifing it after VM number
-  # fast-vm create 113 custom_libvirt_for_113.xml custom_hacks_for_113.sh
-
-c) To start VM - you need to know only VM number
-  # fast-vm start 113
-
-  As thir paramter you can specify 'console' for connecting to serial console
-  of 'ssh' to wait for ssh on VM to come up and connect as root.
-
-  # fast-vm start 113 console
-
-d) Connect to serial console of VM after the VM is started
-  # fast-vm console 113
-
-e) Delete VM - note that script will try to stop the VM first before deleting it
-  # fast-vm delete 113
+- check the man page fast-vm(8)
 
 ====== Configuration ======
-Configuration variables in the  /root/.config/fast-vm/config
-VM_PREFIX   - prefix for VM names in libvirt and for thin LV names
-THINPOOL_VG - name of VG on which is the thin pool
-THINPOOL_LV - name of the thinpool (LV)
-LIBVIRT_NETWORK - name of the libvirt network and bridge adapter for NAT networking
-SUBNET_NUMBER - the XX in the 192.168.XX.0/24 libvirt network created by setup
+- check the man page configure-fast-vm(8) and fast-vm.conf(5)
 
 ====== Known bugs/limitation ======
 * initial setup requires root
@@ -139,13 +78,7 @@ version taht you have imported or you can just re-import images and hack files w
 images that are already imported
 
 ====== Where the files get installed ======
-/usr/bin/fast-vm
-/usr/sbin/configure-fast-vm
-/usr/libexec/fast-vm-helper.sh
-<bash_completion_dir>/fast-vm
-/etc/sudoers.d/fast-vm-sudoers
-/usr/share/fast-vm/fast-vm.conf.defaults
-/usr/share/fast-vm/fast-vm-network.xml
+- check Makefile for exact locations
 
 === Author ===
 Ondrej Famera <ofamera@redhat.com> or <ondrej-xa2iel8u@famera.cz>

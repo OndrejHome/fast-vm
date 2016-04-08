@@ -25,63 +25,44 @@ function usage {
 	echo ''
 	case $part in
 		import_image)
-			echo "fast-vm import_image <image_name> <image.gz> <libvirt.xml> [ <hack_file.sh> ]"
-			echo "  <image_name> - name of imported image (f.e. rhel-6.2)"
-			echo "  <image.gz> - gziped VM drive to be imported"
-			echo "  <libvirt.xml> - default libvirt VM xml definition for this version"
-			echo "  <hack_file.sh> (optional) - bash script executed after creating VM "
-			echo "                              (f.e. used for change of hostname)"
+			echo "$0 import_image ImageName PathToImage PathToLibvirtXML [PathToHacksFile]"
 			;;
 		remove_image)
-			echo "fast-vm remove_image <image_name>"
-			echo "  <image_name> - name of imported image (f.e. rhel-6.2)"
+			echo "$0 remove_image ImageName"
 			;;
 		create)
-			echo "fast-vm create <image_name> <VM_number>/base [ <libvirt.xml> ] [ <hack_file.sh> ]"
-			echo "  <image_name> - name of imported imaged to use for this VM (new ones can be defined using import_image)"
-			echo "  <VM_number>/base - number of VM which you use to identify the VM, the VM also gets assigned"
-			echo "                   static DHCP lease in form of 192.168.XX.<VM_number>."
-			echo " 		         - alternatively special value 'base' denotas creation of base VM"
-			echo "  <libvirt.xml> (optional) - alternative libvirt VM xml definition for this VM"
-			echo "  <hack_file.sh> (optional) - alternative bash script executed after creating VM "
+			echo "$0 create ImageName <base |VmNumber> [PathToLibvirtXML] [PathToHacksFile]"
 			;;
 		start)
-			echo "fast-vm start <VM_number> [ console|ssh  /path/to/custom_cmd]"
-			echo "  <VM_number> - number of VM to start"
-			echo "  console (optional) - connect to serial console after starting VM"
-			echo "  ssh (optional) - connect to VM through SSH as soon as VM is ready"
-			echo "  /path/to/custom_cmd - path to custom command to be executed instead of ssh after VM is reachable via SSH"
+			echo "$0 start VmNumber [console|ssh [/path/to/custom/script]]"
 			;;
 		console)
-			echo "fast-vm console <VM_number>"
-			echo "  <VM_number> - number of VM to connect to"
+			echo "$0 console VmNumber"
 			;;
 		ssh)
-			echo "fast-vm ssh <VM_number> [/path/to/custom_cmd]"
-			echo "  <VM_number> - number of VM to connect to"
-			echo "  /path/to/custom_cmd - path to custom command to be executed instead of ssh after VM is reachable via SSH"
+			echo "$0 ssh VmNumber [/path/to/custom/script]"
 			;;
 		delete)
-			echo "fast-vm delete <VM_number>"
-			echo "  <VM_number> - number of VM to start"
+			echo "$0 delete VmNumber"
 			;;
 		list)
-			echo "fast-vm list"
-			echo "shows list of fast-vm VMs with their VM numbers and status"
+			echo "$0 list"
 			;;
 		*)
-			echo "fast-vm <action> <options>"
-			echo "  <action> :"
-			echo "    import_image - import VM image to thin LVM storage and define default libvirt XML "
-			echo " 	                 and optionaly hacks file"
-			echo "    remove_image - remove VM image from LVM storage, existing machines are NOT affected"
-			echo "    create - creates VM based on image from thin LVM"
-			echo "    start - starts VM and optionally also connects to serial console or SSH after start"
-			echo "    console - connect to serial console of running VM"
-			echo "    delete - delete VM and its thin LV disk drive"
-			echo "    list - shows list of fast-vm VMs with their VM numbers and status"
-			echo " for more details run 'fast-vm <action>' without options to see more help"
-			echo "== fast-vm version 0.4 <ofamera@redhat.com> =="
+cat <<EOF
+fast-vm <action> <options>
+
+fast-vm import_image ImageName PathToImage PathToLibvirtXML [PathToHacksFile]
+fast-vm remove_image ImageName
+fast-vm create ImageName <base |VmNumber> [PathToLibvirtXML] [PathToHacksFile]
+fast-vm delete VmNumber
+fast-vm list
+fast-vm start VmNumber [console|ssh [/path/to/custom/script]]
+fast-vm console VmNumber
+fast-vm ssh VmNumber [/path/to/custom/script]
+
+== fast-vm version 0.5 <ofamera@redhat.com> ==
+EOF
 			;;
 	esac
 	exit 1
@@ -186,7 +167,7 @@ case "$1" in
 
 		else
 			echo "[inf] creating LV $VM_PREFIX$image_name ..."
-			echo "lvcreate" "base" "$image_name" | sudo --non-interactive $FASTVM_HELPER
+			echo "lvcreate" "base" "$image_name" | sudo -n $FASTVM_HELPER
 			if [ "$?" != "0" ]; then
 				echo "[err] Error creating thin LV for VM image"
 				exit 1
@@ -194,7 +175,7 @@ case "$1" in
 		fi
 
 		echo "[inf] importing image $image_path into /dev/$THINPOOL_VG/$VM_PREFIX$image_name"
-		echo "chgrp" "/dev/$THINPOOL_VG/$VM_PREFIX$image_name" | sudo --non-interactive $FASTVM_HELPER
+		echo "chgrp" "/dev/$THINPOOL_VG/$VM_PREFIX$image_name" | sudo -n $FASTVM_HELPER
 
 		if [ "$image_size" -eq "0" ]; then
 			# import from local file
@@ -244,7 +225,7 @@ case "$1" in
 			virsh --connect qemu:///system destroy $VM_PREFIX$image_name >>$DEBUG_LOG 2>&1
 			virsh --connect qemu:///system undefine $VM_PREFIX$image_name >>$DEBUG_LOG 2>&1
 			echo "[inf] removing LV $VM_PREFIX$image_name ..."
-			echo "lvremove" "/dev/$THINPOOL_VG/$VM_PREFIX$image_name" | sudo --non-interactive $FASTVM_HELPER
+			echo "lvremove" "/dev/$THINPOOL_VG/$VM_PREFIX$image_name" | sudo -n $FASTVM_HELPER
 		else
 			echo "[err] image "$image_name" not found"
 			usage remove_image
@@ -355,8 +336,8 @@ case "$1" in
 		VM_NAME="$VM_PREFIX$image_name-$vm_number"
 
 		echo "[inf] creating disk '$VM_PREFIX$image_name-$vm_number'"
-		echo "lvcreate" "newvm" "$image_name" "$image_name-$vm_number" | sudo --non-interactive $FASTVM_HELPER
-		echo "chgrp" "/dev/$THINPOOL_VG/$VM_PREFIX$image_name-$vm_number" | sudo --non-interactive $FASTVM_HELPER
+		echo "lvcreate" "newvm" "$image_name" "$image_name-$vm_number" | sudo -n $FASTVM_HELPER
+		echo "chgrp" "/dev/$THINPOOL_VG/$VM_PREFIX$image_name-$vm_number" | sudo -n $FASTVM_HELPER
 		echo "[inf] defining virtual machine '$VM_PREFIX$image_name-$vm_number' in libvirt"
 
 		tmp_xml=$(mktemp --suffix=.xml)
@@ -364,8 +345,9 @@ case "$1" in
 		virsh --connect qemu:///system define $tmp_xml >>$DEBUG_LOG 2>&1
 
 		echo "[inf] adding static lease for 192.168.$SUBNET_NUMBER.$vm_number into libvirts DHCP"
-		vm_mac=$(virsh --connect qemu:///system dumpxml "$VM_PREFIX$image_name-$vm_number"|grep 'mac address'|cut -d\' -f 2)
-		virsh --connect qemu:///system net-update "$LIBVIRT_NETWORK" add-last ip-dhcp-host --xml "<host mac='$vm_mac' ip='192.168.$SUBNET_NUMBER.$vm_number'/>" --live --config >>$DEBUG_LOG 2>&1
+		VM_MAC=$(virsh --connect qemu:///system dumpxml "$VM_PREFIX$image_name-$vm_number"|grep 'mac address'|cut -d\' -f 2)
+		virsh --connect qemu:///system net-update "$LIBVIRT_NETWORK" add-last ip-dhcp-host --xml "<host mac='$VM_MAC' ip='192.168.$SUBNET_NUMBER.$vm_number'/>" --live --config >>$DEBUG_LOG 2>&1
+		vm_mac="$VM_MAC" # temporary transition variable
 
 		# source file with hacks and apply them
 		if [ -f "$hack_file" ]; then
@@ -465,13 +447,13 @@ case "$1" in
 
 		virsh --connect qemu:///system destroy $vm_name >>$DEBUG_LOG 2>&1
 
-		vm_mac=$(virsh --connect qemu:///system dumpxml "$vm_name"|grep 'mac address'|cut -d\' -f 2)
+		VM_MAC=$(virsh --connect qemu:///system dumpxml "$vm_name"|grep 'mac address'|cut -d\' -f 2)
 
 		echo "[inf] removing DHCP reservation"
-		virsh --connect qemu:///system net-update "$LIBVIRT_NETWORK" delete ip-dhcp-host --xml "<host mac='$vm_mac' ip='192.168.$SUBNET_NUMBER.$vm_number'/>" --live --config >>$DEBUG_LOG 2>&1
+		virsh --connect qemu:///system net-update "$LIBVIRT_NETWORK" delete ip-dhcp-host --xml "<host mac='$VM_MAC' ip='192.168.$SUBNET_NUMBER.$vm_number'/>" --live --config >>$DEBUG_LOG 2>&1
 		PATH="$PATH:/usr/sbin" which dhcp_release >/dev/null 2>&1
 		if [ "$?" -eq '0' ]; then
-			echo "dhcp_release" "$LIBVIRT_NETWORK" "$vm_number" "$vm_mac" | sudo --non-interactive $FASTVM_HELPER
+			echo "dhcp_release" "$LIBVIRT_NETWORK" "$vm_number" "$VM_MAC" | sudo -n $FASTVM_HELPER
 		else
 			echo "[wrn] dhcp_release not found, to reause the same VM number you would need"
 			echo "      need to delete DHCP leases file for $LIBVIRT_NETWORK network and"
@@ -480,7 +462,7 @@ case "$1" in
 		fi
 		
 		echo "[inf] removing VM drive"
-		echo "lvremove" "/dev/$THINPOOL_VG/$vm_name" | sudo --non-interactive $FASTVM_HELPER
+		echo "lvremove" "/dev/$THINPOOL_VG/$vm_name" | sudo -n $FASTVM_HELPER
 
 		echo "[inf] undefining VM from libvirt"
 		virsh --connect qemu:///system undefine $vm_name >>$DEBUG_LOG 2>&1

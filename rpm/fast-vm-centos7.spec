@@ -2,7 +2,7 @@
 %global debug_package %{nil}
 %global __os_install_post /usr/lib/rpm/brp-compress %{nil}
 Name:	fast-vm	
-Version:	0.5
+Version:	0.4
 Release:	1%{?dist}
 Summary:	script for defining VMs from images provided in thin LVM pool
 
@@ -10,9 +10,9 @@ License:	GPLv3
 URL:		https://github.com/OndrejHome/%{name}/
 Source0:	https://github.com/OndrejHome/%{name}/archive/%{version}.tar.gz
 
-BuildArch: 	noarch
+BuildArch:	noarch
 BuildRequires:	coreutils
-Requires:	lvm2,sudo,pv,curl,bash,bash-completion,dnsmasq-utils,libguestfs-tools-c,libvirt,qemu-kvm
+Requires:	lvm2,sudo,curl,bash,bash-completion,dnsmasq-utils,libguestfs-tools-c,libvirt,qemu-kvm
 
 %description
 %{name} is taking care of:
