@@ -36,6 +36,9 @@ function usage {
 		start)
 			echo "$0 start VmNumber [console|ssh [/path/to/custom/script]]"
 			;;
+		stop)
+			echo "$0 stop VmNumber [graceful]"
+			;;
 		console)
 			echo "$0 console VmNumber"
 			;;
@@ -58,6 +61,7 @@ fast-vm create ImageName <base |VmNumber> [PathToLibvirtXML] [PathToHacksFile]
 fast-vm delete VmNumber
 fast-vm list
 fast-vm start VmNumber [console|ssh [/path/to/custom/script]]
+fast-vm stop VmNumber [graceful]
 fast-vm console VmNumber
 fast-vm ssh VmNumber [/path/to/custom/script]
 
@@ -410,6 +414,24 @@ case "$1" in
 					usage start
 				;;
 			esac
+		fi
+		;;
+	stop)
+		vm_number="$2"
+		if [ -z "$vm_number" ]; then echo "[err] VM number missing"; usage stop; fi
+
+		vm_name=$(virsh --connect qemu:///system list --all |grep "$VM_PREFIX"|awk '{print $2}'|egrep "\-$vm_number$")
+		if [ -z "$vm_name" ]; then
+			echo "[err] VM with number '$vm_number' not found"
+			exit 1
+		fi
+
+		if [ ! -z "$3" ] && [ "$3" == "graceful" ]; then
+			echo "[inf] Sending ACPI shutdown event"
+			virsh --connect qemu:///system shutdown $vm_name 2>>$DEBUG_LOG
+		else
+			echo "[inf] Stopping VM now"
+			virsh --connect qemu:///system destroy $vm_name 2>>$DEBUG_LOG
 		fi
 		;;
 	ssh)
