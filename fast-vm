@@ -4,7 +4,7 @@ FASTVM_HELPER=/usr/libexec/fast-vm-helper.sh
 
 #### start common functions
 # helper function for loading and checking configuration
-function check_empty {
+check_empty () {
 	var_name="$1"
 	var_value="$2"
 	if [ -z "$var_value" ]; then
@@ -14,27 +14,26 @@ function check_empty {
 	fi
 }
 
-function wait_for_ssh {
+wait_for_ssh () {
 	vm_number="$1"
 	echo "[inf] checking the 192.168.$SUBNET_NUMBER.$vm_number for active SSH connection"
 	echo "      (ctrl+c to interrupt) "
 	ssh_ready=$(ssh-keyscan -T 1 "192.168.$SUBNET_NUMBER.$vm_number" 2>/dev/null|egrep '(ssh-|ecdsa-)'|wc -l)
 	while [ "$ssh_ready" -eq "0" ];
 	do
-		echo -n "."
+		printf "."
 		ssh_ready=$(ssh-keyscan -T 1 "192.168.$SUBNET_NUMBER.$vm_number" 2>/dev/null|egrep '(ssh-|ecdsa-)'|wc -l)
 		sleep 1
 	done
-	echo
-	echo "[inf] SSH ready"
+	printf "\n[inf] SSH ready"
 }
 
-function check_file {
+check_file () {
 	file_path="$1"
 	file_size=0
 	file_local=0
 	error_prefix="$2"
-	if [ "$curl_ok" -eq 0 ] && [ "${file_path:0:4}" == "http" ]; then
+	if [ "$curl_ok" -eq 0 ] && [ $(echo $file_path | awk  '{ s=substr($0, 0, 4); print s; }' )  = "http" ]; then
 		curl_data=$(curl --head "$file_path" 2>/dev/null)
 		curl_httpok=$(echo "$curl_data"|grep "200 OK"|wc -l)
 		if [ "$curl_httpok" -eq "1" ]; then
@@ -55,7 +54,7 @@ function check_file {
 	fi
 }
 
-function download_file {
+download_file () {
 	file_url="$1"
 	tmp_file=$(mktemp)
 	echo "[info] downloading $file_url " >&2
@@ -69,7 +68,7 @@ function download_file {
 	fi
 }
 
-function usage {
+usage () {
 	part="$1"
 
 	echo ''
@@ -310,15 +309,16 @@ case "$1" in
 		fi
 
 		vm_number="$3"
-		# validate VM NUMBER
-		if [[ $vm_number =~ ^-?[0-9]+$ ]]
+		# validate vm_number is a 'number'
+		$(echo "$vm_number" | grep -Eq '^[+-]?[0-9]+$')
+		if [ "$?" -eq '0' ]
 		then
 			if [ "$vm_number" -lt 20 ] || [ "$vm_number" -gt 220 ];then
 				echo "[err] VM number out of range (20-220)"
 				usage create
 			fi
 		else
-			if [ "$vm_number" == "base" ]; then
+			if [ "$vm_number" = "base" ]; then
 				echo "[inf] creating base image VM"
 			else
 				echo "[err] only numbers from range 20-220 and word 'base' permited here"
@@ -328,7 +328,7 @@ case "$1" in
 
 
 		# special case for creating only base image
-		if [ "$vm_number" == "base" ]; then
+		if [ "$vm_number" = "base" ]; then
 			VM_NAME="$VM_PREFIX$image_name"
 			
 			tmp_xml=$(mktemp --suffix=.xml)
@@ -453,7 +453,7 @@ case "$1" in
 			exit 1
 		fi
 
-		if [ ! -z "$3" ] && [ "$3" == "graceful" ]; then
+		if [ ! -z "$3" ] && [ "$3" = "graceful" ]; then
 			echo "[inf] Sending ACPI shutdown event"
 			virsh --connect qemu:///system shutdown $vm_name 2>>$DEBUG_LOG
 		else
