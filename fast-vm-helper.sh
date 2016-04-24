@@ -2,7 +2,7 @@
 # fast-vm helper script for privileged root actions
 
 DEBUG_LOG=/tmp/fast-vm-helper.debug.log
-if [ ! $(whoami) == 'root' ];
+if [ ! $(whoami) = 'root' ];
 then
         echo "[err] this must be run as root"
         exit 1
@@ -14,7 +14,7 @@ fi
 # load global configuration file
 . /etc/fast-vm.conf
 
-function check_empty {
+check_empty () {
 	var_name="$1"
 	var_value="$2"
 	if [ -z "$var_value" ]; then
@@ -40,7 +40,7 @@ case "$action" in
 			exit 1
 		fi
 		arg3=$(echo "$arg3"|egrep '^[a-zA-Z0-9.-]+$')
-		if [ "$arg1" == "newvm" ]; then
+		if [ "$arg1" = "newvm" ]; then
 			if  [ -z "$arg3" ] || [ ! -b "/dev/$THINPOOL_VG/$VM_PREFIX$arg2" ]; then
 				echo "[err] newvm LV name validation failed"
 				exit 1

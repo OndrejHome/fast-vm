@@ -11,7 +11,7 @@ else
 	touch $config_file
 fi
 
-function ask_question {
+ask_question () {
 	question="$1"
 	default_value="$2"
 	config_variable="$3"
@@ -20,8 +20,7 @@ function ask_question {
 	success=0
 	while [ "$success" -eq 0 ];
 	do
-		echo -e "[?] $question"
-		echo -n "[$default_value]: "
+		printf "[?] $question \n[$default_value]: "
 		read answer
 		if [ -z "$default_value" ] && [ -z "$answer" ]; then
 			echo "[err] You must provide value"
@@ -75,9 +74,9 @@ do
 		echo "Following commands would be executed to create thin pool:"
 		echo "  lvcreate -n $THINPOOL_LV -L $THINPOOL_SIZE $THINPOOL_VG"
 		echo "  lvconvert --type thin-pool $THINPOOL_VG/$THINPOOL_LV"
-		echo -n "[?] Create now? (y/n) "
+		printf "[?] Create now? (y/n) "
 		read answer
-		if [ "$answer" == "y" ]; then
+		if [ "$answer" = "y" ]; then
 			echo "[inf] Creating ..."
 			## create thin pool
 			lvcreate -n $THINPOOL_LV -L $THINPOOL_SIZE $THINPOOL_VG
@@ -107,9 +106,9 @@ do
 	# check for the libvirt network
 	virsh --connect qemu:///system net-info "$LIBVIRT_NETWORK" 2>&1 >/dev/null
 	if [ ! "$?" -eq "0" ]; then
-		echo -n "[?] Network $LIBVIRT_NETWORK is not defined in libvirt, define now? (y/n) "
+		printf "[?] Network $LIBVIRT_NETWORK is not defined in libvirt, define now? (y/n) "
 		read answer
-		if [ "$answer" == "y" ]; then
+		if [ "$answer" = "y" ]; then
 			echo "[inf] Creating ..."
 			tmp_file=$(mktemp --suffix=.xml)
 			sed -e "s/NET_NAME/$LIBVIRT_NETWORK/g; s/SUBNET_NUMBER/$SUBNET_NUMBER/g" /usr/share/fast-vm/fast-vm-network.xml > $tmp_file
