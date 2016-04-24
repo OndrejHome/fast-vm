@@ -29,6 +29,46 @@ function wait_for_ssh {
 	echo "[inf] SSH ready"
 }
 
+function check_file {
+	file_path="$1"
+	file_size=0
+	file_local=0
+	error_prefix="$2"
+	if [ "$curl_ok" -eq 0 ] && [ "${file_path:0:4}" == "http" ]; then
+		curl_data=$(curl --head "$file_path" 2>/dev/null)
+		curl_httpok=$(echo "$curl_data"|grep "200 OK"|wc -l)
+		if [ "$curl_httpok" -eq "1" ]; then
+			file_size=$(echo "$curl_data"|grep "Content-Length:"|awk '{print $2}'|sed 's/[^0-9]*//g')
+			echo "[info] Detected remote file with size $file_size"
+		else
+			echo "[err] $error_prefix: error checking remote file on the server, we got following information from server"
+			echo "$curl_data"
+			exit 2
+		fi
+	else
+		if [ -f "$file_path" ]; then
+			file_local = 1
+		else
+			echo "[err] $error_prefix: local file not found"
+			exit 2
+		fi
+	fi
+}
+
+function download_file {
+	file_url="$1"
+	tmp_file=$(mktemp)
+	echo "[info] downloading $file_url " >&2
+	echo "       into $tmp_file" >&2
+	curl -o $tmp_file -s "$file_url"
+	if [ "$?" -eq 0 ]; then
+		echo "$tmp_file"
+	else
+		echo "[err] Download failed" >&2
+		exit 1
+	fi
+}
+
 function usage {
 	part="$1"
 
@@ -123,30 +163,10 @@ case "$1" in
 		image_name="$2"
 		if [ -z "$image_name" ]; then echo "[err] missing image name"; usage import_image; fi
 		image_path="$3"
-		image_size="0"
-		if [ "$curl_ok" -eq 0 ] && [ "${image_path:0:4}" == "http" ]; then
-			if [ ! -f "$image_path" ]; then
-				# curl, fetch size of image
-				curl_data=$(curl --head "$3" 2>/dev/null)
-				curl_httpok=$(echo "$curl_data"|grep "200 OK"|wc -l)
-				if [ "$curl_httpok" -eq "1" ]; then
-					image_size=$(echo "$curl_data"|grep "Content-Length:"|awk '{print $2}'|sed 's/[^0-9]*//g')
-					echo "[info] Detected binary file with size $image_size"
-				else
-					echo "[err] error checking the file on the server, we got following information from server"
-					echo "$curl_data"
-					exit 2
-				fi
-			else
-				echo "we have the file"
-			fi
-		else
-			if [ ! -f "$image_path" ]; then
-				echo "[err] image file not found"
-				usage import_image
-			fi
-		fi
-
+		check_file "$image_path" "image file"
+		image_path="$file_path"
+		image_size="$file_size"
+		image_local="$file_local"
 		image_extension="${image_path##*.}"
 		case "$image_extension" in
 			gz)
@@ -162,12 +182,17 @@ case "$1" in
 		esac
 
 		image_xml_path="$4"
-		if [ ! -f "$image_xml_path" ]; then echo "[err] image xml file not found"; usage import_image; fi
+		check_file "$image_xml_path" "XML VM definition"
+		if [ "$file_local" -eq '0' ]; then
+			image_xml_path=$(download_file "$image_xml_path")
+		fi
 
 		hack_file="$5"
-		if [ ! -z "$hack_file" ] && [ ! -f "$hack_file" ]; then
-			echo "[err] hack file not found"
-			usage import_image
+		if [ ! -z "$hack_file" ]; then
+			check_file "$hack_file" "hack file"
+			if [ "$file_local" -eq '0' ]; then
+				hack_file=$(download_file "$hack_file")
+			fi
 		fi
 
 		if [ -b "/dev/$THINPOOL_VG/$VM_PREFIX$image_name" ]; then
@@ -187,8 +212,7 @@ case "$1" in
 		echo "[inf] importing image $image_path into /dev/$THINPOOL_VG/$VM_PREFIX$image_name"
 		echo "chgrp" "/dev/$THINPOOL_VG/$VM_PREFIX$image_name" | sudo -n $FASTVM_HELPER
 
-		if [ "$image_size" -eq "0" ]; then
-			# import from local file
+		if [ "$image_local" -eq "1" ]; then
 			if [ "$pv_ok" -eq '0' ]; then
 				$decompress_cmd "$image_path"| pv -s 10G | dd of=/dev/$THINPOOL_VG/$VM_PREFIX$image_name bs=1M conv=sparse >>$DEBUG_LOG 2>&1
 				import_exit="$?"
@@ -247,31 +271,28 @@ case "$1" in
 
 		image_xml_path="$4"
 		if [ ! -z "$image_xml_path" ]; then
-			if [ ! -f "$image_xml_path" ]; then
-				echo "[err] image xml file not found"
-				usage create
-			else
-				echo "[inf] using alternative xml file $image_xml_path"
-			fi
+			check_file "$image_xml_path" "alternative XML VM definition"
+			if [ "$file_local" -eq '0' ]; then
+	                        image_xml_path=$(download_file "$image_xml_path")
+	                fi
+			echo "[inf] using alternative xml file $image_xml_path"
 		else
 			if [ ! -f "$HOME/.fast-vm/config-${image_name}.xml" ]; then
 				echo "[err] no VM XML definition for this version, "
 				echo "      $HOME/.fast-vm/config-${image_name}.xml not found."
 				echo "      Import image again or supply alternative xml"
 				usage create
-			else
-				image_xml_path="$HOME/.fast-vm/config-${image_name}.xml"
 			fi
+			image_xml_path="$HOME/.fast-vm/config-${image_name}.xml"
 		fi
 
 		hack_file="$5"
 		if [ ! -z "$hack_file" ]; then
-			if [ ! -f "$hack_file" ]; then
-				echo "[err] hack file not found"
-				usage create
-			else
-				echo "[inf] using alternative hack file $hack_file"
-			fi
+			check_file "$hack_file" "alternative hack file"
+			if [ "$file_local" -eq '0' ]; then
+                                hack_file=$(download_file "$hack_file")
+                        fi
+			echo "[inf] using alternative hack file $hack_file"
 		else
 			if [ ! -f "$HOME/.fast-vm/hacks-${image_name}.sh" ]; then
 				echo "[wrn] no default hacks file for this version, "
@@ -319,7 +340,7 @@ case "$1" in
 			fi
 
 			# source file with hacks and apply them
-			if [ -f "$hack_file" ]; then
+			if [ ! -z "$hack_file" ]; then
 				echo "[inf] applying hacks from $hack_file"
 				. $hack_file
 				if [ ! "$?" -eq "0" ]; then
@@ -360,7 +381,7 @@ case "$1" in
 		vm_mac="$VM_MAC" # temporary transition variable
 
 		# source file with hacks and apply them
-		if [ -f "$hack_file" ]; then
+		if [ ! -z "$hack_file" ]; then
 			echo "[inf] applying hacks from $hack_file"
 			. $hack_file
 			if [ ! "$?" -eq "0" ]; then
