@@ -35,7 +35,7 @@ check_file () {
 	error_prefix="$2"
 	if [ "$curl_ok" -eq 0 ] && [ $(echo $file_path | awk  '{ s=substr($0, 0, 4); print s; }' )  = "http" ]; then
 		curl_data=$(curl --head "$file_path" 2>/dev/null)
-		curl_httpok=$(echo "$curl_data"|grep "200 OK"|wc -l)
+		curl_httpok=$(echo "$curl_data"|egrep "HTTP.*200 OK"|wc -l)
 		if [ "$curl_httpok" -eq "1" ]; then
 			file_size=$(echo "$curl_data"|grep "Content-Length:"|awk '{print $2}'|sed 's/[^0-9]*//g')
 			echo "[info] Detected remote file with size $file_size"
