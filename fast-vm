@@ -2,13 +2,8 @@
 DEBUG_LOG=/tmp/fast-vm.debug.log
 FASTVM_HELPER=/usr/libexec/fast-vm-helper.sh
 
-if [ $(id |grep '(libvirt)'|wc -l) -eq 0 ] && [ $(whoami) != "root" ]; then
-	echo "[err] User running fast-vm must be member of group 'libvirt'."
-	echo "You can easily add user to libvirt group using command below"
-	echo "  # usermod -a -G libvirt <user>"
-	exit 1
-fi
-
+#### start common functions
+# helper function for loading and checking configuration
 function check_empty {
 	var_name="$1"
 	var_value="$2"
@@ -17,6 +12,21 @@ function check_empty {
                 echo "      run configure-fast-vm again or fix manually"
 		exit 2
 	fi
+}
+
+function wait_for_ssh {
+	vm_number="$1"
+	echo "[inf] checking the 192.168.$SUBNET_NUMBER.$vm_number for active SSH connection"
+	echo "      (ctrl+c to interrupt) "
+	ssh_ready=$(ssh-keyscan -T 1 "192.168.$SUBNET_NUMBER.$vm_number" 2>/dev/null|egrep '(ssh-|ecdsa-)'|wc -l)
+	while [ "$ssh_ready" -eq "0" ];
+	do
+		echo -n "."
+		ssh_ready=$(ssh-keyscan -T 1 "192.168.$SUBNET_NUMBER.$vm_number" 2>/dev/null|egrep '(ssh-|ecdsa-)'|wc -l)
+		sleep 1
+	done
+	echo
+	echo "[inf] SSH ready"
 }
 
 function usage {
@@ -72,39 +82,34 @@ EOF
 	exit 1
 }
 
-function wait_for_ssh {
-	vm_number="$1"
-	echo "[inf] checking the 192.168.$SUBNET_NUMBER.$vm_number for active SSH connection"
-	echo "      (ctrl+c to interrupt) "
-	ssh_ready=$(ssh-keyscan -T 1 "192.168.$SUBNET_NUMBER.$vm_number" 2>/dev/null|egrep '(ssh-|ecdsa-)'|wc -l)
-	while [ "$ssh_ready" -eq "0" ];
-	do
-		echo -n "."
-		ssh_ready=$(ssh-keyscan -T 1 "192.168.$SUBNET_NUMBER.$vm_number" 2>/dev/null|egrep '(ssh-|ecdsa-)'|wc -l)
-		sleep 1
-	done
-	echo
-	echo "[inf] SSH ready"
-}
+#### end common functions
 
 # first parameter is compulsory
 if [ -z "$1" ]; then usage; fi
 
-## fast-vm configuration
-if [ ! -f "/etc/fast-vm.conf" ]; then
-	echo "[err] no global configuration found in /etc/fast-vm.conf"
-	echo "      please run configure-fast-vm as root before using fast-vm"
+# check if we are in libvirt group or if we are root
+if [ $(id |grep '(libvirt)'|wc -l) -eq 0 ] && [ $(whoami) != "root" ]; then
+	echo "[err] User running fast-vm must be member of group 'libvirt'."
+	echo "You can easily add user to libvirt group using command below"
+	echo "  # usermod -a -G libvirt <user>"
 	exit 1
 fi
 
-# load and verify configuration
-. /etc/fast-vm.conf
+# locate and load fast-vm configuration
+if [ -f "/etc/fast-vm.conf" ]; then
+	# load and verify configuration
+	. /etc/fast-vm.conf
 
-check_empty "VM_PREFIX" "$VM_PREFIX"
-check_empty "LIBVIRT_NETWORK" "$LIBVIRT_NETWORK"
-check_empty "THINPOOL_VG" "$THINPOOL_VG"
-check_empty "THINPOOL_LV" "$THINPOOL_LV"
-check_empty "SUBNET_NUMBER" "$SUBNET_NUMBER"
+	check_empty "VM_PREFIX" "$VM_PREFIX"
+	check_empty "LIBVIRT_NETWORK" "$LIBVIRT_NETWORK"
+	check_empty "THINPOOL_VG" "$THINPOOL_VG"
+	check_empty "THINPOOL_LV" "$THINPOOL_LV"
+	check_empty "SUBNET_NUMBER" "$SUBNET_NUMBER"
+else
+	echo "[err] no global configuration file /etc/fast-vm.conf not found"
+	echo "      please run configure-fast-vm as root before using fast-vm"
+	exit 1
+fi
 
 ## check if there is curl available so we can fetch images from http/https
 which curl >/dev/null 2>&1
@@ -112,6 +117,7 @@ curl_ok="$?"
 which pv >/dev/null 2>&1
 pv_ok="$?"
 
+#### main script
 case "$1" in
 	import_image)
 		image_name="$2"
