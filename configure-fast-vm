@@ -105,7 +105,7 @@ do
 	fi
 
 	# check for the libvirt network
-	virsh --connect qemu:///system net-info "$LIBVIRT_NETWORK" 2>&1 >/dev/null
+	virsh --connect qemu:///system net-info "$LIBVIRT_NETWORK" >/dev/null 2>&1
 	if [ ! "$?" -eq "0" ]; then
 		printf "[?] Network $LIBVIRT_NETWORK is not defined in libvirt, define now? (y/n) "
 		read answer
