@@ -366,14 +366,19 @@ case "$1" in
 		## create regular machine
 		VM_NAME="$VM_PREFIX$image_name-$vm_number"
 
-		echo "[inf] creating disk '$VM_PREFIX$image_name-$vm_number'"
-		echo "lvcreate" "newvm" "$image_name" "$image_name-$vm_number" | sudo -n $FASTVM_HELPER
-		echo "chgrp" "/dev/$THINPOOL_VG/$VM_PREFIX$image_name-$vm_number" | sudo -n $FASTVM_HELPER
 		echo "[inf] defining virtual machine '$VM_PREFIX$image_name-$vm_number' in libvirt"
-
 		tmp_xml=$(mktemp --suffix=.xml)
 		sed -e "s/VM_NAME/$VM_PREFIX$image_name-$vm_number/g; s/THINPOOL_VG/$THINPOOL_VG/g; s/LIBVIRT_NETWORK/$LIBVIRT_NETWORK/g;" "$image_xml_path" > $tmp_xml 2>>$DEBUG_LOG
 		virsh --connect qemu:///system define $tmp_xml >>$DEBUG_LOG 2>&1
+		if [ ! "$?" -eq '0' ]; then
+			echo "[err] Unable to define virtual machine from $tmp_xml"
+			echo "      check $DEBUG_LOG for more details"
+			exit 2
+		fi
+
+		echo "[inf] creating disk '$VM_PREFIX$image_name-$vm_number'"
+		echo "lvcreate" "newvm" "$image_name" "$image_name-$vm_number" | sudo -n $FASTVM_HELPER
+		echo "chgrp" "/dev/$THINPOOL_VG/$VM_PREFIX$image_name-$vm_number" | sudo -n $FASTVM_HELPER
 
 		echo "[inf] adding static lease for 192.168.$SUBNET_NUMBER.$vm_number into libvirts DHCP"
 		VM_MAC=$(virsh --connect qemu:///system dumpxml "$VM_PREFIX$image_name-$vm_number"|grep 'mac address'|cut -d\' -f 2)
