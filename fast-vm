@@ -55,7 +55,7 @@ check_file () {
 		fi
 	else
 		if [ -f "$file_path" ]; then
-			file_local = 1
+			file_local=1
 		else
 			printf "$o_err $error_prefix: local file not found\n"
 			exit 2
