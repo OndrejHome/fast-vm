@@ -36,7 +36,7 @@ starting VM using the 'hack files'.
 
 ====== FAST-VM Configuration ======
 ## As root user
-1. Run 'configure-fast-vm' script (/usr/sbin/configure-fast-vm
+1. Run 'configure-fast-vm' script /usr/sbin/configure-fast-vm
 Script will:
 - create default configuration file from your answers
 - create LVM thin pool with name and size of your choice
@@ -60,7 +60,7 @@ Script will:
 * Fedora 22 BUG: libvirt-daemon shipped on installation media doesn't create the 'libivrt' group.
   updating the package solves the problem
 * VM images are provided separately
-  - publicaly available images can be found at  https://github.com/OndrejHome/fast-vm-public-images
+  - publicly available images can be found at  https://github.com/OndrejHome/fast-vm-public-images
 * using 'dhcp_release' to remove DHCP static reservation is not the cleanest
   way of doing so, but there is no other supported way of doing this through libvirt
   (TODO: make RFE/BUG into libvirt)
