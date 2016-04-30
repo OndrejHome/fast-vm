@@ -35,7 +35,7 @@ wait_for_ssh () {
 		ssh_ready=$(ssh-keyscan -T 1 "192.168.$SUBNET_NUMBER.$vm_number" 2>/dev/null|egrep '(ssh-|ecdsa-)'|wc -l)
 		sleep 1
 	done
-	printf "\n$o_inf SSH ready"
+	printf "\n$o_inf SSH ready\n"
 }
 
 check_file () {
@@ -464,8 +464,12 @@ case "$1" in
 		if [ -z "$vm_number" ]; then printf "$o_err VM number missing\n"; usage ssh; fi
 
 		wait_for_ssh "$vm_number"
-		if [ ! -z "$3" ] && [ -x "$3" ]; then
-			eval "$3 192.168.$SUBNET_NUMBER.$vm_number"
+		if [ ! -z "$3" ]; then
+			if [ -x "$3" ]; then
+				eval "$3 192.168.$SUBNET_NUMBER.$vm_number"
+			else
+				printf "$o_err $3 not executable\n"
+			fi
 		else
 			ssh -o GlobalKnownHostsFile=/dev/null -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no "root@192.168.$SUBNET_NUMBER.$vm_number"
 		fi
