@@ -1,6 +1,18 @@
 #!/bin/bash
 config_file="/etc/fast-vm.conf"
 
+## terminal colors
+c_red=$(tput setaf 1)
+c_yellow=$(tput setaf 3)
+c_green=$(tput setaf 2)
+c_cyan=$(tput setaf 6)
+c_normal=$(tput sgr0)
+## common outputs
+o_err="[${c_red}err${c_normal}]"
+o_wrn="[${c_yellow}wrn${c_normal}]"
+o_inf="[${c_cyan}inf${c_normal}]"
+o_ok="[${c_green}ok${c_normal}]"
+
 # load defaults and old configuration if exists
 if [ -f /usr/share/fast-vm/fast-vm.conf.defaults ]; then
 	. /usr/share/fast-vm/fast-vm.conf.defaults
@@ -11,7 +23,7 @@ else
 	touch $config_file
 fi
 
-function ask_question {
+ask_question () {
 	question="$1"
 	default_value="$2"
 	config_variable="$3"
@@ -20,11 +32,10 @@ function ask_question {
 	success=0
 	while [ "$success" -eq 0 ];
 	do
-		echo -e "[?] $question"
-		echo -n "[$default_value]: "
+		printf "[?] $question \n[$default_value]: "
 		read answer
 		if [ -z "$default_value" ] && [ -z "$answer" ]; then
-			echo "[err] You must provide value"
+			printf "$o_err You must provide value\n"
 		else
 			success=1
 		fi
@@ -40,11 +51,7 @@ function ask_question {
 	fi
 }
 
-echo "==>> fast-vm configuration script"
-echo "You can run this script repeatadily and interrupt it with ctrl+c."
-echo "Script will always recheck all configuration options."
-echo "fast-vm system configuration will be saved in /etc/fast-vm.conf."
-echo
+printf "$o_inf ==>> fast-vm configuration script\nYou can run this script repeatedly and interrupt it with ctrl+c.\nScript will always recheck all configuration options. fast-vm system configuration will be saved in /etc/fast-vm.conf.\n\n"
 
 success=0
 while [ "$success" -eq 0 ];
@@ -63,83 +70,82 @@ do
 	. $config_file
 
 	# LVM VG check
-	if [ ! -d "/dev/$THINPOOL_VG" ]; then
-		echo "[err] VG '$THINPOOL_VG' not found"
+	vgdisplay "$THINPOOL_VG"  >/dev/null 2>&1
+	if [ ! "$?" -eq '0' ]; then
+		printf "$o_err VG '$THINPOOL_VG' not found\n"
 		continue
 	fi
 
 	# LVM thinpool LV check
 	lvdisplay $THINPOOL_VG/$THINPOOL_LV >/dev/null 2>&1
 	if [ ! "$?" -eq "0" ]; then
-		echo "[wrn] LV '$THINPOOL_VG/$THINPOOL_LV' not found"
+		printf "$o_wrn LV '$THINPOOL_VG/$THINPOOL_LV' not found\n"
 		echo "Following commands would be executed to create thin pool:"
 		echo "  lvcreate -n $THINPOOL_LV -L $THINPOOL_SIZE $THINPOOL_VG"
 		echo "  lvconvert --type thin-pool $THINPOOL_VG/$THINPOOL_LV"
-		echo -n "[?] Create now? (y/n) "
+		printf "[?] Create now? (y/n) "
 		read answer
-		if [ "$answer" == "y" ]; then
-			echo "[inf] Creating ..."
+		if [ "$answer" = "y" ]; then
+			printf "$o_inf Creating ...\n"
 			## create thin pool
 			lvcreate -n $THINPOOL_LV -L $THINPOOL_SIZE $THINPOOL_VG
 			if [ ! "$?" -eq "0" ]; then
-				echo "[err] Error while creating LV for thin pool, aborting"
+				printf "$o_err Error while creating LV for thin pool, aborting\n"
 				exit 1
 			fi
 			lvconvert --type thin-pool $THINPOOL_VG/$THINPOOL_LV
 			if [ ! "$?" -eq "0" ]; then
-				echo "[err] Error while converting LV into thin pool, aborting"
+				printf "$o_err Error while converting LV into thin pool, aborting\n"
 				exit 1
 			fi
-			echo "[inf] LVM thinpool successfuly created"
+			printf "$o_ok LVM thinpool successfuly created\n"
 		else
-			echo "[wrn] fast-vm will not work without thinpool LV!"
+			printf "$o_wrn fast-vm will not work without thinpool LV!\n"
 		fi
 	fi
 
 	# check if the LV is a thinpool
 	is_thin_pool=$(lvdisplay /dev/$THINPOOL_VG/$THINPOOL_LV 2>/dev/null|grep 'LV Pool'|wc -l)
 	if [ ! "$is_thin_pool" -eq "2" ]; then
-		echo "[err] LV /dev/$THINPOOL_VG/$THINPOOL_LV is not a thin pool"
-		echo "To create a thinpool for fast-vm delete this LV a run the configuration again"
+		printf "$o_err LV /dev/$THINPOOL_VG/$THINPOOL_LV is not a thin pool. To create a thinpool for fast-vm delete this LV a run the configuration again\n"
 		exit 1
 	fi
 
 	# check for the libvirt network
-	virsh --connect qemu:///system net-info "$LIBVIRT_NETWORK" 2>&1 >/dev/null
+	virsh --connect qemu:///system net-info "$LIBVIRT_NETWORK" >/dev/null 2>&1
 	if [ ! "$?" -eq "0" ]; then
-		echo -n "[?] Network $LIBVIRT_NETWORK is not defined in libvirt, define now? (y/n) "
+		printf "[?] Network $LIBVIRT_NETWORK is not defined in libvirt, define now? (y/n) "
 		read answer
-		if [ "$answer" == "y" ]; then
-			echo "[inf] Creating ..."
+		if [ "$answer" = "y" ]; then
+			printf "$o_inf Creating ...\n"
 			tmp_file=$(mktemp --suffix=.xml)
 			sed -e "s/NET_NAME/$LIBVIRT_NETWORK/g; s/SUBNET_NUMBER/$SUBNET_NUMBER/g" /usr/share/fast-vm/fast-vm-network.xml > $tmp_file
 			virsh --connect qemu:///system net-define $tmp_file
 			if [ ! "$?" -eq "0" ]; then
-				echo "[err] Error creating libvirt network, aborting"
+				printf "$o_err Error creating libvirt network, aborting\n"
 				exit 1
 			fi
 			virsh --connect qemu:///system net-autostart "$LIBVIRT_NETWORK"
 			if [ ! "$?" -eq "0" ]; then
-				echo "[err] Error marking libvirt network as autostarted, aborting"
+				printf "$o_err Error marking libvirt network as autostarted, aborting\n"
 				exit 1
 			fi
 			virsh --connect qemu:///system net-start "$LIBVIRT_NETWORK"
 			if [ ! "$?" -eq "0" ]; then
-				echo "[err] Error starting libvirt network, aborting"
+				printf "$o_err Error starting libvirt network, aborting\n"
 				exit 1
 			fi
-			echo "[inf] fast-vm libvirt network created and autostarted"
+			printf "$o_inf fast-vm libvirt network created and autostarted\n"
 		else
-			echo "[wrn] fast-vm will not work without libvirt network!"
+			printf "$o_wrn fast-vm will not work without libvirt network!\n"
 		fi
 	fi
 
 	is_subnet_number=$(virsh --connect qemu:///system net-dumpxml "$LIBVIRT_NETWORK" 2>/dev/null|grep 'ip address'|cut -d. -f3)
 	if [ "$is_subnet_number" != "$SUBNET_NUMBER" ];then
-		echo "[err] Libvirt network subnet is different from one provided in fast-vm configuration"
-		echo "fix fast-vm configuration or libvirt network configuration"
+		printf "$o_err Libvirt network subnet is different from one provided in fast-vm configuration. Fix fast-vm configuration or libvirt network configuration\n"
 		exit 1
 	fi
-	echo "[inf] fast-vm configured"
+	printf "$o_ok fast-vm configured\n"
 	success=1
 done

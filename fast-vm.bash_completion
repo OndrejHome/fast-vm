@@ -27,6 +27,11 @@ _fast-vm()
 		return 0
 	fi
 
+	if [ "$cword" -eq 3 ] && [ ${COMP_WORDS[1]} == "stop" ]; then
+	        COMPREPLY=( $( compgen -W "graceful" -- "$cur" ) )
+		return 0
+	fi
+
 	if [ "$cword" -eq 3 ] && [ ${COMP_WORDS[1]} == "create" ]; then
 		local number_used number_all number_available
 		number_used=$(mktemp)
@@ -74,7 +79,7 @@ _fast-vm()
 		COMPREPLY=( $( compgen -W "$image_name" -- "$cur" ) )
 		return 0
 		;;
-	start|delete|console|ssh)
+	start|stop|delete|console|ssh)
 		local vm_numbers vm_option
 		case $prev in
 			start)
@@ -83,7 +88,7 @@ _fast-vm()
 			delete)
 				vm_option='--all'
 			;;
-			console|ssh)
+			console|ssh|stop)
 				vm_option='--state-running'
 			;;
 		esac
@@ -95,7 +100,7 @@ _fast-vm()
 
 	$split && return 0
 	if [ "$cword" -lt 2 ]; then
-		COMPREPLY=( $( compgen -W 'import_image remove_image create start delete console ssh list' -- "$cur" ) )
+		COMPREPLY=( $( compgen -W 'import_image remove_image create start stop delete console ssh list' -- "$cur" ) )
 		return 0
 	fi
 

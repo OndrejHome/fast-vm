@@ -1,4 +1,4 @@
-.TH FAST-VM 8 "fast-vm 0.5 (2016-04-08)" "fast-vm" "fast-vm" \" -*- nroff -*-
+.TH FAST-VM 8 "fast-vm 0.6 (2016-05-01)" "fast-vm" "fast-vm" \" -*- nroff -*-
 .SH NAME
 fast-vm \(em script for defining VMs from images provided in thin LVM pool
 .SH SYNOPSIS
@@ -45,6 +45,11 @@ fast-vm \(em script for defining VMs from images provided in thin LVM pool
 .br
 
 .B fast-vm
+.BI "stop " VmNumber
+.RB [ graceful ]
+.br
+
+.B fast-vm
 .BI "console " VmNumber
 .br
 
@@ -88,13 +93,17 @@ Local path or http/https URL to image file in GZIP or XZ format.
 
 .TP
 .BI "PathToLibvirtXML " /path/to/libvirt.xml
-Local path to libvirt VM XML template. Check the 
+.TP
+.BI "PathToLibvirtXML " htto://url/to/libvirt.xml
+Local path or http/https URL to libvirt VM XML template. Check the
 .B TEMPLATE MACROS
 for list of supported macros.
 
 .TP 
 .BI "PathToHacksFile " /path/to/hacks.sh
-Local path to shell script which will be executed after creation of the VM and allows
+.TP
+.BI "PathToHacksFile " http://url/to/hacks.sh
+Local path or http/https URL to shell script which will be executed after creation of the VM and allows
 to access the disk drive of the VM before first running it. 
 
 .TP

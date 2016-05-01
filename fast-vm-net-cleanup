@@ -1,4 +1,5 @@
 #!/bin/bash
+FASTVM_HELPER=/usr/libexec/fast-vm-helper.sh
 if [ ! -f '/etc/fast-vm.conf' ]; then
         echo "[err] global configuration file /etc/fast-vm.conf not found"
         exit 1
@@ -15,7 +16,7 @@ while read mac ip; do
 
 	if [ -z "$vm_name" ]; then
 		echo "[inf] deleting reservation for non-existing VM number $vm_number"
-		echo "dhcp_release" "$LIBVIRT_NETWORK" "$vm_number" "$mac" | sudo --non-interactive $FASTVM_HELPER
+		echo "dhcp_release" "$LIBVIRT_NETWORK" "$vm_number" "$mac" | sudo -n $FASTVM_HELPER
                 virsh --connect qemu:///system net-update "$LIBVIRT_NETWORK" delete ip-dhcp-host --xml "<host mac='$mac' ip='$ip'/>" --live --config
 
 	fi

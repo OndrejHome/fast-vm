@@ -1,7 +1,7 @@
 == FAST-VM ==
 fast-vm — script for defining VMs from images provided in thin LVM pool
 
-fast-vm is provides command-line interface to create virtual machines (VMs) in libvirt,
+fast-vm provides command-line interface to create virtual machines (VMs) in libvirt,
 based on imported disks in LVM and XML templates.
 
 Templates of VM disk drives are stored in LVM thinpool LV for space efficiency. Templates
@@ -15,6 +15,7 @@ starting VM using the 'hack files'.
 * libvirt with qemu/kvm 
 * LVM thin pool support
 * LVM VG with reasonable amount of free space (to create LV with thin pool)
+** you can use 'losetup' to create a loopback device with LVM
 * preconfigured VM disk images and XML files (downloadable separately)
 * 'dhcp_release' for proper DHCP static leases release
 * (optional) 'bash-completion' for bash completion to work
@@ -35,7 +36,7 @@ starting VM using the 'hack files'.
 
 ====== FAST-VM Configuration ======
 ## As root user
-1. Run 'configure-fast-vm' script (/usr/sbin/configure-fast-vm
+1. Run 'configure-fast-vm' script /usr/sbin/configure-fast-vm
 Script will:
 - create default configuration file from your answers
 - create LVM thin pool with name and size of your choice
@@ -59,26 +60,17 @@ Script will:
 * Fedora 22 BUG: libvirt-daemon shipped on installation media doesn't create the 'libivrt' group.
   updating the package solves the problem
 * VM images are provided separately
-  - publicaly available images can be found at  https://github.com/OndrejHome/fast-vm-public-images
+  - publicly available images can be found at  https://github.com/OndrejHome/fast-vm-public-images
 * using 'dhcp_release' to remove DHCP static reservation is not the cleanest
   way of doing so, but there is no other supported way of doing this through libvirt
   (TODO: make RFE/BUG into libvirt)
-* BUG: sometimes the VM doesn't get designated IP address because the dnsmasq holds
-       the lease for some older MAC address (dhcp_release should be fixing this but
-       it's not 100% working solution)
+* sometimes the VM doesn't get designated IP address because the dnsmasq holds
+  the lease for some older MAC address (dhcp_release should be fixing this but
+  it's not 100% working solution) - use fast-vm-net-cleanup to fix this issue
 
-===== Upgrading from the 0.2 to 0.3 =====
-* version 0.2 required root to run, 0.3 doesn't require root for normal operations
-* first copy /root/.fast-vm/config into /etc/fast-vm.conf (this is new central configuration file)
-* update hack files and libvirt definitions:
-** due to some changes to way how to connect to libvirt you will have to download new "hack files" for the
-version taht you have imported or you can just re-import images and hack files would get updateed 
-  or
-** copy all '.xml' and '.sh' files from /root/.fast-vm/ into your user $HOME/.fast-vm/ to be able to use 
-images that are already imported
-
-====== Where the files get installed ======
-- check Makefile for exact locations
+=== License and Support ===
+fast-vm is distributed under GPLv3 (or newer if it exists).
+Author will try to supports only the newest release.
 
 === Author ===
 Ondrej Famera <ofamera@redhat.com> or <ondrej-xa2iel8u@famera.cz>
