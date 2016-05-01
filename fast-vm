@@ -122,7 +122,7 @@ fast-vm stop VmNumber [graceful]
 fast-vm console VmNumber
 fast-vm ssh VmNumber [/path/to/custom/script]
 
-== fast-vm version 0.5 <ofamera@redhat.com> ==
+== fast-vm version 0.6 <ofamera@redhat.com> ==
 EOF
 			;;
 	esac

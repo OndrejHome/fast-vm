@@ -1,6 +1,6 @@
 Name:		fast-vm
-Version:	0.5
-Release:	1%{?dist}
+Version:	0.6
+Release:	4%{?dist}
 Summary:	Script for defining VMs from images provided in thin LVM pool
 
 License:	GPLv3+
@@ -49,5 +49,10 @@ Suggests:	libguestfs-tools-c
 %{_mandir}/man8/configure-%{name}*
 
 %changelog
+* Sun May 01 2016 Ondrej Famera <ofamera@redhat.com> 0.6-4
+- support for http(s) links for  XML definitions and hack files
+- colourful output
+- 'stop' action added
+
 * Fri Apr 08 2016 Ondrej Famera <ofamera@redhat.com> 0.5-1
 - Initial release
