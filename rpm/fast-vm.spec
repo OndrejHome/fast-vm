@@ -55,7 +55,7 @@ Suggests:	libguestfs-tools-c
 - change permisions for some of the installed files
 
 * Sun May 01 2016 Ondrej Famera <ofamera@redhat.com> 0.6-4
-- support for http(s) links for  XML definitions and hack files
+- support for http(s) links for XML definitions and hack files
 - colourful output
 - 'stop' action added
 
