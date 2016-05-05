@@ -1,6 +1,6 @@
 Name:		fast-vm
-Version:	0.6
-Release:	4%{?dist}
+Version:	0.6.1
+Release:	1%{?dist}
 Summary:	Script for defining VMs from images provided in thin LVM pool
 
 License:	GPLv3+
@@ -26,7 +26,8 @@ Suggests:	libguestfs-tools-c
 %{name} is taking care of:
 - defining the VMs from provided XML in libvirt
 - creating thin LV thin snaphost as storage devices for VMs
-- making static IP DHCP reservation in libvirt network definition for MAC address of VM
+- making static IP DHCP reservation in libvirt network definition
+  for MAC address of VM
 
 %prep
 %autosetup -n %{name}-%{version}
@@ -42,13 +43,17 @@ Suggests:	libguestfs-tools-c
 %{_sbindir}/configure-%{name}
 %{_libexecdir}/%{name}-helper.sh
 %{_datadir}/%{name}/
-%{_datadir}/bash-completion/completions/%{name}
-%{_sysconfdir}/sudoers.d/%{name}-sudoers
+%{_datadir}/bash-completion/completions
 %{_mandir}/man5/%{name}.conf*
 %{_mandir}/man8/%{name}*
 %{_mandir}/man8/configure-%{name}*
+%config(noreplace) %{_sysconfdir}/sudoers.d/%{name}-sudoers
 
 %changelog
+* Thu May 05 2016 Ondrej Famera <ofamera@redhat.com> 0.6.1-1
+- fix the missing double dash in VG names for bash completion script
+- change permisions for some of the installed files
+
 * Sun May 01 2016 Ondrej Famera <ofamera@redhat.com> 0.6-4
 - support for http(s) links for  XML definitions and hack files
 - colourful output
