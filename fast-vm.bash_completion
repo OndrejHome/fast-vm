@@ -60,7 +60,8 @@ _fast-vm()
 		local image_name
 		# lets get the dm-XX number of the thinpool
 		double_dash=$(echo "$thin_lv"|sed 's/-/--/g') # LVM uses double dash in the /dev/mapper
-		pool_dm=$(ls -l "/dev/mapper/$thin_vg-$double_dash-tpool"|cut -d / -f 5)
+		double_dash_vg=$(echo "$thin_vg"|sed 's/-/--/g') # also for VGs
+		pool_dm=$(ls -l "/dev/mapper/$double_dash_vg-$double_dash-tpool"|cut -d / -f 5)
 		# from dm-XX of thinpool we can list the LVs inside the thinpool 
 		holders=$(ls /sys/block/$pool_dm/holders)
 		holder_regexp=""
