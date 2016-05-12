@@ -414,7 +414,6 @@ case "$1" in
 		printf "$o_inf adding static lease for 192.168.$SUBNET_NUMBER.$vm_number into libvirts DHCP\n"
 		VM_MAC=$(virsh --connect qemu:///system dumpxml "$VM_PREFIX$image_name-$vm_number"|grep 'mac address'|cut -d\' -f 2)
 		virsh --connect qemu:///system net-update "$LIBVIRT_NETWORK" add-last ip-dhcp-host --xml "<host mac='$VM_MAC' ip='192.168.$SUBNET_NUMBER.$vm_number'/>" --live --config >>$DEBUG_LOG 2>&1
-		vm_mac="$VM_MAC" # temporary transition variable
 
 		# source file with hacks and apply them
 		if [ ! -z "$hack_file" ]; then
@@ -588,7 +587,6 @@ case "$1" in
 			done
 
 		fi
-
 		;;
 	list_images)
 		short_output="$2" # if non-zero the output suitable for external processing
