@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 # fast-vm helper script for privileged root actions
 
 DEBUG_LOG=/tmp/fast-vm-helper.debug.log

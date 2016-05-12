@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 config_file="/etc/fast-vm.conf"
 
 ## terminal colors
