@@ -68,6 +68,24 @@ Script will:
   the lease for some older MAC address (dhcp_release should be fixing this but
   it's not 100% working solution) - use fast-vm-net-cleanup to fix this issue
 
+====== FAQ ======
+Q: Why is it using LVM?
+A: Because LVM provides very reasonable management of block devices and writable snapshots
+with thin provisioning.
+
+Q: Why is it not using file-based disk images?
+A: It takes much more space.
+
+Q: Why not to use file-based disk images with cow (copy-on-write) image?
+A: Because if you change the image, the cow images will get corrupted unless you somehow
+re-export them. By using LVM this is not a concern as the LVM is keeping track of changes
+and will preserve the changes stuff in snaphost so it is safe to edit base image while having
+machines that are based on previous version of the base image.
+
+Q: Why not to use BTRFS cow?
+A: BTRFS is not as widely spread as LVM and it is not clear if it would be able to provide same
+functionality as LVM. There is possibility that I will look at this in the future.
+
 === License and Support ===
 fast-vm is distributed under GPLv3 (or newer if it exists).
 Author will try to supports only the newest release.
