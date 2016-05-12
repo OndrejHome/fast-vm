@@ -92,6 +92,19 @@ list_vm () {
 	virsh --connect qemu:///system list "$vm_option"|awk '{print $2}'|egrep "^${VM_PREFIX}.*-[0-9]+"|sed 's/.*-\([0-9]\+\)$/\1/'|sort -n
 }
 
+check_vm_number () {
+	vm_number="$1"
+	vm_state="$2"
+	if [ $(list_vm all|egrep "^$vm_number$"|wc -l) -eq 0 ]; then
+		printf "$o_err no VM with number '$vm_number' found\n"
+		exit 1
+	fi
+	if [ $(list_vm $vm_state|egrep "^$vm_number$"|wc -l) -eq 1 ]; then
+		printf "$o_err VM with number '$vm_number' is already $vm_state\n"
+		exit 1
+	fi
+}
+
 usage () {
 	part="$1"
 
@@ -336,6 +349,10 @@ case "$1" in
 				printf "$o_err VM number out of range (20-220)\n"
 				usage create
 			fi
+			if [ $(list_vm all|egrep "^$vm_number$"|wc -l) -gt 0 ]; then
+				printf "$o_err VM with this VM number already exists\n"
+				exit 1
+			fi
 		else
 			if [ "$vm_number" = "base" ]; then
 				printf "$o_inf creating base image VM\n"
@@ -415,13 +432,10 @@ case "$1" in
 	start)
 		vm_number="$2"
 		if [ -z "$vm_number" ]; then printf "$o_err VM number missing\n"; usage start; fi
-		
-		vm_name=$(virsh --connect qemu:///system list --all |grep "$VM_PREFIX"|awk '{print $2}'|egrep "\-$vm_number$")
 
-		if [ -z "$vm_name" ]; then
-			printf "$o_err VM with number '$vm_number' not found\n"
-			exit 1
-		fi
+		check_vm_number "$vm_number" "active"
+
+		vm_name=$(virsh --connect qemu:///system list --all |grep "$VM_PREFIX"|awk '{print $2}'|egrep "\-$vm_number$")
 		
 		# if there is any third argument start VM and console after
 		if [ -z "$3" ]; then
@@ -465,23 +479,31 @@ case "$1" in
 		vm_number="$2"
 		if [ -z "$vm_number" ]; then printf "$o_err VM number missing\n"; usage stop; fi
 
+		check_vm_number "$vm_number" "inactive"
+
 		vm_name=$(virsh --connect qemu:///system list --all |grep "$VM_PREFIX"|awk '{print $2}'|egrep "\-$vm_number$")
-		if [ -z "$vm_name" ]; then
-			printf "$o_err VM with number '$vm_number' not found\n"
-			exit 1
-		fi
 
 		if [ ! -z "$3" ] && [ "$3" = "graceful" ]; then
 			printf "$o_inf Sending ACPI shutdown event\n"
 			virsh --connect qemu:///system shutdown $vm_name 2>>$DEBUG_LOG
+			if [ "$?" != '0' ]; then
+				printf "$o_err failed to send gracefull shutdown to VM, check $DEBUG_LOG for more information\n"
+				exit 1
+			fi
 		else
 			printf "$o_inf Stopping VM now\n"
 			virsh --connect qemu:///system destroy $vm_name 2>>$DEBUG_LOG
+			if [ "$?" != '0' ]; then
+				printf "$o_err failed to forcefully shutdown VM, check $DEBUG_LOG for more information\n"
+				exit 1
+			fi
 		fi
 		;;
 	ssh)
 		vm_number="$2"
 		if [ -z "$vm_number" ]; then printf "$o_err VM number missing\n"; usage ssh; fi
+
+		check_vm_number "$vm_number" "active"
 
 		wait_for_ssh "$vm_number"
 		if [ ! -z "$3" ]; then
@@ -498,11 +520,9 @@ case "$1" in
 		vm_number="$2"
 		if [ -z "$vm_number" ]; then printf "$o_err VM number missing\n"; usage console; fi
 
+		check_vm_number "$vm_number" "active"
+
 		vm_name=$(virsh --connect qemu:///system list --all |grep "$VM_PREFIX"|awk '{print $2}'|egrep "\-$vm_number$")
-		if [ -z "$vm_name" ]; then
-			printf "$o_err VM with number '$vm_number' not found\n"
-			exit 1
-		fi
 
 		virsh --connect qemu:///system console $vm_name 2>>$DEBUG_LOG
 		;;
@@ -510,18 +530,29 @@ case "$1" in
 		vm_number="$2"
 		if [ -z "$vm_number" ]; then printf "$o_err VM number missing\n"; usage delete; fi
 
-		vm_name=$(virsh --connect qemu:///system list --all |grep "$VM_PREFIX"|awk '{print $2}'|egrep "\-$vm_number$")
-		if [ -z "$vm_name" ]; then
-			printf "$o_err VM with number '$vm_number' not found\n"
+		if [ $(list_vm all|egrep "^$vm_number$"|wc -l) -eq 0 ]; then
+			printf "$o_err no VM with number '$vm_number' found\n"
 			exit 1
 		fi
 
-		virsh --connect qemu:///system destroy $vm_name >>$DEBUG_LOG 2>&1
+		vm_name=$(virsh --connect qemu:///system list --all |grep "$VM_PREFIX"|awk '{print $2}'|egrep "\-$vm_number$")
+
+		if [ $(list_vm active|egrep "^$vm_number$"|wc -l) -eq 0 ]; then
+			print "$o_wrn VM is active, forcefully stopping it"
+			virsh --connect qemu:///system destroy $vm_name >>$DEBUG_LOG 2>&1
+			if [ "$?" != '0' ]; then
+				printf "$o_err failed to stop VM, check $DEBUG_LOG for more information\n"
+				exit 1
+			fi
+		fi
 
 		VM_MAC=$(virsh --connect qemu:///system dumpxml "$vm_name"|grep 'mac address'|cut -d\' -f 2)
 
 		printf "$o_inf removing DHCP reservation\n"
 		virsh --connect qemu:///system net-update "$LIBVIRT_NETWORK" delete ip-dhcp-host --xml "<host mac='$VM_MAC' ip='192.168.$SUBNET_NUMBER.$vm_number'/>" --live --config >>$DEBUG_LOG 2>&1
+		if [ "$?" != '0' ]; then
+			printf "$o_wrn failed to remove DHCP reservation from libvirt, check $DEBUG_LOG for more information\n"
+		fi
 		PATH="$PATH:/usr/sbin" which dhcp_release >/dev/null 2>&1
 		if [ "$?" -eq '0' ]; then
 			echo "dhcp_release" "$LIBVIRT_NETWORK" "$vm_number" "$VM_MAC" | sudo -n $FASTVM_HELPER
@@ -534,8 +565,12 @@ case "$1" in
 
 		printf "$o_inf undefining VM from libvirt\n"
 		virsh --connect qemu:///system undefine $vm_name >>$DEBUG_LOG 2>&1
-
-		printf "$o_ok VM '$vm_name' deleted\n"
+		if [ "$?" != '0' ]; then
+			printf "$o_err failed to undefine VM, check $DEBUG_LOG for more information\n"
+			exit 1
+		else
+			printf "$o_ok VM '$vm_name' deleted\n"
+		fi
 		;;
 	list)
 		list_type="$2"
