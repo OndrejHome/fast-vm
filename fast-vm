@@ -87,6 +87,9 @@ usage () {
 		remove_image)
 			echo "$0 remove_image ImageName"
 			;;
+		list_images)
+			echo "$0 list_images [short]"
+			;;
 		create)
 			echo "$0 create ImageName <base |VmNumber> [PathToLibvirtXML] [PathToHacksFile]"
 			;;
@@ -114,6 +117,7 @@ fast-vm <action> <options>
 
 fast-vm import_image ImageName PathToImage PathToLibvirtXML [PathToHacksFile]
 fast-vm remove_image ImageName
+fast-vm list_images [short]
 fast-vm create ImageName <base |VmNumber> [PathToLibvirtXML] [PathToHacksFile]
 fast-vm delete VmNumber
 fast-vm list
@@ -521,6 +525,51 @@ case "$1" in
 		echo "VM#   status     image_name"
 		echo "==========================="
 		virsh --connect qemu:///system list --all |awk '{print $2,$3,$4,$5}'|egrep "^${VM_PREFIX}.*-[0-9]+"|sed "s/${VM_PREFIX}\(.\+\)-\([0-9]\+\) \([a-zA-Z ]\+\)$/\2 - \3 - \1/" |sort -n
+
+		;;
+	list_images)
+		short_output="$2" # if non-zero the output suitable for external processing
+		# first we need to determine the dm-XX of the thinpool
+		double_dash_lv=$(echo "$THINPOOL_LV"|sed 's/-/--/g') # LVM uses double dash in the /dev/mapper
+		double_dash_vg=$(echo "$THINPOOL_VG"|sed 's/-/--/g') # also for VGs
+		# lets get the dm-XX number of the thinpool
+		pool_dm=$(ls -l "/dev/mapper/${double_dash_vg}-${double_dash_lv}-tpool"|cut -d / -f 5)
+		# from dm-XX of thinpool we can list the LVs inside the thinpool
+		holders=$(ls /sys/block/$pool_dm/holders)
+		holder_regexp=""
+		for dm in $holders
+		do
+			if [ -z "$holder_regexp" ]; then
+				holder_regexp="$dm"
+			else
+				holder_regexp="$holder_regexp|$dm"
+			fi
+		done
+		holder_regexp="($holder_regexp)"
+		# finaly parse the VM image versions from what we have
+		image_name_list=$(ls -l /dev/$THINPOOL_VG/ |egrep "$holder_regexp"|awk '{print $9}'|grep "$VM_PREFIX"|sed -e "s/$VM_PREFIX//; s/-[0-9]\+$//"|uniq)
+
+		if [ ! -z "$short_output" ] && [ "$short_output" = "short" ]; then
+			echo "$image_name_list"
+		else
+				printf '%-20s %-8s %-8s\n' 'Image name' 'XML' 'Hack file'
+			for image_name in $image_name_list; do
+				# check the existence of the XML file
+				if [ -f "$HOME/.fast-vm/config-${image_name}.xml" ]; then
+					xml_exists="ok"
+				else
+					xml_exists="missing"
+				fi
+				# check existence of hack file
+				if [ -f "$HOME/.fast-vm/hacks-${image_name}.sh" ]; then
+					hacks_exists="ok"
+				else
+					hacks_exists="missing"
+				fi
+				printf "%-20s %-8s %-8s\n" "$image_name" "$xml_exists" "$hacks_exists"
+			done
+			printf "\nNOTE: if image is missing XML it wouldn't be possible to create a VM from it!\n Image with missing hack file can work if it's not needed.\n"
+		fi
 		;;
 	*) 
 		printf "$o_err unknown action\n"

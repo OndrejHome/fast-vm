@@ -58,26 +58,13 @@ _fast-vm()
 		;;
 	create|remove_image)
 		local image_name
-		# lets get the dm-XX number of the thinpool
-		double_dash=$(echo "$thin_lv"|sed 's/-/--/g') # LVM uses double dash in the /dev/mapper
-		double_dash_vg=$(echo "$thin_vg"|sed 's/-/--/g') # also for VGs
-		pool_dm=$(ls -l "/dev/mapper/$double_dash_vg-$double_dash-tpool"|cut -d / -f 5)
-		# from dm-XX of thinpool we can list the LVs inside the thinpool 
-		holders=$(ls /sys/block/$pool_dm/holders)
-		holder_regexp=""
-		for dm in $holders
-		do
-			if [ -z "$holder_regexp" ]; then
-				holder_regexp="$dm"
-			else
-				holder_regexp="$holder_regexp|$dm"
-			fi
-		done
-		holder_regexp="($holder_regexp)"
-		# finaly lets parse the VM image versions from what we have
-		image_name=$(ls -l /dev/$thin_vg/ |egrep "$holder_regexp"|awk '{print $9}'|grep "$vm_prefix"|sed -e "s/$vm_prefix//; s/-[0-9]\+$//"|uniq)
 
+		image_name=$(fast-vm list_images short)
 		COMPREPLY=( $( compgen -W "$image_name" -- "$cur" ) )
+		return 0
+		;;
+	list_images)
+		COMPREPLY=( $( compgen -W "short" -- "$cur" ) )
 		return 0
 		;;
 	start|stop|delete|console|ssh)
@@ -101,7 +88,7 @@ _fast-vm()
 
 	$split && return 0
 	if [ "$cword" -lt 2 ]; then
-		COMPREPLY=( $( compgen -W 'import_image remove_image create start stop delete console ssh list' -- "$cur" ) )
+		COMPREPLY=( $( compgen -W 'import_image remove_image list_images create start stop delete console ssh list' -- "$cur" ) )
 		return 0
 	fi
 
