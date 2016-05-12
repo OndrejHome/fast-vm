@@ -54,36 +54,36 @@ _fast-vm()
 
 	case $prev in
 		import_image)
-		return 0
-		;;
-	create|remove_image)
-		local image_name
+			return 0
+			;;
+		create|remove_image)
+			local image_name
 
-		image_name=$(fast-vm list_images short)
-		COMPREPLY=( $( compgen -W "$image_name" -- "$cur" ) )
-		return 0
-		;;
-	list_images)
-		COMPREPLY=( $( compgen -W "short" -- "$cur" ) )
-		return 0
-		;;
-	start|stop|delete|console|ssh)
-		local vm_numbers vm_option
-		case $prev in
-			start)
-				vm_option='--inactive'
+			image_name=$(fast-vm list_images short)
+			COMPREPLY=( $( compgen -W "$image_name" -- "$cur" ) )
+			return 0
 			;;
-			delete)
-				vm_option='--all'
+		list_images)
+			COMPREPLY=( $( compgen -W "short" -- "$cur" ) )
+			return 0
 			;;
-			console|ssh|stop)
-				vm_option='--state-running'
+		start|stop|delete|console|ssh)
+			local vm_numbers vm_option
+			case $prev in
+				start)
+					vm_option='--inactive'
+				;;
+				delete)
+					vm_option='--all'
+				;;
+				console|ssh|stop)
+					vm_option='--state-running'
+				;;
+			esac
+			vm_numbers=$(virsh --connect qemu:///system list "$vm_option"|awk '{print $2}'|egrep "^${vm_prefix}.*-[0-9]+"|sed 's/.*-\([0-9]\+\)$/\1/')
+			COMPREPLY=( $( compgen -W "$vm_numbers" -- "$cur" ) )
+			return 0
 			;;
-		esac
-		vm_numbers=$(virsh --connect qemu:///system list "$vm_option"|awk '{print $2}'|egrep "^${vm_prefix}.*-[0-9]+"|sed 's/.*-\([0-9]\+\)$/\1/')
-		COMPREPLY=( $( compgen -W "$vm_numbers" -- "$cur" ) )
-		return 0
-		;;
 	esac
 
 	$split && return 0
