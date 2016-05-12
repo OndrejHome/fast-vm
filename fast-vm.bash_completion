@@ -2,12 +2,10 @@
 
 _fast-vm()
 {
-	local cur prev words cword split thin_lv thin_vg vm_prefix
+	local cur prev words cword split vm_prefix
 	_init_completion -s || return
 
 	vm_prefix=$(grep VM_PREFIX /etc/fast-vm.conf|tail -1 |cut -d\= -f 2)
-	thin_lv=$(grep THINPOOL_LV /etc/fast-vm.conf|tail -1 |cut -d\= -f 2)
-	thin_vg=$(grep THINPOOL_VG /etc/fast-vm.conf|tail -1 |cut -d\= -f 2)
 
 	if [ "$cword" -eq 3 ] && [ ${COMP_WORDS[1]} == "import_image" ]; then
 		_filedir '@(gz|xz)'
