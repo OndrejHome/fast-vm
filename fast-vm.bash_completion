@@ -29,6 +29,10 @@ _fast-vm()
 	        COMPREPLY=( $( compgen -W "graceful" -- "$cur" ) )
 		return 0
 	fi
+	if [ "$cword" -eq 3 ] && [ ${COMP_WORDS[1]} == "list" ]; then
+	        COMPREPLY=( $( compgen -W "short" -- "$cur" ) )
+		return 0
+	fi
 
 	if [ "$cword" -eq 3 ] && [ ${COMP_WORDS[1]} == "create" ]; then
 		local number_used number_all number_available
@@ -65,20 +69,23 @@ _fast-vm()
 			COMPREPLY=( $( compgen -W "short" -- "$cur" ) )
 			return 0
 			;;
+		list)
+			COMPREPLY=( $( compgen -W "all active inactive" -- "$cur" ) )
+			return 0
+			;;
 		start|stop|delete|console|ssh)
-			local vm_numbers vm_option
+			local vm_numbers
 			case $prev in
 				start)
-					vm_option='--inactive'
+					vm_numbers=$(fast-vm list inactive short)
 				;;
 				delete)
-					vm_option='--all'
+					vm_numbers=$(fast-vm list all short)
 				;;
 				console|ssh|stop)
-					vm_option='--state-running'
+					vm_numbers=$(fast-vm list active short)
 				;;
 			esac
-			vm_numbers=$(virsh --connect qemu:///system list "$vm_option"|awk '{print $2}'|egrep "^${vm_prefix}.*-[0-9]+"|sed 's/.*-\([0-9]\+\)$/\1/')
 			COMPREPLY=( $( compgen -W "$vm_numbers" -- "$cur" ) )
 			return 0
 			;;

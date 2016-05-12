@@ -76,6 +76,22 @@ download_file () {
 	fi
 }
 
+list_vm () {
+	vm_state="$1"
+	case $vm_state in
+		inactive)
+			vm_option='--inactive'
+		;;
+		active)
+			vm_option='--state-running'
+		;;
+		*)
+			vm_option='--all'
+		;;
+	esac
+	virsh --connect qemu:///system list "$vm_option"|awk '{print $2}'|egrep "^${VM_PREFIX}.*-[0-9]+"|sed 's/.*-\([0-9]\+\)$/\1/'|sort -n
+}
+
 usage () {
 	part="$1"
 
@@ -109,7 +125,7 @@ usage () {
 			echo "$0 delete VmNumber"
 			;;
 		list)
-			echo "$0 list"
+			echo "$0 list [all|active|inactive [short]]"
 			;;
 		*)
 cat <<EOF
@@ -120,7 +136,7 @@ fast-vm remove_image ImageName
 fast-vm list_images [short]
 fast-vm create ImageName <base |VmNumber> [PathToLibvirtXML] [PathToHacksFile]
 fast-vm delete VmNumber
-fast-vm list
+fast-vm list [all|active|inactive [short]]
 fast-vm start VmNumber [console|ssh [/path/to/custom/script]]
 fast-vm stop VmNumber [graceful]
 fast-vm console VmNumber
@@ -522,9 +538,21 @@ case "$1" in
 		printf "$o_ok VM '$vm_name' deleted\n"
 		;;
 	list)
-		echo "VM#   status     image_name"
-		echo "==========================="
-		virsh --connect qemu:///system list --all |awk '{print $2,$3,$4,$5}'|egrep "^${VM_PREFIX}.*-[0-9]+"|sed "s/${VM_PREFIX}\(.\+\)-\([0-9]\+\) \([a-zA-Z ]\+\)$/\2 - \3 - \1/" |sort -n
+		list_type="$2"
+		short_output="$3"
+
+		vm_list=$(list_vm "$list_type")
+		if [ ! -z "$short_output" ] && [ "$short_output" = "short" ]; then
+			echo "$vm_list"
+		else
+			printf "%3s %-20s %s\n" "VM#" "Image name" "Status"
+			data=$(virsh --connect qemu:///system list --all|awk '{print $2,$3,$4}'|egrep "^${VM_PREFIX}.*-[0-9]+"|sed "s/${VM_PREFIX}\(.\+\)-\([0-9]\+\) \([a-zA-Z ]\+\)$/\2 \1 \3/"|awk '{printf "%3s %-20s %s %s\n",$1,$2,$3,$4}')
+			for vm in $vm_list;
+			do
+				echo "$data"|egrep "(^ $vm|^$vm)"
+			done
+
+		fi
 
 		;;
 	list_images)
