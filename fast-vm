@@ -536,8 +536,8 @@ case "$1" in
 
 		vm_name=$(virsh --connect qemu:///system list --all |grep "$VM_PREFIX"|awk '{print $2}'|egrep "\-$vm_number$")
 
-		if [ $(list_vm active|egrep "^$vm_number$"|wc -l) -eq 0 ]; then
-			print "$o_wrn VM is active, forcefully stopping it"
+		if [ $(list_vm active|egrep "^$vm_number$"|wc -l) -eq 1 ]; then
+			printf "$o_wrn VM is active, forcefully stopping it\n"
 			virsh --connect qemu:///system destroy $vm_name >>$DEBUG_LOG 2>&1
 			if [ "$?" != '0' ]; then
 				printf "$o_err failed to stop VM, check $DEBUG_LOG for more information\n"
