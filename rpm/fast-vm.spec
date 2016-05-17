@@ -1,5 +1,5 @@
 Name:		fast-vm
-Version:	0.6.1
+Version:	0.7
 Release:	1%{?dist}
 Summary:	Script for defining VMs from images provided in thin LVM pool
 
@@ -53,6 +53,11 @@ Recommends:	pv
 %config(noreplace) %{_sysconfdir}/sudoers.d/%{name}-sudoers
 
 %changelog
+* Wed May 18 2016 Ondrej Famera <ofamera@redhat.com> 0.7-1
+- transition from /bin/bash to /bin/sh
+- move listing of the VMs from bash completion to fast-vm script
+- add list_images function
+
 * Thu May 05 2016 Ondrej Famera <ofamera@redhat.com> 0.6.1-1
 - fix the missing double dash in VG names for bash completion script
 - change permisions for some of the installed files
