@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 config_file="/etc/fast-vm.conf"
 
 ## terminal colors
@@ -58,9 +58,12 @@ while [ "$success" -eq 0 ];
 do
 
 	ask_question "VG for LVM thin pool\n fast-vm is using LVM thin LV to store VM images and data.\n On which existing VG should be this thin LV?" "$THINPOOL_VG" "THINPOOL_VG"
-	ask_question "LVM thin pool name\n Name the thin LV on which data would be stored." "$THINPOOL_LV" "THINPOOL_LV"
-	ask_question "LVM thin pool size\n You can use units understood by LVM like M,G,T.\n NOTE: This applies only when thin LV doesn't exists yet." "$THINPOOL_SIZE" "THINPOOL_SIZE"
+	ask_question "LVM thin pool name\n Name the thin LV on which data would be stored.\n NOTE: This can be both 'name of existing thinpool LV' or 'name for a new one'.\n If LV with this name doesn't exists, it will get created by this setup." "$THINPOOL_LV" "THINPOOL_LV"
 
+	lvdisplay $THINPOOL_VG/$THINPOOL_LV >/dev/null 2>&1
+	if [ ! "$?" -eq "0" ]; then
+		ask_question "LVM thin pool size\n You can use units understood by LVM like M,G,T.\n NOTE: This applies only when thin LV doesn't exists yet." "$THINPOOL_SIZE" "THINPOOL_SIZE"
+	fi
 	ask_question "VM name prefix in libvirt\n Prefix is used in VM names and VM drive names." "$VM_PREFIX" "VM_PREFIX"
 
 	ask_question "Libvirt network (bridge) name\n This configuration will create a libvirt \n network with this name providing NAT for VMs." "$LIBVIRT_NETWORK" "LIBVIRT_NETWORK"

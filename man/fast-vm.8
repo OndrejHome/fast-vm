@@ -1,4 +1,4 @@
-.TH FAST-VM 8 "fast-vm 0.6 (2016-05-01)" "fast-vm" "fast-vm" \" -*- nroff -*-
+.TH FAST-VM 8 "fast-vm 0.7 (2016-05-12)" "fast-vm" "fast-vm" \" -*- nroff -*-
 .SH NAME
 fast-vm \(em script for defining VMs from images provided in thin LVM pool
 .SH SYNOPSIS
@@ -21,6 +21,11 @@ fast-vm \(em script for defining VMs from images provided in thin LVM pool
 .br
 
 .B fast-vm
+.BR list_images
+.RB [ short ]
+.br
+
+.B fast-vm
 .B create 
 .I ImageName
 .RB < base 
@@ -36,6 +41,8 @@ fast-vm \(em script for defining VMs from images provided in thin LVM pool
 
 .B fast-vm
 .B list
+.RB [ all | active | inactive
+.RB [ short ]]
 .br
 
 .B fast-vm

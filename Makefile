@@ -11,12 +11,12 @@ install:
 	mkdir -p ${DESTDIR}/${sbindir}
 	install -pm 755 configure-fast-vm ${DESTDIR}/${sbindir}/
 	mkdir -p ${DESTDIR}/${libexecdir}
-	install -pm 750 fast-vm-helper.sh ${DESTDIR}/${libexecdir}/
+	install -pm 744 fast-vm-helper.sh ${DESTDIR}/${libexecdir}/
 	mkdir -p ${DESTDIR}/${datadir}/fast-vm
 	install -pm 644 fast-vm-network.xml ${DESTDIR}/${datadir}/fast-vm/
 	install -pm 644 fast-vm.conf.defaults ${DESTDIR}/${datadir}/fast-vm/
 	mkdir -p ${DESTDIR}/${sysconfdir}/sudoers.d/
-	install -pm 640 fast-vm-sudoers ${DESTDIR}/${sysconfdir}/sudoers.d/
+	install -pm 440 fast-vm-sudoers ${DESTDIR}/${sysconfdir}/sudoers.d/
 	mkdir -p ${DESTDIR}/${datadir}/bash-completion/completions
 	install -pm 644 fast-vm.bash_completion ${DESTDIR}/${datadir}/bash-completion/completions/fast-vm
 	mkdir -p ${DESTDIR}/${datadir}/man/man8

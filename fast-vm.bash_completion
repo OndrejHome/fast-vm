@@ -2,12 +2,10 @@
 
 _fast-vm()
 {
-	local cur prev words cword split thin_lv thin_vg vm_prefix
+	local cur prev words cword split vm_prefix
 	_init_completion -s || return
 
 	vm_prefix=$(grep VM_PREFIX /etc/fast-vm.conf|tail -1 |cut -d\= -f 2)
-	thin_lv=$(grep THINPOOL_LV /etc/fast-vm.conf|tail -1 |cut -d\= -f 2)
-	thin_vg=$(grep THINPOOL_VG /etc/fast-vm.conf|tail -1 |cut -d\= -f 2)
 
 	if [ "$cword" -eq 3 ] && [ ${COMP_WORDS[1]} == "import_image" ]; then
 		_filedir '@(gz|xz)'
@@ -29,6 +27,10 @@ _fast-vm()
 
 	if [ "$cword" -eq 3 ] && [ ${COMP_WORDS[1]} == "stop" ]; then
 	        COMPREPLY=( $( compgen -W "graceful" -- "$cur" ) )
+		return 0
+	fi
+	if [ "$cword" -eq 3 ] && [ ${COMP_WORDS[1]} == "list" ]; then
+	        COMPREPLY=( $( compgen -W "short" -- "$cur" ) )
 		return 0
 	fi
 
@@ -54,53 +56,44 @@ _fast-vm()
 
 	case $prev in
 		import_image)
-		return 0
-		;;
-	create|remove_image)
-		local image_name
-		# lets get the dm-XX number of the thinpool
-		double_dash=$(echo "$thin_lv"|sed 's/-/--/g') # LVM uses double dash in the /dev/mapper
-		pool_dm=$(ls -l "/dev/mapper/$thin_vg-$double_dash-tpool"|cut -d / -f 5)
-		# from dm-XX of thinpool we can list the LVs inside the thinpool 
-		holders=$(ls /sys/block/$pool_dm/holders)
-		holder_regexp=""
-		for dm in $holders
-		do
-			if [ -z "$holder_regexp" ]; then
-				holder_regexp="$dm"
-			else
-				holder_regexp="$holder_regexp|$dm"
-			fi
-		done
-		holder_regexp="($holder_regexp)"
-		# finaly lets parse the VM image versions from what we have
-		image_name=$(ls -l /dev/$thin_vg/ |egrep "$holder_regexp"|awk '{print $9}'|grep "$vm_prefix"|sed -e "s/$vm_prefix//; s/-[0-9]\+$//"|uniq)
+			return 0
+			;;
+		create|remove_image)
+			local image_name
 
-		COMPREPLY=( $( compgen -W "$image_name" -- "$cur" ) )
-		return 0
-		;;
-	start|stop|delete|console|ssh)
-		local vm_numbers vm_option
-		case $prev in
-			start)
-				vm_option='--inactive'
+			image_name=$(fast-vm list_images short)
+			COMPREPLY=( $( compgen -W "$image_name" -- "$cur" ) )
+			return 0
 			;;
-			delete)
-				vm_option='--all'
+		list_images)
+			COMPREPLY=( $( compgen -W "short" -- "$cur" ) )
+			return 0
 			;;
-			console|ssh|stop)
-				vm_option='--state-running'
+		list)
+			COMPREPLY=( $( compgen -W "all active inactive" -- "$cur" ) )
+			return 0
 			;;
-		esac
-		vm_numbers=$(virsh --connect qemu:///system list "$vm_option"|awk '{print $2}'|egrep "^${vm_prefix}.*-[0-9]+"|sed 's/.*-\([0-9]\+\)$/\1/')
-		COMPREPLY=( $( compgen -W "$vm_numbers" -- "$cur" ) )
-		return 0
-		;;
+		start|stop|delete|console|ssh)
+			local vm_numbers
+			case $prev in
+				start)
+					vm_numbers=$(fast-vm list inactive short)
+				;;
+				delete)
+					vm_numbers=$(fast-vm list all short)
+				;;
+				console|ssh|stop)
+					vm_numbers=$(fast-vm list active short)
+				;;
+			esac
+			COMPREPLY=( $( compgen -W "$vm_numbers" -- "$cur" ) )
+			return 0
+			;;
 	esac
 
 	$split && return 0
 	if [ "$cword" -lt 2 ]; then
-		COMPREPLY=( $( compgen -W 'import_image remove_image create start stop delete console ssh list' -- "$cur" ) )
+		COMPREPLY=( $( compgen -W 'import_image remove_image list_images create start stop delete console ssh list' -- "$cur" ) )
 		return 0
 	fi
 

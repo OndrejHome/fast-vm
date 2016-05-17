@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 DEBUG_LOG=/tmp/fast-vm.debug.log
 FASTVM_HELPER=/usr/libexec/fast-vm-helper.sh
 
@@ -45,12 +45,13 @@ check_file () {
 	error_prefix="$2"
 	if [ "$curl_ok" -eq 0 ] && [ $(echo $file_path | awk  '{ s=substr($0, 0, 4); print s; }' )  = "http" ]; then
 		curl_data=$(curl --head "$file_path" 2>/dev/null)
+		curl_exit="$?"
 		curl_httpok=$(echo "$curl_data"|egrep "HTTP.*200 OK"|wc -l)
 		if [ "$curl_httpok" -eq "1" ]; then
 			file_size=$(echo "$curl_data"|grep "Content-Length:"|awk '{print $2}'|sed 's/[^0-9]*//g')
 			printf "$o_inf Detected remote file with size $file_size\n"
 		else
-			printf "$o_err $error_prefix: error checking remote file on the server, we got following information from server\n%s\n" "$curl_data"
+			printf "$o_err $error_prefix: error checking remote file on the server.\nCURL exited with code %d and we got following information from server\n%s\n" "$curl_exit" "$curl_data"
 			exit 2
 		fi
 	else
@@ -76,6 +77,35 @@ download_file () {
 	fi
 }
 
+list_vm () {
+	vm_state="$1"
+	case $vm_state in
+		inactive)
+			vm_option='--inactive'
+		;;
+		active)
+			vm_option='--state-running'
+		;;
+		*)
+			vm_option='--all'
+		;;
+	esac
+	virsh --connect qemu:///system list "$vm_option"|awk '{print $2}'|egrep "^${VM_PREFIX}.*-[0-9]+"|sed 's/.*-\([0-9]\+\)$/\1/'|sort -n
+}
+
+check_vm_number () {
+	vm_number="$1"
+	vm_state="$2"
+	if [ $(list_vm all|egrep "^$vm_number$"|wc -l) -eq 0 ]; then
+		printf "$o_err no VM with number '$vm_number' found\n"
+		exit 1
+	fi
+	if [ $(list_vm $vm_state|egrep "^$vm_number$"|wc -l) -eq 1 ]; then
+		printf "$o_err VM with number '$vm_number' is already $vm_state\n"
+		exit 1
+	fi
+}
+
 usage () {
 	part="$1"
 
@@ -86,6 +116,9 @@ usage () {
 			;;
 		remove_image)
 			echo "$0 remove_image ImageName"
+			;;
+		list_images)
+			echo "$0 list_images [short]"
 			;;
 		create)
 			echo "$0 create ImageName <base |VmNumber> [PathToLibvirtXML] [PathToHacksFile]"
@@ -106,7 +139,7 @@ usage () {
 			echo "$0 delete VmNumber"
 			;;
 		list)
-			echo "$0 list"
+			echo "$0 list [all|active|inactive [short]]"
 			;;
 		*)
 cat <<EOF
@@ -114,15 +147,16 @@ fast-vm <action> <options>
 
 fast-vm import_image ImageName PathToImage PathToLibvirtXML [PathToHacksFile]
 fast-vm remove_image ImageName
+fast-vm list_images [short]
 fast-vm create ImageName <base |VmNumber> [PathToLibvirtXML] [PathToHacksFile]
 fast-vm delete VmNumber
-fast-vm list
+fast-vm list [all|active|inactive [short]]
 fast-vm start VmNumber [console|ssh [/path/to/custom/script]]
 fast-vm stop VmNumber [graceful]
 fast-vm console VmNumber
 fast-vm ssh VmNumber [/path/to/custom/script]
 
-== fast-vm version 0.6 <ofamera@redhat.com> ==
+== fast-vm version 0.7 <ofamera@redhat.com> ==
 EOF
 			;;
 	esac
@@ -316,6 +350,10 @@ case "$1" in
 				printf "$o_err VM number out of range (20-220)\n"
 				usage create
 			fi
+			if [ $(list_vm all|egrep "^$vm_number$"|wc -l) -gt 0 ]; then
+				printf "$o_err VM with this VM number already exists\n"
+				exit 1
+			fi
 		else
 			if [ "$vm_number" = "base" ]; then
 				printf "$o_inf creating base image VM\n"
@@ -377,7 +415,6 @@ case "$1" in
 		printf "$o_inf adding static lease for 192.168.$SUBNET_NUMBER.$vm_number into libvirts DHCP\n"
 		VM_MAC=$(virsh --connect qemu:///system dumpxml "$VM_PREFIX$image_name-$vm_number"|grep 'mac address'|cut -d\' -f 2)
 		virsh --connect qemu:///system net-update "$LIBVIRT_NETWORK" add-last ip-dhcp-host --xml "<host mac='$VM_MAC' ip='192.168.$SUBNET_NUMBER.$vm_number'/>" --live --config >>$DEBUG_LOG 2>&1
-		vm_mac="$VM_MAC" # temporary transition variable
 
 		# source file with hacks and apply them
 		if [ ! -z "$hack_file" ]; then
@@ -395,13 +432,10 @@ case "$1" in
 	start)
 		vm_number="$2"
 		if [ -z "$vm_number" ]; then printf "$o_err VM number missing\n"; usage start; fi
-		
-		vm_name=$(virsh --connect qemu:///system list --all |grep "$VM_PREFIX"|awk '{print $2}'|egrep "\-$vm_number$")
 
-		if [ -z "$vm_name" ]; then
-			printf "$o_err VM with number '$vm_number' not found\n"
-			exit 1
-		fi
+		check_vm_number "$vm_number" "active"
+
+		vm_name=$(virsh --connect qemu:///system list --all |grep "$VM_PREFIX"|awk '{print $2}'|egrep "\-$vm_number$")
 		
 		# if there is any third argument start VM and console after
 		if [ -z "$3" ]; then
@@ -445,23 +479,31 @@ case "$1" in
 		vm_number="$2"
 		if [ -z "$vm_number" ]; then printf "$o_err VM number missing\n"; usage stop; fi
 
+		check_vm_number "$vm_number" "inactive"
+
 		vm_name=$(virsh --connect qemu:///system list --all |grep "$VM_PREFIX"|awk '{print $2}'|egrep "\-$vm_number$")
-		if [ -z "$vm_name" ]; then
-			printf "$o_err VM with number '$vm_number' not found\n"
-			exit 1
-		fi
 
 		if [ ! -z "$3" ] && [ "$3" = "graceful" ]; then
 			printf "$o_inf Sending ACPI shutdown event\n"
 			virsh --connect qemu:///system shutdown $vm_name 2>>$DEBUG_LOG
+			if [ "$?" != '0' ]; then
+				printf "$o_err failed to send gracefull shutdown to VM, check $DEBUG_LOG for more information\n"
+				exit 1
+			fi
 		else
 			printf "$o_inf Stopping VM now\n"
 			virsh --connect qemu:///system destroy $vm_name 2>>$DEBUG_LOG
+			if [ "$?" != '0' ]; then
+				printf "$o_err failed to forcefully shutdown VM, check $DEBUG_LOG for more information\n"
+				exit 1
+			fi
 		fi
 		;;
 	ssh)
 		vm_number="$2"
 		if [ -z "$vm_number" ]; then printf "$o_err VM number missing\n"; usage ssh; fi
+
+		check_vm_number "$vm_number" "active"
 
 		wait_for_ssh "$vm_number"
 		if [ ! -z "$3" ]; then
@@ -478,11 +520,9 @@ case "$1" in
 		vm_number="$2"
 		if [ -z "$vm_number" ]; then printf "$o_err VM number missing\n"; usage console; fi
 
+		check_vm_number "$vm_number" "active"
+
 		vm_name=$(virsh --connect qemu:///system list --all |grep "$VM_PREFIX"|awk '{print $2}'|egrep "\-$vm_number$")
-		if [ -z "$vm_name" ]; then
-			printf "$o_err VM with number '$vm_number' not found\n"
-			exit 1
-		fi
 
 		virsh --connect qemu:///system console $vm_name 2>>$DEBUG_LOG
 		;;
@@ -490,18 +530,29 @@ case "$1" in
 		vm_number="$2"
 		if [ -z "$vm_number" ]; then printf "$o_err VM number missing\n"; usage delete; fi
 
-		vm_name=$(virsh --connect qemu:///system list --all |grep "$VM_PREFIX"|awk '{print $2}'|egrep "\-$vm_number$")
-		if [ -z "$vm_name" ]; then
-			printf "$o_err VM with number '$vm_number' not found\n"
+		if [ $(list_vm all|egrep "^$vm_number$"|wc -l) -eq 0 ]; then
+			printf "$o_err no VM with number '$vm_number' found\n"
 			exit 1
 		fi
 
-		virsh --connect qemu:///system destroy $vm_name >>$DEBUG_LOG 2>&1
+		vm_name=$(virsh --connect qemu:///system list --all |grep "$VM_PREFIX"|awk '{print $2}'|egrep "\-$vm_number$")
+
+		if [ $(list_vm active|egrep "^$vm_number$"|wc -l) -eq 1 ]; then
+			printf "$o_wrn VM is active, forcefully stopping it\n"
+			virsh --connect qemu:///system destroy $vm_name >>$DEBUG_LOG 2>&1
+			if [ "$?" != '0' ]; then
+				printf "$o_err failed to stop VM, check $DEBUG_LOG for more information\n"
+				exit 1
+			fi
+		fi
 
 		VM_MAC=$(virsh --connect qemu:///system dumpxml "$vm_name"|grep 'mac address'|cut -d\' -f 2)
 
 		printf "$o_inf removing DHCP reservation\n"
 		virsh --connect qemu:///system net-update "$LIBVIRT_NETWORK" delete ip-dhcp-host --xml "<host mac='$VM_MAC' ip='192.168.$SUBNET_NUMBER.$vm_number'/>" --live --config >>$DEBUG_LOG 2>&1
+		if [ "$?" != '0' ]; then
+			printf "$o_wrn failed to remove DHCP reservation from libvirt, check $DEBUG_LOG for more information\n"
+		fi
 		PATH="$PATH:/usr/sbin" which dhcp_release >/dev/null 2>&1
 		if [ "$?" -eq '0' ]; then
 			echo "dhcp_release" "$LIBVIRT_NETWORK" "$vm_number" "$VM_MAC" | sudo -n $FASTVM_HELPER
@@ -514,13 +565,73 @@ case "$1" in
 
 		printf "$o_inf undefining VM from libvirt\n"
 		virsh --connect qemu:///system undefine $vm_name >>$DEBUG_LOG 2>&1
-
-		printf "$o_ok VM '$vm_name' deleted\n"
+		if [ "$?" != '0' ]; then
+			printf "$o_err failed to undefine VM, check $DEBUG_LOG for more information\n"
+			exit 1
+		else
+			printf "$o_ok VM '$vm_name' deleted\n"
+		fi
 		;;
 	list)
-		echo "VM#   status     image_name"
-		echo "==========================="
-		virsh --connect qemu:///system list --all |awk '{print $2,$3,$4,$5}'|egrep "^${VM_PREFIX}.*-[0-9]+"|sed "s/${VM_PREFIX}\(.\+\)-\([0-9]\+\) \([a-zA-Z ]\+\)$/\2 - \3 - \1/" |sort -n
+		list_type="$2"
+		short_output="$3"
+
+		vm_list=$(list_vm "$list_type")
+		if [ ! -z "$short_output" ] && [ "$short_output" = "short" ]; then
+			echo "$vm_list"
+		else
+			printf "%3s %-20s %s\n" "VM#" "Image name" "Status"
+			data=$(virsh --connect qemu:///system list --all|awk '{print $2,$3,$4}'|egrep "^${VM_PREFIX}.*-[0-9]+"|sed "s/${VM_PREFIX}\(.\+\)-\([0-9]\+\) \([a-zA-Z ]\+\)$/\2 \1 \3/"|awk '{printf "%3s %-20s %s %s\n",$1,$2,$3,$4}')
+			for vm in $vm_list;
+			do
+				echo "$data"|egrep "(^ $vm|^$vm)"
+			done
+
+		fi
+		;;
+	list_images)
+		short_output="$2" # if non-zero the output suitable for external processing
+		# first we need to determine the dm-XX of the thinpool
+		double_dash_lv=$(echo "$THINPOOL_LV"|sed 's/-/--/g') # LVM uses double dash in the /dev/mapper
+		double_dash_vg=$(echo "$THINPOOL_VG"|sed 's/-/--/g') # also for VGs
+		# lets get the dm-XX number of the thinpool
+		pool_dm=$(ls -l "/dev/mapper/${double_dash_vg}-${double_dash_lv}-tpool"|cut -d / -f 5)
+		# from dm-XX of thinpool we can list the LVs inside the thinpool
+		holders=$(ls /sys/block/$pool_dm/holders)
+		holder_regexp=""
+		for dm in $holders
+		do
+			if [ -z "$holder_regexp" ]; then
+				holder_regexp="$dm"
+			else
+				holder_regexp="$holder_regexp|$dm"
+			fi
+		done
+		holder_regexp="($holder_regexp)"
+		# finaly parse the VM image versions from what we have
+		image_name_list=$(ls -l /dev/$THINPOOL_VG/ |egrep "$holder_regexp"|awk '{print $9}'|grep "$VM_PREFIX"|sed -e "s/$VM_PREFIX//; s/-[0-9]\+$//"|uniq)
+
+		if [ ! -z "$short_output" ] && [ "$short_output" = "short" ]; then
+			echo "$image_name_list"
+		else
+				printf '%-20s %-8s %-8s\n' 'Image name' 'XML' 'Hack file'
+			for image_name in $image_name_list; do
+				# check the existence of the XML file
+				if [ -f "$HOME/.fast-vm/config-${image_name}.xml" ]; then
+					xml_exists="ok"
+				else
+					xml_exists="missing"
+				fi
+				# check existence of hack file
+				if [ -f "$HOME/.fast-vm/hacks-${image_name}.sh" ]; then
+					hacks_exists="ok"
+				else
+					hacks_exists="missing"
+				fi
+				printf "%-20s %-8s %-8s\n" "$image_name" "$xml_exists" "$hacks_exists"
+			done
+			printf "\nNOTE: if image is missing XML it wouldn't be possible to create a VM from it!\n Image with missing hack file can work if it's not needed.\n"
+		fi
 		;;
 	*) 
 		printf "$o_err unknown action\n"
