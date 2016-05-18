@@ -101,7 +101,7 @@ check_vm_number () {
 		exit 1
 	fi
 	if [ $(list_vm $vm_state|egrep "^$vm_number$"|wc -l) -eq 1 ]; then
-		printf "$o_err VM with number '$vm_number' is already $vm_state\n"
+		printf "$o_err VM with number '$vm_number' is $vm_state\n"
 		exit 1
 	fi
 }
@@ -503,7 +503,7 @@ case "$1" in
 		vm_number="$2"
 		if [ -z "$vm_number" ]; then printf "$o_err VM number missing\n"; usage ssh; fi
 
-		check_vm_number "$vm_number" "active"
+		check_vm_number "$vm_number" "inactive"
 
 		wait_for_ssh "$vm_number"
 		if [ ! -z "$3" ]; then
@@ -520,7 +520,7 @@ case "$1" in
 		vm_number="$2"
 		if [ -z "$vm_number" ]; then printf "$o_err VM number missing\n"; usage console; fi
 
-		check_vm_number "$vm_number" "active"
+		check_vm_number "$vm_number" "inactive"
 
 		vm_name=$(virsh --connect qemu:///system list --all |grep "$VM_PREFIX"|awk '{print $2}'|egrep "\-$vm_number$")
 
