@@ -1,5 +1,5 @@
 Name:		fast-vm
-Version:	0.7
+Version:	0.7.1
 Release:	1%{?dist}
 Summary:	Script for defining VMs from images provided in thin LVM pool
 
@@ -10,8 +10,8 @@ Source0:	https://github.com/OndrejHome/%{name}/archive/%{version}.tar.gz
 BuildArch:	noarch
 BuildRequires:	coreutils
 BuildRequires:	bash-completion
-Requires:	awk
 Requires:	coreutils
+Requires:	gawk
 Requires:	libvirt-client
 Requires:	libvirt-daemon
 Requires:	lvm2
@@ -26,11 +26,15 @@ Recommends:	dnsmasq-utils
 Recommends:	pv
 
 %description
-%{name} is taking care of:
-- defining the VMs from provided XML in libvirt
-- creating thin LV thin snaphost as storage devices for VMs
-- making static IP DHCP reservation in libvirt network definition
-  for MAC address of VM
+%{name} provides command-line interface to create virtual machines (VMs) in
+libvirt, based on imported disks in LVM and XML templates.
+
+Templates of VM disk drives are stored in LVM thinpool LV for space efficiency.
+Templates for VMs are just libvirt XMLs with few macros from %{name}. When
+creating a VM, %{name} will create new writable LVM snapshot of disk drive,
+define libvirt VM for it and make a static DHCP reservation for libvirt network
+on which VM will be. Optionally %{name} allows to do some customization of disk
+drive of new machine before starting VM using the 'hack files'.
 
 %prep
 %autosetup -n %{name}-%{version}
@@ -53,6 +57,10 @@ Recommends:	pv
 %config(noreplace) %{_sysconfdir}/sudoers.d/%{name}-sudoers
 
 %changelog
+* Wed May 18 2016 Ondrej Famera <ofamera@redhat.com> 0.7.1-1
+- fix incorrect check logic for ssh/console commands
+- fix wrong awk requirement in RPM
+
 * Wed May 18 2016 Ondrej Famera <ofamera@redhat.com> 0.7-1
 - transition from /bin/bash to /bin/sh
 - move listing of the VMs from bash completion to fast-vm script
