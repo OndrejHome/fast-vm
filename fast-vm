@@ -43,7 +43,7 @@ check_file () {
 	file_size=0
 	file_local=0
 	error_prefix="$2"
-	if [ "$curl_ok" -eq 0 ] && [ $(echo $file_path | awk  '{ s=substr($0, 0, 4); print s; }' )  = "http" ]; then
+	if [ "$curl_ok" -eq 0 ] && [ "$(echo $file_path | awk  '{ s=substr($0, 0, 4); print s; }' )"  = "http" ]; then
 		curl_data=$(curl --head "$file_path" 2>/dev/null)
 		curl_exit="$?"
 		curl_httpok=$(echo "$curl_data"|egrep "HTTP.*200 OK"|wc -l)
@@ -264,7 +264,7 @@ case "$1" in
 		printf "$o_inf importing image $image_path into /dev/$THINPOOL_VG/$VM_PREFIX$image_name\n"
 		echo "chgrp" "/dev/$THINPOOL_VG/$VM_PREFIX$image_name" | sudo -n $FASTVM_HELPER
 
-		if [ "$image_local" -eq "1" ]; then
+		if [ "$image_local" = "1" ]; then
 			if [ "$pv_ok" -eq '0' ]; then
 				$decompress_cmd "$image_path"| pv -s 10G | dd of=/dev/$THINPOOL_VG/$VM_PREFIX$image_name bs=1M conv=sparse >>$DEBUG_LOG 2>&1
 				import_exit="$?"
