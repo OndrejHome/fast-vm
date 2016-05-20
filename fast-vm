@@ -189,6 +189,11 @@ else
 	exit 1
 fi
 
+# create local configuration directory if it doesn't exists
+if [ ! -d "$HOME/.fast-vm" ]; then
+	mkdir "$HOME/.fast-vm" >>$DEBUG_LOG 2>&1
+fi
+
 ## check if there is curl available so we can fetch images from http/https
 which curl >/dev/null 2>&1
 curl_ok="$?"
@@ -286,9 +291,6 @@ case "$1" in
 		fi
 
 		# copy the XML configuration file
-		if [ ! -d "$HOME/.fast-vm" ]; then 
-			mkdir "$HOME/.fast-vm" >>$DEBUG_LOG 2>&1
-		fi
 		cp "$image_xml_path" "$HOME/.fast-vm/config-${image_name}.xml" >>$DEBUG_LOG 2>&1
 		if [ ! -z "$hack_file" ] && [ -f "$hack_file" ]; then
 			cp "$hack_file" "$HOME/.fast-vm/hacks-${image_name}.sh" >>$DEBUG_LOG 2>&1
