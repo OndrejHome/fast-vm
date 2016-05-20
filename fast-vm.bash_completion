@@ -20,11 +20,15 @@ _fast-vm()
 		return 0
 	fi
 
+	if [ "$cword" -eq 3 ] && [ ${COMP_WORDS[1]} == "export_image" ]; then
+	        COMPREPLY=( $( compgen -W "xz gz" -- "$cur" ) )
+		return 0
+	fi
+
 	if [ "$cword" -eq 3 ] && [ ${COMP_WORDS[1]} == "start" ]; then
 	        COMPREPLY=( $( compgen -W "console ssh" -- "$cur" ) )
 		return 0
 	fi
-
 	if [ "$cword" -eq 3 ] && [ ${COMP_WORDS[1]} == "stop" ]; then
 	        COMPREPLY=( $( compgen -W "graceful" -- "$cur" ) )
 		return 0
@@ -58,7 +62,7 @@ _fast-vm()
 		import_image)
 			return 0
 			;;
-		create|remove_image)
+		create|remove_image|export_image)
 			local image_name
 
 			image_name=$(fast-vm list_images short)
@@ -93,7 +97,7 @@ _fast-vm()
 
 	$split && return 0
 	if [ "$cword" -lt 2 ]; then
-		COMPREPLY=( $( compgen -W 'import_image remove_image list_images create start stop delete console ssh list' -- "$cur" ) )
+		COMPREPLY=( $( compgen -W 'import_image export_image remove_image list_images create start stop delete console ssh list' -- "$cur" ) )
 		return 0
 	fi
 

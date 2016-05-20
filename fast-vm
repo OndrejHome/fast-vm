@@ -114,6 +114,9 @@ usage () {
 		import_image)
 			echo "$0 import_image ImageName <empty |PathToImage> PathToLibvirtXML [PathToHacksFile]"
 			;;
+		export_image)
+			echo "$0 export_image ImageName <xz|gz>"
+			;;
 		remove_image)
 			echo "$0 remove_image ImageName"
 			;;
@@ -146,6 +149,7 @@ cat <<EOF
 fast-vm <action> <options>
 
 fast-vm import_image ImageName <empty |PathToImage> PathToLibvirtXML [PathToHacksFile]
+fast-vm export_image ImageName <xz|gz>
 fast-vm remove_image ImageName
 fast-vm list_images [short]
 fast-vm create ImageName <base |VmNumber> [PathToLibvirtXML] [PathToHacksFile]
@@ -310,6 +314,46 @@ case "$1" in
 		fi
 
 		printf "$o_ok image imported\n"
+		;;
+	export_image)
+		image_name="$2"
+		if [ -z "$image_name" ]; then printf "$o_err missing image name\n"; usage export_image; fi
+		image_format="$3"
+		case "$image_format" in
+			gz)
+				which gzip >/dev/null 2>&1
+				if [ ! "$?" -eq 0 ]; then
+					printf "$o_err 'gzip' binary missing, install it to have support for GZ\n"
+					exit 1
+				fi
+				compress_cmd="gzip -c"
+				;;
+			xz)
+				which xz >/dev/null 2>&1
+				if [ ! "$?" -eq 0 ]; then
+					printf "$o_err 'xz' binary missing, install it to have support for XZ\n"
+					exit 1
+				fi
+				compress_cmd="xz -c -k --best --block-size=16777216 -T 0"
+				;;
+			*)
+				printf "$o_err unknown image format $image_format (supported: xz, gz)\n"
+				exit 1
+				;;
+		esac
+
+		if [ -b "/dev/$THINPOOL_VG/$VM_PREFIX$image_name" ]; then
+			printf "$o_inf compressing the image $image_name into $(pwd)/${image_name}.img.${image_format}\n"
+			$compress_cmd /dev/$THINPOOL_VG/$VM_PREFIX$image_name > $(pwd)/${image_name}.img.${image_format}
+			if [ "$?" -eq "0" ]; then
+				printf "$o_ok Image compression finished\n"
+			else
+				printf "$o_err There was error compressing the image, check output above\n"
+			fi
+		else
+			printf "$o_err image "$image_name" not found\n"
+			usage export_image
+		fi
 		;;
 	remove_image)
 		image_name="$2"
