@@ -23,7 +23,9 @@ Requires:	qemu-kvm
 Recommends:	bash-completion
 Recommends:	curl
 Recommends:	dnsmasq-utils
+Recommends:	gzip
 Recommends:	pv
+Recommends:	xz
 
 %description
 %{name} provides command-line interface to create virtual machines (VMs) in

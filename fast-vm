@@ -208,9 +208,19 @@ case "$1" in
 		image_extension="${image_path##*.}"
 		case "$image_extension" in
 			gz)
+				which gunzip >/dev/null 2>&1
+				if [ ! "$?" -eq 0 ]; then
+					printf "$o_err 'gunzip' binary missing, install it to have support for GZ\n"
+					exit 1
+				fi
 				decompress_cmd="gunzip -c"
 				;;
 			xz)
+				which xz >/dev/null 2>&1
+				if [ ! "$?" -eq 0 ]; then
+					printf "$o_err 'xz' binary missing, install it to have support for XZ\n"
+					exit 1
+				fi
 				decompress_cmd="xz -d -c"
 				;;
 			*)
