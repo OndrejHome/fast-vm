@@ -112,7 +112,7 @@ usage () {
 	echo ''
 	case $part in
 		import_image)
-			echo "$0 import_image ImageName PathToImage PathToLibvirtXML [PathToHacksFile]"
+			echo "$0 import_image ImageName <empty |PathToImage> PathToLibvirtXML [PathToHacksFile]"
 			;;
 		remove_image)
 			echo "$0 remove_image ImageName"
@@ -145,7 +145,7 @@ usage () {
 cat <<EOF
 fast-vm <action> <options>
 
-fast-vm import_image ImageName PathToImage PathToLibvirtXML [PathToHacksFile]
+fast-vm import_image ImageName <empty |PathToImage> PathToLibvirtXML [PathToHacksFile]
 fast-vm remove_image ImageName
 fast-vm list_images [short]
 fast-vm create ImageName <base |VmNumber> [PathToLibvirtXML] [PathToHacksFile]
@@ -206,8 +206,11 @@ case "$1" in
 		image_name="$2"
 		if [ -z "$image_name" ]; then printf "$o_err missing image name\n"; usage import_image; fi
 		image_path="$3"
-		check_file "$image_path" "image file"
-		image_path="$file_path"
+		# skip path check for "empty" image file
+		if [ "$image_path" != "empty" ]; then
+			check_file "$image_path" "image file"
+			image_path="$file_path"
+		fi
 		image_size="$file_size"
 		image_local="$file_local"
 		image_extension="${image_path##*.}"
@@ -227,6 +230,9 @@ case "$1" in
 					exit 1
 				fi
 				decompress_cmd="xz -d -c"
+				;;
+			empty)
+				printf "$o_inf we are creating empty image file\n"
 				;;
 			*)
 				printf "$o_err unknown image file extension $image_extension, (supported: xz, gz)\n"
@@ -263,6 +269,12 @@ case "$1" in
 
 		printf "$o_inf importing image $image_path into /dev/$THINPOOL_VG/$VM_PREFIX$image_name\n"
 		echo "chgrp" "/dev/$THINPOOL_VG/$VM_PREFIX$image_name" | sudo -n $FASTVM_HELPER
+
+		if [ "$image_path" = "empty" ]; then
+			cp "$image_xml_path" "$HOME/.fast-vm/config-${image_name}.xml" >>$DEBUG_LOG 2>&1
+			printf "$o_ok Empty image imported\n"
+			exit 0
+		fi
 
 		if [ "$image_local" = "1" ]; then
 			if [ "$pv_ok" -eq '0' ]; then
@@ -397,7 +409,7 @@ case "$1" in
 				printf "$o_inf applying hacks finished\n"
 			fi
 
-			printf "$o_inf base image VM created, to start this VM use 'virsh --connect qemu:///system start $VM_PREFIX$image_name'. This VM is used for customizing the base image of '$image_name' VMs. All changes you make to this VM would be available in newly created VMs of that version, this will not affect already existing VMs of same version\n"
+			printf "$o_inf base image VM created, to start this VM use 'virsh --connect qemu:///system start $VM_PREFIX$image_name'.\n This VM is used for customizing the base image of '$image_name' VMs.\n All changes you make to this VM would be available in newly created VMs of that version, this will not affect already existing VMs of same version\n"
 			exit 0
 		fi
 		
