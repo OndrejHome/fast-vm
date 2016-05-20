@@ -1,4 +1,4 @@
-.TH FAST-VM 8 "fast-vm 0.7 (2016-05-12)" "fast-vm" "fast-vm" \" -*- nroff -*-
+.TH FAST-VM 8 "fast-vm 0.7 (2016-05-20)" "fast-vm" "fast-vm" \" -*- nroff -*-
 .SH NAME
 fast-vm \(em script for defining VMs from images provided in thin LVM pool
 .SH SYNOPSIS
@@ -153,33 +153,47 @@ MAC address assigned to VM.
 
 .SH CREATING CUSTOM IMAGES
 Currently fast-vm expects that all images are 10GB in size (this can change in future).
-There 2-3 steps for creating the custom image.
-
+Below is recommended procedure for creating your custom images.
 .TP
-.B 1. Compressing disk image
-If you have a 10GB disk image for example at
-.I /dev/mystuff/cool_image
-, then you just need to first compress the image using GZIP or XZ preferably using commands with arguments below.
-
-.B xz -c -k --best --block-size=16777216 -T 0 /dev/mystuff/cool_image > cool_image.xz
-
-.B gzip -c /dev/mystuff/cool_image > cool_image.gz
-
-To make image as small as possible try to first remove unnecesary things from the VM such as cache files, logs. If the OS supports it,
-try to send TRIM (ATA devices) or UNMAP (SCSI devices) so the storage can mark free space as free. YOu can try command
-.BR fstrim .
-
-.TP
-.B 2. Creating libvirt XML template
-If possible try to reuse the templates from the fast-vm-public-images repository where the libvirt XML images are already quite small.
-If this is not possible the here are some guidelines in creating good libvirt XML:
+.B 1. Create libvirt VM XML template
+If you are unsure about the template get some inspiration in the fast-vm-public-images repository and feel free to reuse the template
+files from there. You can change template later to suit more your needs. Here are some guidelines for creating a good libvirt XML:
 .nf
 .RB "\(bu Use " "TEMPLATE MACROS" " to describe paths and names. Avoid hardcoding path to single drive to prevenc concurrent access to it."
 \(bu Remove the exact hardware addresses where possible to let the destination libvirt decide where the devices should be assigned.
 .fi
 
 .TP
-.B 3. (optional) Creating hack file
+.B 2. Name your custom image and import "empty image" witht the libvirt XML
+The custom image in example will be named 'cool_image' and libvirt XML file wil have name cool_image.xml
+
+.B fast-vm import_image cool_image empty cool_image.xml
+
+.TP
+.B 3. Create base VM and prepare your custom image
+First create the base VM which will use the empty drive that you have imported.
+
+.B fast-vm create cool_image base
+
+Now you will have a VM with empty disk drive and you can install any system you want to become your custom image.
+To make image as small as possible try to first remove unnecesary things from the VM such as cache files, logs. If the OS supports it,
+try to send TRIM (ATA devices) or UNMAP (SCSI devices) so the storage can mark free space as free. You can try command
+.BR fstrim .
+
+.TP
+.B 4. Export image in compressed form
+When you have done all modification to your image export it to GZ or XZ compressed file using one of the commands below.
+
+.B fast-vm export_image cool_image xz
+
+.B fast-vm export_image cool_image gz
+
+TIP: To test how the fast-vm VM would be created from this image, simply create it based on your custom image
+
+.B fast-vm create cool_image VmNumber
+
+.TP
+.B 5. (optional) Creating hack file
 Hack files allows you to change some thing in the image at the time when new fast-vm VM is created and when you know for example the VmNumber.
 This is used in fast-vm-public-images to setup the hostname of the machine to match the fast-vm VM_NAME and also to alter the MAC address to match
 the one that got assigned by libvirt to new VM. fast-vm-public-images hack files are also doing some changes on the filesystem before the VM
