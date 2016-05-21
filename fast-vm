@@ -343,6 +343,7 @@ case "$1" in
 		esac
 
 		if [ -b "/dev/$THINPOOL_VG/$VM_PREFIX$image_name" ]; then
+			echo "chgrp" "/dev/$THINPOOL_VG/$VM_PREFIX$image_name" | sudo -n $FASTVM_HELPER
 			printf "$o_inf compressing the image $image_name into $(pwd)/${image_name}.img.${image_format}\n"
 			$compress_cmd /dev/$THINPOOL_VG/$VM_PREFIX$image_name > $(pwd)/${image_name}.img.${image_format}
 			if [ "$?" -eq "0" ]; then
