@@ -5,7 +5,12 @@ _fast-vm()
 	local cur prev words cword split vm_prefix
 	_init_completion -s || return
 
-	vm_prefix=$(grep VM_PREFIX /etc/fast-vm.conf|tail -1 |cut -d\= -f 2)
+	if [ -f /etc/fast-vm.conf ]; then
+		vm_prefix=$(grep VM_PREFIX /etc/fast-vm.conf|tail -1 |cut -d\= -f 2)
+	else
+		printf "\n/etc/fast-vm.conf not found. Run 'configure-fast-vm' to generate it first.\n"
+		return 0
+	fi
 
 	if [ "$cword" -eq 3 ] && [ ${COMP_WORDS[1]} == "import_image" ]; then
 		_filedir '@(gz|xz)'
