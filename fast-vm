@@ -1,6 +1,7 @@
 #!/bin/sh
 DEBUG_LOG=/tmp/fast-vm.debug.log
 FASTVM_HELPER=/usr/libexec/fast-vm-helper.sh
+FASTVM_USER_CONF_DIR="$HOME/.fast-vm"
 
 ## terminal colors
 c_red=$(tput setaf 1)
@@ -194,8 +195,8 @@ else
 fi
 
 # create local configuration directory if it doesn't exists
-if [ ! -d "$HOME/.fast-vm" ]; then
-	mkdir "$HOME/.fast-vm" >>$DEBUG_LOG 2>&1
+if [ ! -d "$FASTVM_USER_CONF_DIR" ]; then
+	mkdir "$FASTVM_USER_CONF_DIR" >>$DEBUG_LOG 2>&1
 fi
 
 ## check if there is curl available so we can fetch images from http/https
@@ -275,7 +276,7 @@ case "$1" in
 		echo "chgrp" "/dev/$THINPOOL_VG/$VM_PREFIX$image_name" | sudo -n $FASTVM_HELPER
 
 		if [ "$image_path" = "empty" ]; then
-			cp "$image_xml_path" "$HOME/.fast-vm/config-${image_name}.xml" >>$DEBUG_LOG 2>&1
+			cp "$image_xml_path" "$FASTVM_USER_CONF_DIR/config-${image_name}.xml" >>$DEBUG_LOG 2>&1
 			printf "$o_ok Empty image imported\n"
 			exit 0
 		fi
@@ -307,10 +308,10 @@ case "$1" in
 		fi
 
 		# copy the XML configuration file
-		cp "$image_xml_path" "$HOME/.fast-vm/config-${image_name}.xml" >>$DEBUG_LOG 2>&1
+		cp "$image_xml_path" "$FASTVM_USER_CONF_DIR/config-${image_name}.xml" >>$DEBUG_LOG 2>&1
 		if [ ! -z "$hack_file" ] && [ -f "$hack_file" ]; then
-			cp "$hack_file" "$HOME/.fast-vm/hacks-${image_name}.sh" >>$DEBUG_LOG 2>&1
-			chmod +x "$HOME/.fast-vm/hacks-${image_name}.sh" >>$DEBUG_LOG 2>&1
+			cp "$hack_file" "$FASTVM_USER_CONF_DIR/hacks-${image_name}.sh" >>$DEBUG_LOG 2>&1
+			chmod +x "$FASTVM_USER_CONF_DIR/hacks-${image_name}.sh" >>$DEBUG_LOG 2>&1
 		fi
 
 		printf "$o_ok image imported\n"
@@ -367,8 +368,8 @@ case "$1" in
 			printf "$o_inf removing LV $VM_PREFIX$image_name ...\n"
 			echo "lvremove" "/dev/$THINPOOL_VG/$VM_PREFIX$image_name" | sudo -n $FASTVM_HELPER
 			printf "$o_inf removing XML and hack file ...\n"
-			if [ -f "$HOME/.fast-vm/config-${image_name}.xml" ]; then rm "$HOME/.fast-vm/config-${image_name}.xml"; fi
-			if [ -f "$HOME/.fast-vm/hacks-${image_name}.sh" ]; then rm "$HOME/.fast-vm/hacks-${image_name}.sh"; fi
+			if [ -f "$FASTVM_USER_CONF_DIR/config-${image_name}.xml" ]; then rm "$FASTVM_USER_CONF_DIR/config-${image_name}.xml"; fi
+			if [ -f "$FASTVM_USER_CONF_DIR/hacks-${image_name}.sh" ]; then rm "$FASTVM_USER_CONF_DIR/hacks-${image_name}.sh"; fi
 			printf "$o_ok image removed\n"
 		else
 			printf "$o_err image "$image_name" not found\n"
@@ -387,11 +388,11 @@ case "$1" in
 	                fi
 			printf "$o_inf using alternative xml file $image_xml_path\n"
 		else
-			if [ ! -f "$HOME/.fast-vm/config-${image_name}.xml" ]; then
-				printf "$o_err no VM XML definition for this version. $HOME/.fast-vm/config-${image_name}.xml not found. Import image again or supply alternative xml\n"
+			if [ ! -f "$FASTVM_USER_CONF_DIR/config-${image_name}.xml" ]; then
+				printf "$o_err no VM XML definition for this version. $FASTVM_USER_CONF_DIR/config-${image_name}.xml not found. Import image again or supply alternative xml\n"
 				usage create
 			fi
-			image_xml_path="$HOME/.fast-vm/config-${image_name}.xml"
+			image_xml_path="$FASTVM_USER_CONF_DIR/config-${image_name}.xml"
 		fi
 
 		hack_file="$5"
@@ -402,10 +403,10 @@ case "$1" in
                         fi
 			printf "$o_inf using alternative hack file $hack_file\n"
 		else
-			if [ ! -f "$HOME/.fast-vm/hacks-${image_name}.sh" ]; then
-				printf "$o_wrn no default hacks file for this version. $HOME/.fast-vm/hacks-${image_name}.sh not found\n"
+			if [ ! -f "$FASTVM_USER_CONF_DIR/hacks-${image_name}.sh" ]; then
+				printf "$o_wrn no default hacks file for this version. $FASTVM_USER_CONF_DIR/hacks-${image_name}.sh not found\n"
 			else
-				hack_file="$HOME/.fast-vm/hacks-${image_name}.sh"
+				hack_file="$FASTVM_USER_CONF_DIR/hacks-${image_name}.sh"
 			fi
 		fi
 
@@ -690,13 +691,13 @@ case "$1" in
 				printf '%-20s %-8s %-8s\n' 'Image name' 'XML' 'Hack file'
 			for image_name in $image_name_list; do
 				# check the existence of the XML file
-				if [ -f "$HOME/.fast-vm/config-${image_name}.xml" ]; then
+				if [ -f "$FASTVM_USER_CONF_DIR/config-${image_name}.xml" ]; then
 					xml_exists="ok"
 				else
 					xml_exists="missing"
 				fi
 				# check existence of hack file
-				if [ -f "$HOME/.fast-vm/hacks-${image_name}.sh" ]; then
+				if [ -f "$FASTVM_USER_CONF_DIR/hacks-${image_name}.sh" ]; then
 					hacks_exists="ok"
 				else
 					hacks_exists="missing"
