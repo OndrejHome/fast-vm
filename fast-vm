@@ -366,6 +366,10 @@ case "$1" in
 			virsh --connect qemu:///system undefine $VM_PREFIX$image_name >>$DEBUG_LOG 2>&1
 			printf "$o_inf removing LV $VM_PREFIX$image_name ...\n"
 			echo "lvremove" "/dev/$THINPOOL_VG/$VM_PREFIX$image_name" | sudo -n $FASTVM_HELPER
+			printf "$o_inf removing XML and hack file ...\n"
+			if [ -f "$HOME/.fast-vm/config-${image_name}.xml" ]; then rm "$HOME/.fast-vm/config-${image_name}.xml"; fi
+			if [ -f "$HOME/.fast-vm/hacks-${image_name}.sh" ]; then rm "$HOME/.fast-vm/hacks-${image_name}.sh"; fi
+			printf "$o_ok image removed\n"
 		else
 			printf "$o_err image "$image_name" not found\n"
 			usage remove_image
