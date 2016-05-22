@@ -451,6 +451,7 @@ case "$1" in
 
 			# source file with hacks and apply them
 			if [ ! -z "$hack_file" ]; then
+				hack_file=$(echo "$hack_file"|sed 's/^\([^\/]\)/\.\/\1/g')
 				printf "$o_inf applying hacks from $hack_file\n"
 				. $hack_file
 				if [ ! "$?" -eq "0" ]; then
@@ -492,6 +493,7 @@ case "$1" in
 
 		# source file with hacks and apply them
 		if [ ! -z "$hack_file" ]; then
+			hack_file=$(echo "$hack_file"|sed 's/^\([^\/]\)/\.\/\1/g')
 			printf "$o_inf applying hacks from $hack_file\n"
 			. $hack_file
 			if [ ! "$?" -eq "0" ]; then
