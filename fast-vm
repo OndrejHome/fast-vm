@@ -97,11 +97,11 @@ list_vm () {
 check_vm_number () {
 	vm_number="$1"
 	vm_state="$2"
-	if [ "$(list_vm all|egrep '^$vm_number$'|wc -l)" -eq "0" ]; then
+	if [ $(list_vm all|egrep "^$vm_number$"|wc -l) -eq 0 ]; then
 		printf "$o_err no VM with number '$vm_number' found\n"
 		exit 1
 	fi
-	if [ "$(list_vm $vm_state|egrep '^$vm_number$'|wc -l)" -eq "1" ]; then
+	if [ $(list_vm $vm_state|egrep "^$vm_number$"|wc -l) -eq 1 ]; then
 		printf "$o_err VM with number '$vm_number' is $vm_state\n"
 		exit 1
 	fi
@@ -174,7 +174,7 @@ EOF
 if [ -z "$1" ]; then usage; fi
 
 # check if we are in libvirt group or if we are root
-if [ "$(id |grep '(libvirt)'|wc -l)" -eq "0" ] && [ "$(whoami)" != "root" ]; then
+if [ $(id |grep '(libvirt)'|wc -l) -eq 0 ] && [ $(whoami) != "root" ]; then
 	printf "$o_err User running fast-vm must be member of group 'libvirt'. You can easily add user to libvirt group using command below\n # usermod -a -G libvirt <user>\n"
 	exit 1
 fi
@@ -383,7 +383,7 @@ case "$1" in
 		image_xml_path="$4"
 		if [ ! -z "$image_xml_path" ]; then
 			check_file "$image_xml_path" "alternative XML VM definition"
-			if [ "$file_local" = '0' ]; then
+			if [ "$file_local" -eq '0' ]; then
 	                        image_xml_path=$(download_file "$image_xml_path")
 	                fi
 			printf "$o_inf using alternative xml file $image_xml_path\n"
@@ -398,7 +398,7 @@ case "$1" in
 		hack_file="$5"
 		if [ ! -z "$hack_file" ]; then
 			check_file "$hack_file" "alternative hack file"
-			if [ "$file_local" = '0' ]; then
+			if [ "$file_local" -eq '0' ]; then
                                 hack_file=$(download_file "$hack_file")
                         fi
 			printf "$o_inf using alternative hack file $hack_file\n"
@@ -424,7 +424,7 @@ case "$1" in
 				printf "$o_err VM number out of range (20-220)\n"
 				usage create
 			fi
-			if [ "$(list_vm all|egrep '^$vm_number$'|wc -l)" -gt 0 ]; then
+			if [ $(list_vm all|egrep "^$vm_number$"|wc -l) -gt 0 ]; then
 				printf "$o_err VM with this VM number already exists\n"
 				exit 1
 			fi
@@ -604,14 +604,14 @@ case "$1" in
 		vm_number="$2"
 		if [ -z "$vm_number" ]; then printf "$o_err VM number missing\n"; usage delete; fi
 
-		if [ "$(list_vm all|egrep '^$vm_number$'|wc -l)" -eq 0 ]; then
+		if [ $(list_vm all|egrep "^$vm_number$"|wc -l) -eq 0 ]; then
 			printf "$o_err no VM with number '$vm_number' found\n"
 			exit 1
 		fi
 
 		vm_name=$(virsh --connect qemu:///system list --all |grep "$VM_PREFIX"|awk '{print $2}'|egrep "\-$vm_number$")
 
-		if [ "$(list_vm active|egrep '^$vm_number$'|wc -l)" -eq 1 ]; then
+		if [ $(list_vm active|egrep "^$vm_number$"|wc -l) -eq 1 ]; then
 			printf "$o_wrn VM is active, forcefully stopping it\n"
 			virsh --connect qemu:///system destroy $vm_name >>$DEBUG_LOG 2>&1
 			if [ "$?" != '0' ]; then
