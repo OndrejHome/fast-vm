@@ -210,6 +210,11 @@ case "$1" in
 	import_image)
 		image_name="$2"
 		if [ -z "$image_name" ]; then printf "$o_err missing image name\n"; usage import_image; fi
+		image_name_stripped=$(echo "$image_name"|tr -d -C '[:alnum:]\-.')
+		if [ "$image_name" != "$image_name_stripped" ]; then
+			printf "$o_err ImageName contains restricted characters, allowed are only letters, numbers, dot(.) and dash(-)\n"
+			exit 1
+		fi
 		image_path="$3"
 		# skip path check for "empty" image file
 		if [ "$image_path" != "empty" ]; then
