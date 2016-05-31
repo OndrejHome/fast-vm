@@ -194,6 +194,13 @@ else
 	exit 1
 fi
 
+double_dash_lv=$(echo "$THINPOOL_LV"|sed 's/-/--/g') # LVM uses double dash in the /dev/mapper
+double_dash_vg=$(echo "$THINPOOL_VG"|sed 's/-/--/g') # also for VGs
+if [ ! -b "/dev/mapper/${double_dash_vg}-${double_dash_lv}-tpool" ];then
+	printf "$o_err thinpool $THINPOOL_VG/$THINPOOL_LV not found or not a thinpool LV, try running configure-fast-vm as root to check/correct\n"
+	exit 1
+fi
+
 # create local configuration directory if it doesn't exists
 if [ ! -d "$FASTVM_USER_CONF_DIR" ]; then
 	mkdir "$FASTVM_USER_CONF_DIR" >>$DEBUG_LOG 2>&1
