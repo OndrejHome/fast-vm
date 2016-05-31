@@ -1,5 +1,5 @@
 Name:		fast-vm
-Version:	0.7.1
+Version:	0.8
 Release:	1%{?dist}
 Summary:	Script for defining VMs from images provided in thin LVM pool
 
@@ -23,7 +23,9 @@ Requires:	qemu-kvm
 Recommends:	bash-completion
 Recommends:	curl
 Recommends:	dnsmasq-utils
+Recommends:	gzip
 Recommends:	pv
+Recommends:	xz
 
 %description
 %{name} provides command-line interface to create virtual machines (VMs) in
@@ -57,6 +59,11 @@ drive of new machine before starting VM using the 'hack files'.
 %config(noreplace) %{_sysconfdir}/sudoers.d/%{name}-sudoers
 
 %changelog
+* Tue May 31 2016 Ondrej Famera <ofamera@redhat.com> 0.8-1
+- a lot of sanity checks introduced - for example image name restricted to contain only some characters
+- import "empty" image and add "export_image" subcommand
+- remove the XML definition and hacks file after removing image file
+
 * Wed May 18 2016 Ondrej Famera <ofamera@redhat.com> 0.7.1-1
 - fix incorrect check logic for ssh/console commands
 - fix wrong awk requirement in RPM
