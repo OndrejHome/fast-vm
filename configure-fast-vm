@@ -49,6 +49,7 @@ ask_question () {
 	else
 		echo "$config_variable=$answer" >> $config_file
 	fi
+	. $config_file
 }
 
 printf "$o_inf ==>> fast-vm configuration script\nYou can run this script repeatedly and interrupt it with ctrl+c.\nScript will always recheck all configuration options. fast-vm system configuration will be saved in /etc/fast-vm.conf.\n\n"
