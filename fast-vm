@@ -2,6 +2,7 @@
 DEBUG_LOG=/tmp/fast-vm.debug.log
 FASTVM_HELPER=/usr/libexec/fast-vm-helper.sh
 FASTVM_USER_CONF_DIR="$HOME/.fast-vm"
+FASTVM_SYSTEM_CONF_DIR="/etc/fast-vm"
 
 ## terminal colors
 c_red=$(tput setaf 1)
@@ -53,14 +54,14 @@ check_file () {
 			printf "$o_inf Detected remote file with size $file_size\n"
 		else
 			printf "$o_err $error_prefix: error checking remote file on the server.\nCURL exited with code %d and we got following information from server\n%s\n" "$curl_exit" "$curl_data"
-			exit 2
+			return 2
 		fi
 	else
 		if [ -f "$file_path" ]; then
 			file_local=1
 		else
 			printf "$o_err $error_prefix: local file not found\n"
-			exit 2
+			return 2
 		fi
 	fi
 }
@@ -205,6 +206,9 @@ fi
 if [ ! -d "$FASTVM_USER_CONF_DIR" ]; then
 	mkdir "$FASTVM_USER_CONF_DIR" >>$DEBUG_LOG 2>&1
 fi
+if [ ! -d "$FASTVM_SYSTEM_CONF_DIR" ] && [ $(whoami) = "root" ]; then
+	mkdir "$FASTVM_SYSTEM_CONF_DIR" >>$DEBUG_LOG 2>&1
+fi
 
 ## check if there is curl available so we can fetch images from http/https
 which curl >/dev/null 2>&1
@@ -226,6 +230,7 @@ case "$1" in
 		# skip path check for "empty" image file
 		if [ "$image_path" != "empty" ]; then
 			check_file "$image_path" "image file"
+			if [ "$?" = 2 ]; then  printf "$o_err image file not found\n"; exit 2; fi
 			image_path="$file_path"
 		fi
 		image_size="$file_size"
@@ -259,14 +264,16 @@ case "$1" in
 
 		image_xml_path="$4"
 		check_file "$image_xml_path" "XML VM definition"
-		if [ "$file_local" -eq '0' ]; then
+		if [ "$?" = 2 ]; then printf "$o_err XML file $image_xml_path not found\n"; exit 2; fi
+		if [ "$file_local" = '0' ]; then
 			image_xml_path=$(download_file "$image_xml_path")
 		fi
 
 		hack_file="$5"
 		if [ ! -z "$hack_file" ]; then
 			check_file "$hack_file" "hack file"
-			if [ "$file_local" -eq '0' ]; then
+			if [ "$?" = 2 ]; then printf "$o_err hack file $hack_file not found\n"; exit 2; fi
+			if [ "$file_local" = '0' ]; then
 				hack_file=$(download_file "$hack_file")
 			fi
 		fi
@@ -288,7 +295,11 @@ case "$1" in
 		echo "chgrp" "/dev/$THINPOOL_VG/$VM_PREFIX$image_name" | sudo -n $FASTVM_HELPER
 
 		if [ "$image_path" = "empty" ]; then
-			cp "$image_xml_path" "$FASTVM_USER_CONF_DIR/config-${image_name}.xml" >>$DEBUG_LOG 2>&1
+			if [ $(whoami) = 'root']; then
+				cp "$image_xml_path" "$FASTVM_SYSTEM_CONF_DIR/config-${image_name}.xml" >>$DEBUG_LOG 2>&1
+			else
+				cp "$image_xml_path" "$FASTVM_USER_CONF_DIR/config-${image_name}.xml" >>$DEBUG_LOG 2>&1
+			fi
 			printf "$o_ok Empty image imported\n"
 			exit 0
 		fi
@@ -320,10 +331,21 @@ case "$1" in
 		fi
 
 		# copy the XML configuration file
-		cp "$image_xml_path" "$FASTVM_USER_CONF_DIR/config-${image_name}.xml" >>$DEBUG_LOG 2>&1
+		if [ $(whoami) = 'root' ]; then
+			cp "$image_xml_path" "$FASTVM_SYSTEM_CONF_DIR/config-${image_name}.xml" >>$DEBUG_LOG 2>&1
+			chmod +r "$FASTVM_SYSTEM_CONF_DIR/config-${image_name}.xml" >>$DEBUG_LOG 2>&1
+		else
+			cp "$image_xml_path" "$FASTVM_USER_CONF_DIR/config-${image_name}.xml" >>$DEBUG_LOG 2>&1
+			chmod +r "$FASTVM_USER_CONF_DIR/config-${image_name}.xml" >>$DEBUG_LOG 2>&1
+		fi
 		if [ ! -z "$hack_file" ] && [ -f "$hack_file" ]; then
-			cp "$hack_file" "$FASTVM_USER_CONF_DIR/hacks-${image_name}.sh" >>$DEBUG_LOG 2>&1
-			chmod +x "$FASTVM_USER_CONF_DIR/hacks-${image_name}.sh" >>$DEBUG_LOG 2>&1
+			if [ $(whoami) = 'root' ]; then
+				cp "$hack_file" "$FASTVM_SYSTEM_CONF_DIR/hacks-${image_name}.sh" >>$DEBUG_LOG 2>&1
+				chmod +rx "$FASTVM_SYSTEM_CONF_DIR/hacks-${image_name}.sh" >>$DEBUG_LOG 2>&1
+			else
+				cp "$hack_file" "$FASTVM_USER_CONF_DIR/hacks-${image_name}.sh" >>$DEBUG_LOG 2>&1
+				chmod +rx "$FASTVM_USER_CONF_DIR/hacks-${image_name}.sh" >>$DEBUG_LOG 2>&1
+			fi
 		fi
 
 		printf "$o_ok image imported\n"
@@ -382,6 +404,11 @@ case "$1" in
 			printf "$o_inf removing XML and hack file ...\n"
 			if [ -f "$FASTVM_USER_CONF_DIR/config-${image_name}.xml" ]; then rm "$FASTVM_USER_CONF_DIR/config-${image_name}.xml"; fi
 			if [ -f "$FASTVM_USER_CONF_DIR/hacks-${image_name}.sh" ]; then rm "$FASTVM_USER_CONF_DIR/hacks-${image_name}.sh"; fi
+			if [ $(whoami) = 'root' ]; then
+				printf "$o_inf removing system-wide XML and hack file ...\n"
+				if [ -f "$FASTVM_SYSTEM_CONF_DIR/config-${image_name}.xml" ]; then rm "$FASTVM_SYSTEM_CONF_DIR/config-${image_name}.xml"; fi
+				if [ -f "$FASTVM_SYSTEM_CONF_DIR/hacks-${image_name}.sh" ]; then rm "$FASTVM_SYSTEM_CONF_DIR/hacks-${image_name}.sh"; fi
+			fi
 			printf "$o_ok image removed\n"
 		else
 			printf "$o_err image "$image_name" not found\n"
@@ -392,35 +419,39 @@ case "$1" in
 		image_name="$2"
 		if [ -z "$image_name" ]; then printf "$o_err missing image name\n"; usage create; fi
 
-		image_xml_path="$4"
-		if [ ! -z "$image_xml_path" ]; then
-			check_file "$image_xml_path" "alternative XML VM definition"
-			if [ "$file_local" -eq '0' ]; then
-	                        image_xml_path=$(download_file "$image_xml_path")
-	                fi
-			printf "$o_inf using alternative xml file $image_xml_path\n"
-		else
-			if [ ! -f "$FASTVM_USER_CONF_DIR/config-${image_name}.xml" ]; then
-				printf "$o_err no VM XML definition for this version. $FASTVM_USER_CONF_DIR/config-${image_name}.xml not found. Import image again or supply alternative xml\n"
-				usage create
+		image_xml_path=""
+		for path in "$4" "$FASTVM_USER_CONF_DIR/config-${image_name}.xml" "$FASTVM_SYSTEM_CONF_DIR/config-${image_name}.xml"
+		do
+			check_file "$path" "test XML file" >>$DEBUG_LOG 2>&1
+			if [ "$?" != 2 ]; then
+				if [ "$file_local" = '0' ]; then
+		                        image_xml_path=$(download_file "$path")
+				else
+					image_xml_path="$path"
+		                fi
+				printf "$o_inf using file $path as libvirt XML\n"
+				break
 			fi
-			image_xml_path="$FASTVM_USER_CONF_DIR/config-${image_name}.xml"
+		done
+		if [ -z "$image_xml_path" ]; then
+			printf "$o_err no VM XML definition for this version. Import image again or supply alternative xml\n"
+			usage create
 		fi
 
-		hack_file="$5"
-		if [ ! -z "$hack_file" ]; then
-			check_file "$hack_file" "alternative hack file"
-			if [ "$file_local" -eq '0' ]; then
-                                hack_file=$(download_file "$hack_file")
-                        fi
-			printf "$o_inf using alternative hack file $hack_file\n"
-		else
-			if [ ! -f "$FASTVM_USER_CONF_DIR/hacks-${image_name}.sh" ]; then
-				printf "$o_wrn no default hacks file for this version. $FASTVM_USER_CONF_DIR/hacks-${image_name}.sh not found\n"
-			else
-				hack_file="$FASTVM_USER_CONF_DIR/hacks-${image_name}.sh"
+		hack_file=""
+		for path in "$5" "$FASTVM_USER_CONF_DIR/hacks-${image_name}.sh" "$FASTVM_SYSTEM_CONF_DIR/hacks-${image_name}.sh"
+		do
+			check_file "$path" "test hack file" >>$DEBUG_LOG 2>&1
+			if [ "$?" != 2 ]; then
+				if [ "$file_local" = '0' ]; then
+		                        hack_file=$(download_file "$path")
+				else
+					hack_file="$path"
+		                fi
+				printf "$o_inf using file $path as hack file\n"
+				break
 			fi
-		fi
+		done
 
 		if [ ! -b "/dev/$THINPOOL_VG/$VM_PREFIX$image_name" ]; then
 			printf "$o_err Missing image for this image name.\n/dev/$THINPOOL_VG/$VM_PREFIX$image_name not found.\nFirst import image using 'fast-vm image_import $image_name'\n"
