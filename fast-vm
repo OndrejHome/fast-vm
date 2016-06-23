@@ -278,7 +278,9 @@ case "$1" in
 				hack_file=$(download_file "$hack_file")
 			fi
 		fi
-
+		(
+		# beginning of locked section
+		flock -n 9 || exit 4
 		if [ -b "/dev/$THINPOOL_VG/$VM_PREFIX$image_name" ]; then
 			printf "$o_err base image for '$image_name' version already exists. To remove image use 'remove_image' parameter\n"
 			exit 1
@@ -350,6 +352,12 @@ case "$1" in
 		fi
 
 		printf "$o_ok image imported\n"
+		# end of locked section
+		) 9>/tmp/fast-vm.img.${image_name}.lock
+		if [ "$?" = "4" ]; then
+			printf "$o_err It is not possible to import image $image_name now as it is being used by fast-vm at the moment\n"
+			exit 1
+		fi
 		;;
 	export_image)
 		image_name="$2"
@@ -378,6 +386,9 @@ case "$1" in
 				;;
 		esac
 
+		(
+		# beginning of locked section
+		flock -n 9 || exit 4
 		if [ -b "/dev/$THINPOOL_VG/$VM_PREFIX$image_name" ]; then
 			echo "chgrp" "/dev/$THINPOOL_VG/$VM_PREFIX$image_name" | sudo -n $FASTVM_HELPER
 			printf "$o_inf compressing the image $image_name into $(pwd)/${image_name}.img.${image_format}\n"
@@ -391,11 +402,20 @@ case "$1" in
 			printf "$o_err image "$image_name" not found\n"
 			usage export_image
 		fi
+		# end of locked section
+		) 9>/tmp/fast-vm.img.${image_name}.lock
+		if [ "$?" = "4" ]; then
+			printf "$o_err It is not possible to export image $image_name now as it is being used by fast-vm at the moment\n"
+			exit 1
+		fi
 		;;
 	remove_image)
 		image_name="$2"
 		if [ -z "$image_name" ]; then printf "$o_err missing image name\n"; usage remove_image; fi
 
+		(
+		# beginning of locked section
+		flock -n 9 || exit 4
 		if [ -b "/dev/$THINPOOL_VG/$VM_PREFIX$image_name" ]; then
 			printf "$o_inf stopping and undefining the base VM\n"
 			virsh --connect qemu:///system destroy $VM_PREFIX$image_name >>$DEBUG_LOG 2>&1
@@ -414,6 +434,12 @@ case "$1" in
 		else
 			printf "$o_err image "$image_name" not found\n"
 			usage remove_image
+		fi
+		# end of locked section
+		) 9>/tmp/fast-vm.img.${image_name}.lock
+		if [ "$?" = "4" ]; then
+			printf "$o_err It is not possible to remove image $image_name now as it is being used by fast-vm at the moment\n"
+			exit 1
 		fi
 		;;
 	create)
@@ -454,6 +480,9 @@ case "$1" in
 			fi
 		done
 
+		(
+		# beginning of locked section
+		flock -n 9 || exit 4
 		if [ ! -b "/dev/$THINPOOL_VG/$VM_PREFIX$image_name" ]; then
 			printf "$o_err Missing image for this image name.\n/dev/$THINPOOL_VG/$VM_PREFIX$image_name not found.\nFirst import image using 'fast-vm image_import $image_name'\n"
 			exit 2
@@ -547,6 +576,12 @@ case "$1" in
 		fi
 
 		printf "$o_ok VM '$VM_NAME' created\n"
+		# end of locked section
+		) 9>/tmp/fast-vm.img.${image_name}.lock
+		if [ "$?" = "4" ]; then
+			printf "$o_err It is not possible to use image $image_name for creating VM now as it is being used by fast-vm at the moment\n"
+			exit 1
+		fi
 		;;
 
 	start)
