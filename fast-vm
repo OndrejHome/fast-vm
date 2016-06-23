@@ -733,23 +733,37 @@ case "$1" in
 		if [ ! -z "$short_output" ] && [ "$short_output" = "short" ]; then
 			echo "$image_name_list"
 		else
-				printf '%-20s %-8s %-8s\n' 'Image name' 'XML' 'Hack file'
+				printf '%-20s|%-17s |%-17s |\n' 'Image' 'SYSTEM' 'USER'
+				printf '%-20s|%-8s %-9s|%-8s %-9s|\n' 'Image name' 'XML' 'Hack file' 'XML' 'Hack file'
 			for image_name in $image_name_list; do
 				# check the existence of the XML file
 				if [ -f "$FASTVM_USER_CONF_DIR/config-${image_name}.xml" ]; then
-					xml_exists="ok"
+					user_xml_exists="ok"
 				else
-					xml_exists="missing"
+					user_xml_exists="missing"
 				fi
 				# check existence of hack file
 				if [ -f "$FASTVM_USER_CONF_DIR/hacks-${image_name}.sh" ]; then
-					hacks_exists="ok"
+					user_hacks_exists="ok"
 				else
-					hacks_exists="missing"
+					user_hacks_exists="missing"
 				fi
-				printf "%-20s %-8s %-8s\n" "$image_name" "$xml_exists" "$hacks_exists"
+				# check the existence of the XML file
+				if [ -f "$FASTVM_SYSTEM_CONF_DIR/config-${image_name}.xml" ]; then
+					system_xml_exists="ok"
+				else
+					system_xml_exists="missing"
+				fi
+				# check existence of hack file
+				if [ -f "$FASTVM_SYSTEM_CONF_DIR/hacks-${image_name}.sh" ]; then
+					system_hacks_exists="ok"
+				else
+					system_hacks_exists="missing"
+				fi
+				printf "%-20s %-8s %-9s %-8s %-9s\n" "$image_name" "$system_xml_exists" "$system_hacks_exists" "$user_xml_exists" "$user_hacks_exists"
 			done
 			printf "\nNOTE: if image is missing XML it wouldn't be possible to create a VM from it!\n Image with missing hack file can work if it's not needed.\n"
+			printf "\n USER XML and hack files takes precendense before SYSTEM ones.\n"
 		fi
 		;;
 	*) 
