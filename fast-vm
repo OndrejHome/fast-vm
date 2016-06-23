@@ -3,6 +3,7 @@ DEBUG_LOG=/tmp/fast-vm.debug.log
 FASTVM_HELPER=/usr/libexec/fast-vm-helper.sh
 FASTVM_USER_CONF_DIR="$HOME/.fast-vm"
 FASTVM_SYSTEM_CONF_DIR="/etc/fast-vm"
+CURL_OPTS=""
 
 ## terminal colors
 c_red=$(tput setaf 1)
@@ -46,7 +47,7 @@ check_file () {
 	file_local=0
 	error_prefix="$2"
 	if [ "$curl_ok" -eq 0 ] && [ "$(echo $file_path | awk  '{ s=substr($0, 0, 4); print s; }' )"  = "http" ]; then
-		curl_data=$(curl --head "$file_path" 2>/dev/null)
+		curl_data=$(curl $CURL_OPTS --head "$file_path" 2>/dev/null)
 		curl_exit="$?"
 		curl_httpok=$(echo "$curl_data"|egrep "HTTP.*200 OK"|wc -l)
 		if [ "$curl_httpok" -eq "1" ]; then
@@ -70,7 +71,7 @@ download_file () {
 	file_url="$1"
 	tmp_file=$(mktemp)
 	printf "$o_inf downloading $file_url\ninto $tmp_file\n" >&2
-	curl -o $tmp_file -s "$file_url"
+	curl $CURL_OPTS -o $tmp_file -s "$file_url"
 	if [ "$?" -eq 0 ]; then
 		echo "$tmp_file"
 	else
@@ -316,11 +317,11 @@ case "$1" in
 		else
 			# import from http(s)
 			if [ "$pv_ok" -eq '0' ]; then
-				curl -s "$image_path" | pv -N download -c -s "$image_size" | $decompress_cmd | pv -N unpack -c -s 10737418240 | dd of=/dev/$THINPOOL_VG/$VM_PREFIX$image_name bs=1M conv=sparse >>$DEBUG_LOG 2>&1
+				curl $CURL_OPTS -s "$image_path" | pv -N download -c -s "$image_size" | $decompress_cmd | pv -N unpack -c -s 10737418240 | dd of=/dev/$THINPOOL_VG/$VM_PREFIX$image_name bs=1M conv=sparse >>$DEBUG_LOG 2>&1
 				import_exit="$?"
 			else
 				printf "$o_inf please wait while importing image (to show image write progress, install 'pv')\n"
-				curl "$image_path" | $decompress_cmd | dd of=/dev/$THINPOOL_VG/$VM_PREFIX$image_name bs=1M conv=sparse 2>>$DEBUG_LOG
+				curl $CURL_OPTS "$image_path" | $decompress_cmd | dd of=/dev/$THINPOOL_VG/$VM_PREFIX$image_name bs=1M conv=sparse 2>>$DEBUG_LOG
 				import_exit="$?"
 			fi
 
