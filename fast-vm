@@ -196,9 +196,16 @@ else
 	exit 1
 fi
 
+## try to detect if the defined thin pool is available
 double_dash_lv=$(echo "$THINPOOL_LV"|sed 's/-/--/g') # LVM uses double dash in the /dev/mapper
 double_dash_vg=$(echo "$THINPOOL_VG"|sed 's/-/--/g') # also for VGs
-if [ ! -b "/dev/mapper/${double_dash_vg}-${double_dash_lv}-tpool" ];then
+if [ -b "/dev/mapper/${double_dash_vg}-${double_dash_lv}-tpool" ];then
+	THINPOOL_PATH="/dev/mapper/${double_dash_vg}-${double_dash_lv}-tpool"
+fi
+if [ -b "/dev/mapper/${double_dash_vg}-${double_dash_lv}_tdata" ] && [ -b "/dev/mapper/${double_dash_vg}-${double_dash_lv}_tmeta" ];then
+	THINPOOL_PATH="/dev/mapper/${double_dash_vg}-${double_dash_lv}"
+fi
+if [ -z "$THINPOOL_PATH" ]; then
 	printf "$o_err thinpool $THINPOOL_VG/$THINPOOL_LV not found or not a thinpool LV, try running configure-fast-vm as root to check/correct\n"
 	exit 1
 fi
@@ -746,11 +753,8 @@ case "$1" in
 		;;
 	list_images)
 		short_output="$2" # if non-zero the output suitable for external processing
-		# first we need to determine the dm-XX of the thinpool
-		double_dash_lv=$(echo "$THINPOOL_LV"|sed 's/-/--/g') # LVM uses double dash in the /dev/mapper
-		double_dash_vg=$(echo "$THINPOOL_VG"|sed 's/-/--/g') # also for VGs
 		# lets get the dm-XX number of the thinpool
-		pool_dm=$(ls -l "/dev/mapper/${double_dash_vg}-${double_dash_lv}-tpool"|cut -d / -f 5)
+		pool_dm=$(ls -l "$THINPOOL_PATH"|cut -d / -f 5)
 		# from dm-XX of thinpool we can list the LVs inside the thinpool
 		holders=$(ls /sys/block/$pool_dm/holders)
 		holder_regexp=""
