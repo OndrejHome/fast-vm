@@ -1,4 +1,4 @@
-.TH FAST-VM.CONF 5 "fast-vm 0.8 (2016-04-08)" "fast-vm" "/etc/fast-vm.conf" \" -*- nroff -*-
+.TH FAST-VM.CONF 5 "fast-vm 0.8 (2016-06-25)" "fast-vm" "/etc/fast-vm.conf" \" -*- nroff -*-
 .SH NAME
 .IR /etc/fast-vm.conf " \(em global configuration file for fast-vm"
 
@@ -31,6 +31,18 @@ Name of the libvirt network and bridge adapter for NAT networking.
 .TP
 .B SUBNET_NUMBER
 The XX in the 192.168.XX.0/24 libvirt network created by setup.
+
+.TP
+.B FASTVM_GROUP
+System group which will be allowed access to fast-vm. Users in this group can use fast-vm
+and fast-vm will allow access disks to this group (prior to version 0.9 this was a 'libvirt' group).
+If you setup this to other group than 'libvirt' you would most probably need to allow RW access for
+this groupto libvirt RW socket. typicaly this can be done by changing following two options in
+.BR /etc/libvirt/libvirtd.conf ". Changes below disable polkit authentication."
+.sp
+.BI "unix_sock_group = " "<new_group>"
+.sp
+.BI "auth_unix_rw =  " "none"
 
 .SH SEE ALSO
 .BR fast-vm (8),

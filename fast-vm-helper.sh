@@ -29,6 +29,7 @@ check_empty "THINPOOL_VG" "$THINPOOL_VG"
 check_empty "THINPOOL_LV" "$THINPOOL_LV"
 check_empty "LIBVIRT_NETWORK" "$LIBVIRT_NETWORK"
 check_empty "SUBNET_NUMBER" "$SUBNET_NUMBER"
+check_empty "FASTVM_GROUP" "$FASTVM_GROUP"
 
 read action arg1 arg2 arg3
 
@@ -75,7 +76,7 @@ case "$action" in
 			exit 1
 		fi
 
-		chgrp libvirt "$arg1" >>$DEBUG_LOG 2>&1
+		chgrp $FASTVM_GROUP "$arg1" >>$DEBUG_LOG 2>&1
 		;;
 	dhcp_release)
 		PATH="$PATH:/usr/sbin" which dhcp_release >/dev/null 2>&1

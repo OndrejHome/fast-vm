@@ -175,12 +175,6 @@ EOF
 # first parameter is compulsory
 if [ -z "$1" ]; then usage; fi
 
-# check if we are in libvirt group or if we are root
-if [ $(id |grep '(libvirt)'|wc -l) -eq 0 ] && [ $(whoami) != "root" ]; then
-	printf "$o_err User running fast-vm must be member of group 'libvirt'. You can easily add user to libvirt group using command below\n # usermod -a -G libvirt <user>\n"
-	exit 1
-fi
-
 # locate and load fast-vm configuration
 if [ -f "/etc/fast-vm.conf" ]; then
 	# load and verify configuration
@@ -191,8 +185,15 @@ if [ -f "/etc/fast-vm.conf" ]; then
 	check_empty "THINPOOL_VG" "$THINPOOL_VG"
 	check_empty "THINPOOL_LV" "$THINPOOL_LV"
 	check_empty "SUBNET_NUMBER" "$SUBNET_NUMBER"
+	check_empty "FASTVM_GROUP" "$FASTVM_GROUP"
 else
 	printf "$o_err no global configuration file /etc/fast-vm.conf not found please run configure-fast-vm as root before using fast-vm\n"
+	exit 1
+fi
+
+# check if we are in $FASTVM_GROUP group or if we are root
+if [ $(id |grep "($FASTVM_GROUP)"|wc -l) -eq 0 ] && [ $(whoami) != "root" ]; then
+	printf "$o_err User running fast-vm must be member of group '$FASTVM_GROUP'. You can easily add user to this group using command below\n # usermod -a -G $FASTVM_GROUP $(whoami)\n"
 	exit 1
 fi
 

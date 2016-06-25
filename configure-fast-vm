@@ -67,11 +67,19 @@ do
 	fi
 	ask_question "VM name prefix in libvirt\n Prefix is used in VM names and VM drive names." "$VM_PREFIX" "VM_PREFIX"
 
+	ask_question "Users that want to use fast-vm must be members of following group.\n WARNING: if this group is different from 'libivrt' you would have to adjust libvirt configuration.\n Please check the fast-vm.conf(5) if setting this to something else than 'libvirt'." "$FASTVM_GROUP" "FASTVM_GROUP"
+	if [ "$FASTVM_GROUP" != "libvirt" ]; then
+		printf "$o_wrn You are using non-default group for FASTVM_GROUP.\n Please check the fast-vm.conf(5) on how to configure libvirtd for this to work properly.\n\n"
+	fi
+
 	ask_question "Libvirt network (bridge) name\n This configuration will create a libvirt \n network with this name providing NAT for VMs." "$LIBVIRT_NETWORK" "LIBVIRT_NETWORK"
 	ask_question "Libvirt subnet number (192.168.XX.0/24)" "$SUBNET_NUMBER" "SUBNET_NUMBER"
 
 	## reload the configuration file and check the system for changes
 	. $config_file
+
+	# redefine the sudoers file
+	sed -i -e "s/^\%[^ ]* \(.* \/usr\/libexec\/fast-vm-helper\.sh\)$/\%${FASTVM_GROUP} \1/" /etc/sudoers.d/fast-vm-sudoers >/dev/null 2>&1
 
 	# LVM VG check
 	vgdisplay "$THINPOOL_VG"  >/dev/null 2>&1
