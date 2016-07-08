@@ -306,7 +306,7 @@ case "$1" in
 		echo "chgrp" "/dev/$THINPOOL_VG/$VM_PREFIX$image_name" | sudo -n $FASTVM_HELPER
 
 		if [ "$image_path" = "empty" ]; then
-			if [ $(whoami) = 'root']; then
+			if [ "$(whoami)" = 'root' ]; then
 				cp "$image_xml_path" "$FASTVM_SYSTEM_CONF_DIR/config-${image_name}.xml" >>$DEBUG_LOG 2>&1
 			else
 				cp "$image_xml_path" "$FASTVM_USER_CONF_DIR/config-${image_name}.xml" >>$DEBUG_LOG 2>&1
