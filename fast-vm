@@ -13,11 +13,6 @@ c_yellow=$(tput setaf 3)
 c_green=$(tput setaf 2)
 c_cyan=$(tput setaf 6)
 c_normal=$(tput sgr0)
-## common outputs
-o_err="[${c_red}err${c_normal}]"
-o_wrn="[${c_yellow}wrn${c_normal}]"
-o_inf="[${c_cyan}inf${c_normal}]"
-o_ok="[${c_green}ok${c_normal}]"
 
 ## LOG priorities
 P_DEBUG=7
@@ -37,16 +32,16 @@ pmsg () {
 	if [ "$DISPLAY_LEVEL" -ge "$priority" ]; then
 		case "$priority" in
 			$P_DEBUG)
-				printf "$o_inf $message"
+				printf "[${c_cyan}inf${c_normal}] $message"
 				;;
 			$P_INFO)
-				printf "$o_ok $message"
+				printf "[${c_green}ok${c_normal}] $message"
 				;;
 			$P_WARNING)
-				printf "$o_wrn $message"
+				printf "[${c_yellow}wrn${c_normal}] $message"
 				;;
 			$P_ERROR)
-				printf "$o_err $message"
+				printf "[${c_red}err${c_normal}] $message"
 				;;
 			*)
 				printf "[unk] $message"
