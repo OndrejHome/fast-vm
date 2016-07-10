@@ -1,5 +1,5 @@
 #!/bin/sh
-DEBUG_LOG=/tmp/fast-vm.debug.log
+DEBUG_LOG_CMD="logger -p debug -t fast-vm-dbg -e"
 FASTVM_HELPER=/usr/libexec/fast-vm-helper.sh
 FASTVM_USER_CONF_DIR="$HOME/.fast-vm"
 FASTVM_SYSTEM_CONF_DIR="/etc/fast-vm"
@@ -249,10 +249,10 @@ fi
 
 # create local configuration directory if it doesn't exists
 if [ ! -d "$FASTVM_USER_CONF_DIR" ]; then
-	mkdir "$FASTVM_USER_CONF_DIR" >>$DEBUG_LOG 2>&1
+	mkdir "$FASTVM_USER_CONF_DIR" 2>&1 |$DEBUG_LOG_CMD
 fi
 if [ ! -d "$FASTVM_SYSTEM_CONF_DIR" ] && [ $(whoami) = "root" ]; then
-	mkdir "$FASTVM_SYSTEM_CONF_DIR" >>$DEBUG_LOG 2>&1
+	mkdir "$FASTVM_SYSTEM_CONF_DIR" 2>&1 |$DEBUG_LOG_CMD
 fi
 
 ## check if there is curl available so we can fetch images from http/https
@@ -343,9 +343,9 @@ case "$1" in
 
 		if [ "$image_path" = "empty" ]; then
 			if [ "$(whoami)" = 'root' ]; then
-				cp "$image_xml_path" "$FASTVM_SYSTEM_CONF_DIR/config-${image_name}.xml" >>$DEBUG_LOG 2>&1
+				cp "$image_xml_path" "$FASTVM_SYSTEM_CONF_DIR/config-${image_name}.xml" 2>&1|$DEBUG_LOG_CMD
 			else
-				cp "$image_xml_path" "$FASTVM_USER_CONF_DIR/config-${image_name}.xml" >>$DEBUG_LOG 2>&1
+				cp "$image_xml_path" "$FASTVM_USER_CONF_DIR/config-${image_name}.xml" 2>&1|$DEBUG_LOG_CMD
 			fi
 			pmsg $P_INFO "Empty image imported\n"
 			exit 0
@@ -353,21 +353,21 @@ case "$1" in
 
 		if [ "$image_local" = "1" ]; then
 			if [ "$pv_ok" -eq '0' ]; then
-				$decompress_cmd "$image_path"| pv -s 10G | dd of=/dev/$THINPOOL_VG/$VM_PREFIX$image_name bs=1M conv=sparse >>$DEBUG_LOG 2>&1
+				$decompress_cmd "$image_path"| pv -s 10G | dd of=/dev/$THINPOOL_VG/$VM_PREFIX$image_name bs=1M conv=sparse 2>&1|$DEBUG_LOG_CMD
 				import_exit="$?"
 			else
 				pmsg $P_DEBUG "please wait while importing image (to show progress, install 'pv')\n"
-				$decompress_cmd "$image_path"| dd of=/dev/$THINPOOL_VG/$VM_PREFIX$image_name bs=1M conv=sparse >>$DEBUG_LOG 2>&1
+				$decompress_cmd "$image_path"| dd of=/dev/$THINPOOL_VG/$VM_PREFIX$image_name bs=1M conv=sparse 2>&1|$DEBUG_LOG_CMD
 				import_exit="$?"
 			fi
 		else
 			# import from http(s)
 			if [ "$pv_ok" -eq '0' ]; then
-				curl $CURL_OPTS -s "$image_path" | pv -N download -c -s "$image_size" | $decompress_cmd | pv -N unpack -c -s 10737418240 | dd of=/dev/$THINPOOL_VG/$VM_PREFIX$image_name bs=1M conv=sparse >>$DEBUG_LOG 2>&1
+				curl $CURL_OPTS -s "$image_path" | pv -N download -c -s "$image_size" | $decompress_cmd | pv -N unpack -c -s 10737418240 | dd of=/dev/$THINPOOL_VG/$VM_PREFIX$image_name bs=1M conv=sparse 2>&1|$DEBUG_LOG_CMD
 				import_exit="$?"
 			else
 				pmsg $P_DEBUG "please wait while importing image (to show image write progress, install 'pv')\n"
-				curl $CURL_OPTS "$image_path" | $decompress_cmd | dd of=/dev/$THINPOOL_VG/$VM_PREFIX$image_name bs=1M conv=sparse 2>>$DEBUG_LOG
+				curl $CURL_OPTS "$image_path" | $decompress_cmd | dd of=/dev/$THINPOOL_VG/$VM_PREFIX$image_name bs=1M conv=sparse 2>&1|$DEBUG_LOG_CMD
 				import_exit="$?"
 			fi
 
@@ -379,19 +379,19 @@ case "$1" in
 
 		# copy the XML configuration file
 		if [ $(whoami) = 'root' ]; then
-			cp "$image_xml_path" "$FASTVM_SYSTEM_CONF_DIR/config-${image_name}.xml" >>$DEBUG_LOG 2>&1
-			chmod +r "$FASTVM_SYSTEM_CONF_DIR/config-${image_name}.xml" >>$DEBUG_LOG 2>&1
+			cp "$image_xml_path" "$FASTVM_SYSTEM_CONF_DIR/config-${image_name}.xml" 2>&1|$DEBUG_LOG_CMD
+			chmod +r "$FASTVM_SYSTEM_CONF_DIR/config-${image_name}.xml" 2>&1|$DEBUG_LOG_CMD
 		else
-			cp "$image_xml_path" "$FASTVM_USER_CONF_DIR/config-${image_name}.xml" >>$DEBUG_LOG 2>&1
-			chmod +r "$FASTVM_USER_CONF_DIR/config-${image_name}.xml" >>$DEBUG_LOG 2>&1
+			cp "$image_xml_path" "$FASTVM_USER_CONF_DIR/config-${image_name}.xml" 2>&1|$DEBUG_LOG_CMD
+			chmod +r "$FASTVM_USER_CONF_DIR/config-${image_name}.xml" 2>&1|$DEBUG_LOG_CMD
 		fi
 		if [ ! -z "$hack_file" ] && [ -f "$hack_file" ]; then
 			if [ $(whoami) = 'root' ]; then
-				cp "$hack_file" "$FASTVM_SYSTEM_CONF_DIR/hacks-${image_name}.sh" >>$DEBUG_LOG 2>&1
-				chmod +rx "$FASTVM_SYSTEM_CONF_DIR/hacks-${image_name}.sh" >>$DEBUG_LOG 2>&1
+				cp "$hack_file" "$FASTVM_SYSTEM_CONF_DIR/hacks-${image_name}.sh" 2>&1|$DEBUG_LOG_CMD
+				chmod +rx "$FASTVM_SYSTEM_CONF_DIR/hacks-${image_name}.sh" 2>&1|$DEBUG_LOG_CMD
 			else
-				cp "$hack_file" "$FASTVM_USER_CONF_DIR/hacks-${image_name}.sh" >>$DEBUG_LOG 2>&1
-				chmod +rx "$FASTVM_USER_CONF_DIR/hacks-${image_name}.sh" >>$DEBUG_LOG 2>&1
+				cp "$hack_file" "$FASTVM_USER_CONF_DIR/hacks-${image_name}.sh" 2>&1|$DEBUG_LOG_CMD
+				chmod +rx "$FASTVM_USER_CONF_DIR/hacks-${image_name}.sh" 2>&1|$DEBUG_LOG_CMD
 			fi
 		fi
 
@@ -462,8 +462,8 @@ case "$1" in
 		flock -n 9 || exit 4
 		if [ -b "/dev/$THINPOOL_VG/$VM_PREFIX$image_name" ]; then
 			pmsg $P_DEBUG "stopping and undefining the base VM of $image_name\n"
-			virsh --connect qemu:///system destroy $VM_PREFIX$image_name >>$DEBUG_LOG 2>&1
-			virsh --connect qemu:///system undefine $VM_PREFIX$image_name >>$DEBUG_LOG 2>&1
+			virsh --connect qemu:///system destroy $VM_PREFIX$image_name 2>&1|$DEBUG_LOG_CMD
+			virsh --connect qemu:///system undefine $VM_PREFIX$image_name 2>&1|$DEBUG_LOG_CMD
 			pmsg $P_DEBUG "removing LV $VM_PREFIX$image_name ...\n"
 			echo "lvremove" "/dev/$THINPOOL_VG/$VM_PREFIX$image_name" | sudo -n $FASTVM_HELPER
 			pmsg $P_DEBUG "removing XML and hack file of $image_name...\n"
@@ -493,7 +493,7 @@ case "$1" in
 		image_xml_path=""
 		for path in "$4" "$FASTVM_USER_CONF_DIR/config-${image_name}.xml" "$FASTVM_SYSTEM_CONF_DIR/config-${image_name}.xml"
 		do
-			check_file "$path" "test XML file" >>$DEBUG_LOG 2>&1
+			check_file "$path" "test XML file" 2>&1|$DEBUG_LOG_CMD
 			if [ "$?" != 2 ]; then
 				if [ "$file_local" = '0' ]; then
 		                        image_xml_path=$(download_file "$path")
@@ -512,7 +512,7 @@ case "$1" in
 		hack_file=""
 		for path in "$5" "$FASTVM_USER_CONF_DIR/hacks-${image_name}.sh" "$FASTVM_SYSTEM_CONF_DIR/hacks-${image_name}.sh"
 		do
-			check_file "$path" "hack file at $path" >>$DEBUG_LOG 2>&1
+			check_file "$path" "hack file at $path" 2>&1|$DEBUG_LOG_CMD
 			if [ "$?" != 2 ]; then
 				if [ "$file_local" = '0' ]; then
 		                        hack_file=$(download_file "$path")
@@ -560,7 +560,7 @@ case "$1" in
 			
 			tmp_xml=$(mktemp --suffix=.xml)
 			sed -e "s/VM_NAME/$VM_PREFIX$image_name/g; s/THINPOOL_VG/$THINPOOL_VG/g; s/LIBVIRT_NETWORK/$LIBVIRT_NETWORK/g;" "$image_xml_path" > $tmp_xml
-			virsh --connect qemu:///system define $tmp_xml >>$DEBUG_LOG 2>&1
+			virsh --connect qemu:///system define $tmp_xml 2>&1|$DEBUG_LOG_CMD
 			if [ ! "$?" -eq '0' ]; then
 				pmsg $P_ERROR "defining base VM for $image_name failed, doesn't it exists already?\n"
 				exit 2
@@ -572,7 +572,7 @@ case "$1" in
 				pmsg $P_DEBUG "applying hacks from $hack_file\n"
 				. $hack_file
 				if [ ! "$?" -eq "0" ]; then
-					pmsg $P_WARNING "there was issue applying hacks to this machine, check $DEBUG_LOG for more details\n"
+					pmsg $P_WARNING "there was issue applying hacks to this machine, check syslog for more details\n"
 				fi
 				pmsg $P_DEBUG "applying hacks finished\n"
 			fi
@@ -593,10 +593,10 @@ case "$1" in
 
 		pmsg $P_DEBUG "defining virtual machine '$VM_PREFIX$image_name-$vm_number' in libvirt\n"
 		tmp_xml=$(mktemp --suffix=.xml)
-		sed -e "s/VM_NAME/$VM_PREFIX$image_name-$vm_number/g; s/THINPOOL_VG/$THINPOOL_VG/g; s/LIBVIRT_NETWORK/$LIBVIRT_NETWORK/g;" "$image_xml_path" > $tmp_xml 2>>$DEBUG_LOG
-		virsh --connect qemu:///system define $tmp_xml >>$DEBUG_LOG 2>&1
+		sed -e "s/VM_NAME/$VM_PREFIX$image_name-$vm_number/g; s/THINPOOL_VG/$THINPOOL_VG/g; s/LIBVIRT_NETWORK/$LIBVIRT_NETWORK/g;" "$image_xml_path" > $tmp_xml
+		virsh --connect qemu:///system define $tmp_xml 2>&1|$DEBUG_LOG_CMD
 		if [ ! "$?" -eq '0' ]; then
-			pmsg $P_ERROR "Unable to define virtual machine from $tmp_xml. Check $DEBUG_LOG for more details\n"
+			pmsg $P_ERROR "Unable to define virtual machine from $tmp_xml. Check syslog for more details\n"
 			exit 2
 		fi
 
@@ -606,7 +606,7 @@ case "$1" in
 
 		pmsg $P_DEBUG "adding static lease for 192.168.$SUBNET_NUMBER.$vm_number into libvirts DHCP\n"
 		VM_MAC=$(virsh --connect qemu:///system dumpxml "$VM_PREFIX$image_name-$vm_number"|grep 'mac address'|cut -d\' -f 2)
-		virsh --connect qemu:///system net-update "$LIBVIRT_NETWORK" add-last ip-dhcp-host --xml "<host mac='$VM_MAC' ip='192.168.$SUBNET_NUMBER.$vm_number'/>" --live --config >>$DEBUG_LOG 2>&1
+		virsh --connect qemu:///system net-update "$LIBVIRT_NETWORK" add-last ip-dhcp-host --xml "<host mac='$VM_MAC' ip='192.168.$SUBNET_NUMBER.$vm_number'/>" --live --config 2>&1|$DEBUG_LOG_CMD
 
 		# source file with hacks and apply them
 		if [ ! -z "$hack_file" ]; then
@@ -614,7 +614,7 @@ case "$1" in
 			pmsg $P_DEBUG "applying hacks from $hack_file\n"
 			. $hack_file
 			if [ ! "$?" -eq "0" ]; then
-				pmsg $P_WARNING "there was issue applying hacks to this machine, check $DEBUG_LOG for more details\n"
+				pmsg $P_WARNING "there was issue applying hacks to this machine, check syslog for more details\n"
 			fi
 			pmsg $P_DEBUG "applying hacks finished\n"
 		fi
@@ -639,26 +639,26 @@ case "$1" in
 		# if there is any third argument start VM and console after
 		if [ -z "$3" ]; then
 			pmsg $P_DEBUG "starting VM $vm_name\n"
-			virsh --connect qemu:///system start $vm_name >>$DEBUG_LOG 2>&1
+			virsh --connect qemu:///system start $vm_name 2>&1 |$DEBUG_LOG_CMD
 			if [ "$?" != '0' ]; then
-				pmsg $P_ERROR "failed to start VM, check $DEBUG_LOG for more information\n"
+				pmsg $P_ERROR "failed to start VM, check syslog for more information\n"
 			fi
 		else
 			case "$3" in
 				console)
 					pmsg $P_DEBUG "starting VM $vm_name and connecting to it serial console ...\n"
-					virsh --connect qemu:///system start $vm_name 2>>$DEBUG_LOG
+					virsh --connect qemu:///system start $vm_name 2>&1 |$DEBUG_LOG_CMD
 					if [ "$?" != '0' ]; then
-						pmsg $P_ERROR "failed to start VM $vm_name, check $DEBUG_LOG for more information\n"
+						pmsg $P_ERROR "failed to start VM $vm_name, check syslog for more information\n"
 					else
-						virsh --connect qemu:///system console $vm_name 2>>$DEBUG_LOG
+						virsh --connect qemu:///system console $vm_name 2>&1|$DEBUG_LOG_CMD
 					fi
 				;;
 				ssh)
 					pmsg $P_DEBUG "starting VM $vm_name\n"
-					virsh --connect qemu:///system start $vm_name 2>>$DEBUG_LOG
+					virsh --connect qemu:///system start $vm_name 2>&1|$DEBUG_LOG_CMD
 					if [ "$?" != '0' ]; then
-						pmsg $P_ERROR "failed to start VM $vm_name, check $DEBUG_LOG for more information\n"
+						pmsg $P_ERROR "failed to start VM $vm_name, check syslog for more information\n"
 					else
 						wait_for_ssh "$vm_number"
 						if [ ! -z "$4" ] && [ -x "$4" ]; then
@@ -684,16 +684,16 @@ case "$1" in
 
 		if [ ! -z "$3" ] && [ "$3" = "graceful" ]; then
 			pmsg $P_DEBUG "Sending ACPI shutdown event to $vm_name\n"
-			virsh --connect qemu:///system shutdown $vm_name 2>>$DEBUG_LOG
+			virsh --connect qemu:///system shutdown $vm_name 2>&1|$DEBUG_LOG_CMD
 			if [ "$?" != '0' ]; then
-				pmsg $P_ERROR "failed to send gracefull shutdown to VM $vm_name, check $DEBUG_LOG for more information\n"
+				pmsg $P_ERROR "failed to send gracefull shutdown to VM $vm_name, check syslog for more information\n"
 				exit 1
 			fi
 		else
 			pmsg $P_DEBUG "Stopping VM $vm_name now\n"
-			virsh --connect qemu:///system destroy $vm_name 2>>$DEBUG_LOG
+			virsh --connect qemu:///system destroy $vm_name 2>&1|$DEBUG_LOG_CMD
 			if [ "$?" != '0' ]; then
-				pmsg $P_ERROR "failed to forcefully shutdown VM $vm_name, check $DEBUG_LOG for more information\n"
+				pmsg $P_ERROR "failed to forcefully shutdown VM $vm_name, check syslog for more information\n"
 				exit 1
 			fi
 		fi
@@ -723,7 +723,7 @@ case "$1" in
 
 		vm_name=$(virsh --connect qemu:///system list --all |grep "$VM_PREFIX"|awk '{print $2}'|egrep "\-$vm_number$")
 
-		virsh --connect qemu:///system console $vm_name 2>>$DEBUG_LOG
+		virsh --connect qemu:///system console $vm_name
 		;;
 	delete)
 		vm_number="$2"
@@ -738,9 +738,9 @@ case "$1" in
 
 		if [ $(list_vm active|egrep "^$vm_number$"|wc -l) -eq 1 ]; then
 			pmsg $P_WARNING "VM $vm_name is active, forcefully stopping it\n"
-			virsh --connect qemu:///system destroy $vm_name >>$DEBUG_LOG 2>&1
+			virsh --connect qemu:///system destroy $vm_name 2>&1|$DEBUG_LOG_CMD
 			if [ "$?" != '0' ]; then
-				pmsg $P_ERROR "failed to stop VM $vm_name, check $DEBUG_LOG for more information\n"
+				pmsg $P_ERROR "failed to stop VM $vm_name, check syslog for more information\n"
 				exit 1
 			fi
 		fi
@@ -748,9 +748,9 @@ case "$1" in
 		VM_MAC=$(virsh --connect qemu:///system dumpxml "$vm_name"|grep 'mac address'|cut -d\' -f 2)
 
 		pmsg $P_DEBUG "removing DHCP reservation 192.168.$SUBNET_NUMBER.$vm_number for $VM_MAC\n"
-		virsh --connect qemu:///system net-update "$LIBVIRT_NETWORK" delete ip-dhcp-host --xml "<host mac='$VM_MAC' ip='192.168.$SUBNET_NUMBER.$vm_number'/>" --live --config >>$DEBUG_LOG 2>&1
+		virsh --connect qemu:///system net-update "$LIBVIRT_NETWORK" delete ip-dhcp-host --xml "<host mac='$VM_MAC' ip='192.168.$SUBNET_NUMBER.$vm_number'/>" --live --config 2>&1|$DEBUG_LOG_CMD
 		if [ "$?" != '0' ]; then
-			pmsg $P_WARNING "failed to remove DHCP reservation 192.168.$SUBNET_NUMBER.$vm_number for $VM_MAC from libvirt, check $DEBUG_LOG for more information\n"
+			pmsg $P_WARNING "failed to remove DHCP reservation 192.168.$SUBNET_NUMBER.$vm_number for $VM_MAC from libvirt, check syslog for more information\n"
 		fi
 		PATH="$PATH:/usr/sbin" which dhcp_release >/dev/null 2>&1
 		if [ "$?" -eq '0' ]; then
@@ -763,9 +763,9 @@ case "$1" in
 		echo "lvremove" "/dev/$THINPOOL_VG/$vm_name" | sudo -n $FASTVM_HELPER
 
 		pmsg $P_DEBUG "undefining VM $vm_name from libvirt\n"
-		virsh --connect qemu:///system undefine $vm_name >>$DEBUG_LOG 2>&1
+		virsh --connect qemu:///system undefine $vm_name 2>&1|$DEBUG_LOG_CMD
 		if [ "$?" != '0' ]; then
-			pmsg $P_ERROR "failed to undefine VM $vm_name, check $DEBUG_LOG for more information\n"
+			pmsg $P_ERROR "failed to undefine VM $vm_name, check syslog for more information\n"
 			exit 1
 		else
 			pmsg $P_INFO "VM '$vm_name' deleted\n"
