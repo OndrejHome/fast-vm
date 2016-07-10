@@ -37,19 +37,19 @@ pmsg () {
 	if [ "$DISPLAY_LEVEL" -ge "$priority" ]; then
 		case "$priority" in
 			$P_DEBUG)
-				printf "$o_inf $message\n"
+				printf "$o_inf $message"
 				;;
 			$P_INFO)
-				printf "$o_ok $message\n"
+				printf "$o_ok $message"
 				;;
 			$P_WARNING)
-				printf "$o_wrn $message\n"
+				printf "$o_wrn $message"
 				;;
 			$P_ERROR)
-				printf "$o_err $message\n"
+				printf "$o_err $message"
 				;;
 			*)
-				printf "[unk] $message\n"
+				printf "[unk] $message"
 				;;
 		esac
 	fi
