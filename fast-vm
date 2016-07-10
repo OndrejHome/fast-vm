@@ -22,7 +22,7 @@ P_WARNING=4
 P_ERROR=3
 
 #### start common functions
-# helper function for loading and checking configuration
+# function for message output to display&logs based on LOG/DISPLAY level
 pmsg () {
 	priority="$1"
 	message="$2"
@@ -49,6 +49,7 @@ pmsg () {
 		esac
 	fi
 }
+# helper function for loading and checking configuration
 check_empty () {
 	var_name="$1"
 	var_value="$2"
