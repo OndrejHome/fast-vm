@@ -93,7 +93,7 @@ check_file () {
 		if [ -f "$file_path" ]; then
 			file_local=1
 		else
-			pmsg $P_ERROR "$error_prefix: local file not found\n"
+			pmsg $P_ERROR "$error_prefix: local file '$file_path' not found\n"
 			return 2
 		fi
 	fi
@@ -489,7 +489,7 @@ case "$1" in
 		image_xml_path=""
 		for path in "$4" "$FASTVM_USER_CONF_DIR/config-${image_name}.xml" "$FASTVM_SYSTEM_CONF_DIR/config-${image_name}.xml"
 		do
-			check_file "$path" "test XML file" 2>&1|$DEBUG_LOG_CMD
+			check_file "$path" "test XML file" 2>&1 >/dev/null
 			if [ "$?" != 2 ]; then
 				if [ "$file_local" = '0' ]; then
 		                        image_xml_path=$(download_file "$path")
@@ -508,7 +508,7 @@ case "$1" in
 		hack_file=""
 		for path in "$5" "$FASTVM_USER_CONF_DIR/hacks-${image_name}.sh" "$FASTVM_SYSTEM_CONF_DIR/hacks-${image_name}.sh"
 		do
-			check_file "$path" "hack file at $path" 2>&1|$DEBUG_LOG_CMD
+			check_file "$path" "hack file at $path" 2>&1 >/dev/null
 			if [ "$?" != 2 ]; then
 				if [ "$file_local" = '0' ]; then
 		                        hack_file=$(download_file "$path")
