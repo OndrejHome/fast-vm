@@ -647,7 +647,7 @@ case "$1" in
 					if [ "$?" != '0' ]; then
 						pmsg $P_ERROR "failed to start VM $vm_name, check syslog for more information\n"
 					else
-						virsh --connect qemu:///system console $vm_name 2>&1|$DEBUG_LOG_CMD
+						virsh --connect qemu:///system console $vm_name
 					fi
 				;;
 				ssh)
