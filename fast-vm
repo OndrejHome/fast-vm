@@ -69,7 +69,7 @@ wait_for_ssh () {
 	ssh_ready=$(ssh-keyscan -T 1 "192.168.$SUBNET_NUMBER.$vm_number" 2>/dev/null|egrep '(ssh-|ecdsa-)'|wc -l)
 	while [ "$ssh_ready" -eq "0" ];
 	do
-		printf "."
+		if [ "$DISPLAY_LEVEL" = "$P_DEBUG" ]; then printf "."; fi
 		ssh_ready=$(ssh-keyscan -T 1 "192.168.$SUBNET_NUMBER.$vm_number" 2>/dev/null|egrep '(ssh-|ecdsa-)'|wc -l)
 		sleep 1
 	done
