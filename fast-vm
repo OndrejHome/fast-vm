@@ -27,7 +27,7 @@ pmsg () {
 	priority="$1"
 	message="$2"
 	if [ "$LOG_LEVEL" -ge "$priority" ]; then
-		printf "$USER | $message"|logger -p $priority --id=$$ -t fast-vm
+		printf "$USER | $message"|logger -p $priority --id -t fast-vm
 	fi
 	if [ "$DISPLAY_LEVEL" -ge "$priority" ]; then
 		case "$priority" in
