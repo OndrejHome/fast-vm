@@ -1,6 +1,6 @@
 Name:		fast-vm
 Version:	0.8
-Release:	1%{?dist}
+Release:	2%{?dist}
 Summary:	Script for defining VMs from images provided in thin LVM pool
 
 License:	GPLv3+
@@ -20,6 +20,9 @@ Requires:	openssh-clients
 Requires:	sed
 Requires:	sudo
 Requires:	qemu-kvm
+Requires:	libvirt-daemon-driver-storage
+Requires:	libvirt-daemon-driver-lxc
+Requires:	libvirt-daemon-driver-qemu
 
 %description
 %{name} provides command-line interface to create virtual machines (VMs) in
