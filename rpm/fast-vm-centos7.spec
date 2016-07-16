@@ -1,6 +1,6 @@
 Name:		fast-vm
-Version:	0.8
-Release:	2%{?dist}
+Version:	0.9
+Release:	1%{?dist}
 Summary:	Script for defining VMs from images provided in thin LVM pool
 
 License:	GPLv3+
@@ -56,6 +56,12 @@ drive of new machine before starting VM using the 'hack files'.
 %config(noreplace) %{_sysconfdir}/sudoers.d/%{name}-sudoers
 
 %changelog
+* Sat Jul 16 2016 Ondrej Famera <ofamera@redhat.com> 0.9-1
+- version suitable for use in multiuser environment
+- system-wide storage of XML and hack files
+- logging via syslog
+- configurable group for fast-vm users (previously fixed to 'libvirt' group)
+
 * Tue May 31 2016 Ondrej Famera <ofamera@redhat.com> 0.8-1
 - a lot of sanity checks introduced - for example image name restricted to contain only some characters
 - import "empty" image and add "export_image" subcommand
