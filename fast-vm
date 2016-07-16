@@ -349,21 +349,21 @@ case "$1" in
 
 		if [ "$image_local" = "1" ]; then
 			if [ "$pv_ok" -eq '0' ]; then
-				$decompress_cmd "$image_path"| pv -s 10G | dd of=/dev/$THINPOOL_VG/$VM_PREFIX$image_name bs=1M conv=sparse 2>&1|$DEBUG_LOG_CMD
+				$decompress_cmd "$image_path"| pv -s 10G | dd of=/dev/$THINPOOL_VG/$VM_PREFIX$image_name bs=1M conv=sparse
 				import_exit="$?"
 			else
 				pmsg $P_DEBUG "please wait while importing image (to show progress, install 'pv')\n"
-				$decompress_cmd "$image_path"| dd of=/dev/$THINPOOL_VG/$VM_PREFIX$image_name bs=1M conv=sparse 2>&1|$DEBUG_LOG_CMD
+				$decompress_cmd "$image_path"| dd of=/dev/$THINPOOL_VG/$VM_PREFIX$image_name bs=1M conv=sparse
 				import_exit="$?"
 			fi
 		else
 			# import from http(s)
 			if [ "$pv_ok" -eq '0' ]; then
-				curl $CURL_OPTS -s "$image_path" | pv -N download -c -s "$image_size" | $decompress_cmd | pv -N unpack -c -s 10737418240 | dd of=/dev/$THINPOOL_VG/$VM_PREFIX$image_name bs=1M conv=sparse 2>&1|$DEBUG_LOG_CMD
+				curl $CURL_OPTS -s "$image_path" | pv -N download -c -s "$image_size" | $decompress_cmd | pv -N unpack -c -s 10737418240 | dd of=/dev/$THINPOOL_VG/$VM_PREFIX$image_name bs=1M conv=sparse
 				import_exit="$?"
 			else
 				pmsg $P_DEBUG "please wait while importing image (to show image write progress, install 'pv')\n"
-				curl $CURL_OPTS "$image_path" | $decompress_cmd | dd of=/dev/$THINPOOL_VG/$VM_PREFIX$image_name bs=1M conv=sparse 2>&1|$DEBUG_LOG_CMD
+				curl $CURL_OPTS "$image_path" | $decompress_cmd | dd of=/dev/$THINPOOL_VG/$VM_PREFIX$image_name bs=1M conv=sparse
 				import_exit="$?"
 			fi
 
@@ -556,7 +556,7 @@ case "$1" in
 			
 			tmp_xml=$(mktemp --suffix=.xml)
 			sed -e "s/VM_NAME/$VM_PREFIX$image_name/g; s/THINPOOL_VG/$THINPOOL_VG/g; s/LIBVIRT_NETWORK/$LIBVIRT_NETWORK/g;" "$image_xml_path" > $tmp_xml
-			virsh --connect qemu:///system define $tmp_xml 2>&1|$DEBUG_LOG_CMD
+			virsh --connect qemu:///system define $tmp_xml
 			if [ ! "$?" -eq '0' ]; then
 				pmsg $P_ERROR "defining base VM for $image_name failed, doesn't it exists already?\n"
 				exit 2
@@ -590,7 +590,7 @@ case "$1" in
 		pmsg $P_DEBUG "defining virtual machine '$VM_PREFIX$image_name-$vm_number' in libvirt\n"
 		tmp_xml=$(mktemp --suffix=.xml)
 		sed -e "s/VM_NAME/$VM_PREFIX$image_name-$vm_number/g; s/THINPOOL_VG/$THINPOOL_VG/g; s/LIBVIRT_NETWORK/$LIBVIRT_NETWORK/g;" "$image_xml_path" > $tmp_xml
-		virsh --connect qemu:///system define $tmp_xml 2>&1|$DEBUG_LOG_CMD
+		virsh --connect qemu:///system define $tmp_xml
 		if [ ! "$?" -eq '0' ]; then
 			pmsg $P_ERROR "Unable to define virtual machine from $tmp_xml. Check syslog for more details\n"
 			exit 2
@@ -635,7 +635,7 @@ case "$1" in
 		# if there is any third argument start VM and console after
 		if [ -z "$3" ]; then
 			pmsg $P_DEBUG "starting VM $vm_name\n"
-			virsh --connect qemu:///system start $vm_name 2>&1 |$DEBUG_LOG_CMD
+			virsh --connect qemu:///system start $vm_name
 			if [ "$?" != '0' ]; then
 				pmsg $P_ERROR "failed to start VM, check syslog for more information\n"
 			fi
@@ -643,7 +643,7 @@ case "$1" in
 			case "$3" in
 				console)
 					pmsg $P_DEBUG "starting VM $vm_name and connecting to it serial console ...\n"
-					virsh --connect qemu:///system start $vm_name 2>&1 |$DEBUG_LOG_CMD
+					virsh --connect qemu:///system start $vm_name
 					if [ "$?" != '0' ]; then
 						pmsg $P_ERROR "failed to start VM $vm_name, check syslog for more information\n"
 					else
@@ -652,7 +652,7 @@ case "$1" in
 				;;
 				ssh)
 					pmsg $P_DEBUG "starting VM $vm_name\n"
-					virsh --connect qemu:///system start $vm_name 2>&1|$DEBUG_LOG_CMD
+					virsh --connect qemu:///system start $vm_name
 					if [ "$?" != '0' ]; then
 						pmsg $P_ERROR "failed to start VM $vm_name, check syslog for more information\n"
 					else
@@ -680,14 +680,14 @@ case "$1" in
 
 		if [ ! -z "$3" ] && [ "$3" = "graceful" ]; then
 			pmsg $P_DEBUG "Sending ACPI shutdown event to $vm_name\n"
-			virsh --connect qemu:///system shutdown $vm_name 2>&1|$DEBUG_LOG_CMD
+			virsh --connect qemu:///system shutdown $vm_name
 			if [ "$?" != '0' ]; then
 				pmsg $P_ERROR "failed to send gracefull shutdown to VM $vm_name, check syslog for more information\n"
 				exit 1
 			fi
 		else
 			pmsg $P_DEBUG "Stopping VM $vm_name now\n"
-			virsh --connect qemu:///system destroy $vm_name 2>&1|$DEBUG_LOG_CMD
+			virsh --connect qemu:///system destroy $vm_name
 			if [ "$?" != '0' ]; then
 				pmsg $P_ERROR "failed to forcefully shutdown VM $vm_name, check syslog for more information\n"
 				exit 1
@@ -734,7 +734,7 @@ case "$1" in
 
 		if [ $(list_vm active|egrep "^$vm_number$"|wc -l) -eq 1 ]; then
 			pmsg $P_WARNING "VM $vm_name is active, forcefully stopping it\n"
-			virsh --connect qemu:///system destroy $vm_name 2>&1|$DEBUG_LOG_CMD
+			virsh --connect qemu:///system destroy $vm_name
 			if [ "$?" != '0' ]; then
 				pmsg $P_ERROR "failed to stop VM $vm_name, check syslog for more information\n"
 				exit 1
@@ -744,7 +744,7 @@ case "$1" in
 		VM_MAC=$(virsh --connect qemu:///system dumpxml "$vm_name"|grep 'mac address'|cut -d\' -f 2)
 
 		pmsg $P_DEBUG "removing DHCP reservation 192.168.$SUBNET_NUMBER.$vm_number for $VM_MAC\n"
-		virsh --connect qemu:///system net-update "$LIBVIRT_NETWORK" delete ip-dhcp-host --xml "<host mac='$VM_MAC' ip='192.168.$SUBNET_NUMBER.$vm_number'/>" --live --config 2>&1|$DEBUG_LOG_CMD
+		virsh --connect qemu:///system net-update "$LIBVIRT_NETWORK" delete ip-dhcp-host --xml "<host mac='$VM_MAC' ip='192.168.$SUBNET_NUMBER.$vm_number'/>" --live --config
 		if [ "$?" != '0' ]; then
 			pmsg $P_WARNING "failed to remove DHCP reservation 192.168.$SUBNET_NUMBER.$vm_number for $VM_MAC from libvirt, check syslog for more information\n"
 		fi
@@ -759,7 +759,7 @@ case "$1" in
 		echo "lvremove" "/dev/$THINPOOL_VG/$vm_name" | sudo -n $FASTVM_HELPER
 
 		pmsg $P_DEBUG "undefining VM $vm_name from libvirt\n"
-		virsh --connect qemu:///system undefine $vm_name 2>&1|$DEBUG_LOG_CMD
+		virsh --connect qemu:///system undefine $vm_name
 		if [ "$?" != '0' ]; then
 			pmsg $P_ERROR "failed to undefine VM $vm_name, check syslog for more information\n"
 			exit 1
