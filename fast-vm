@@ -329,7 +329,7 @@ case "$1" in
 			pmsg $P_DEBUG "creating LV $VM_PREFIX$image_name ...\n"
 			echo "lvcreate" "base" "$image_name" | sudo -n $FASTVM_HELPER
 			if [ "$?" != "0" ]; then
-				pmesg $P_ERROR "Error creating thin LV for VM image\n"
+				pmsg $P_ERROR "Error creating thin LV for VM image\n"
 				exit 1
 			fi
 		fi
