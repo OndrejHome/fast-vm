@@ -1,7 +1,7 @@
 #!/bin/sh
 # fast-vm helper script for privileged root actions
 
-DEBUG_LOG_CMD="logger -p debug -t fast-vm-helper-dbg -e"
+DEBUG_LOG_CMD="logger -p debug -t fast-vm-helper-dbg"
 LOG_LEVEL=7
 DISPLAY_LEVEL=7
 

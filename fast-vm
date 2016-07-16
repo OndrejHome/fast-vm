@@ -1,5 +1,5 @@
 #!/bin/sh
-DEBUG_LOG_CMD="logger -p debug -t fast-vm-dbg -e"
+DEBUG_LOG_CMD="logger -p debug -t fast-vm-dbg"
 FASTVM_HELPER=/usr/libexec/fast-vm-helper.sh
 FASTVM_USER_CONF_DIR="$HOME/.fast-vm"
 FASTVM_SYSTEM_CONF_DIR="/etc/fast-vm"
