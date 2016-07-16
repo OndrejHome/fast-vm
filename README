@@ -25,40 +25,51 @@ starting VM using the 'hack files'.
 ====== Installation ======
 === From source
 ## As root
-1. Install using command 'make install'
-2. Continue with 'FAST-VM Configuration'
+1. Ensure you have all requirements needed (FIXME: have script for checking them)
+2. Install using command 'make install'
+3. Continue with 'FAST-VM Configuration'
 
 === From RPM
 ## As root
 1. Install RPM
   # dnf install fast-vm-*.rpm
-2. Continue with 'FAST-VM Configuration'
+    or
+  # yum install fast-vm-*.rpm
+2. Start libvirt service
+  # systemctl start libvirtd
+2A. (Fedora 24 only) Start virtlogd service
+  https://bugzilla.redhat.com/show_bug.cgi?id=1290357
+  # systemctl start virtlogd
+3. Continue with 'FAST-VM Configuration'
 
 ====== FAST-VM Configuration ======
 ## As root user
-1. Run 'configure-fast-vm' script /usr/sbin/configure-fast-vm
+1. Run 'configure-fast-vm' script and answer questions to configure fast-vm.
 Script will:
 - create default configuration file from your answers
-- create LVM thin pool with name and size of your choice
-- libvirt NAT network for VMs
+- create LVM thin pool with name and size of your choice (if it doesn't exist)
+- create new libvirt NAT network for VMs
 
-2. Add users that will be using to the 'libvirt' group
+2. Add users that will be using to configured group for fast-vm access (default group is libvirt)
 
-====== Usage ======
-- check the man page fast-vm(8)
+3. When NOT using group 'libvirt' to allow fast-vm access, then check fast-vm.conf(5) man page
+for further configuration of libvirt daemon (section FASTVM_GROUP)
 
-====== Configuration ======
-- check the man page configure-fast-vm(8) and fast-vm.conf(5)
+====== Usage and further documentation  ======
+fast-vm(8)
+fast-vm.conf(5)
+configure-fast-vm(8)
+
+====== Supported/Tested OS =====
+Distribution    Installation method
+- RHEL 7.2	RPM
+- CentOS 7.2	RPM
+- Fedora 24	RPM
+- Gentoo	make install
 
 ====== Known bugs/limitation ======
 * initial setup requires root
-* tested on the Gentoo and Fedora 22
-* Gentoo libvirt special requirements in /etc/libvirt/libvirtd.conf
-** unix_sock_group = "libvirt"
-** unix_sock_rw_perms = "0770"
 * Gentoo might require user to be in group 'kvm' to use guestfish from hacks files
-* Fedora 22 BUG: libvirt-daemon shipped on installation media doesn't create the 'libivrt' group.
-  updating the package solves the problem
 * VM images are provided separately
   - publicly available images can be found at  https://github.com/OndrejHome/fast-vm-public-images
 * using 'dhcp_release' to remove DHCP static reservation is not the cleanest

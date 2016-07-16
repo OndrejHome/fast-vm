@@ -1,7 +1,11 @@
 #!/bin/sh
-DEBUG_LOG=/tmp/fast-vm.debug.log
+DEBUG_LOG_CMD="logger -p debug -t fast-vm-dbg"
 FASTVM_HELPER=/usr/libexec/fast-vm-helper.sh
 FASTVM_USER_CONF_DIR="$HOME/.fast-vm"
+FASTVM_SYSTEM_CONF_DIR="/etc/fast-vm"
+CURL_OPTS=""
+LOG_LEVEL=7
+DISPLAY_LEVEL=7
 
 ## terminal colors
 c_red=$(tput setaf 1)
@@ -9,34 +13,63 @@ c_yellow=$(tput setaf 3)
 c_green=$(tput setaf 2)
 c_cyan=$(tput setaf 6)
 c_normal=$(tput sgr0)
-## common outputs
-o_err="[${c_red}err${c_normal}]"
-o_wrn="[${c_yellow}wrn${c_normal}]"
-o_inf="[${c_cyan}inf${c_normal}]"
-o_ok="[${c_green}ok${c_normal}]"
+
+## LOG priorities
+P_DEBUG=7
+P_INFO=6
+P_NOTICE=5
+P_WARNING=4
+P_ERROR=3
 
 #### start common functions
+# function for message output to display&logs based on LOG/DISPLAY level
+pmsg () {
+	priority="$1"
+	message="$2"
+	if [ "$LOG_LEVEL" -ge "$priority" ]; then
+		printf "$USER | $message"|logger -p $priority --id -t fast-vm
+	fi
+	if [ "$DISPLAY_LEVEL" -ge "$priority" ]; then
+		case "$priority" in
+			$P_DEBUG)
+				printf "[${c_cyan}inf${c_normal}] $message"
+				;;
+			$P_INFO)
+				printf "[${c_green}ok${c_normal}] $message"
+				;;
+			$P_WARNING)
+				printf "[${c_yellow}wrn${c_normal}] $message"
+				;;
+			$P_ERROR)
+				printf "[${c_red}err${c_normal}] $message"
+				;;
+			*)
+				printf "[unk] $message"
+				;;
+		esac
+	fi
+}
 # helper function for loading and checking configuration
 check_empty () {
 	var_name="$1"
 	var_value="$2"
 	if [ -z "$var_value" ]; then
-                printf "$o_err variable $var_name not declared in global configuration run configure-fast-vm again or fix manually\n"
+                pmsg $P_ERROR "variable $var_name not declared in global configuration run configure-fast-vm again or fix manually\n"
 		exit 2
 	fi
 }
 
 wait_for_ssh () {
 	vm_number="$1"
-	printf "$o_inf checking the 192.168.$SUBNET_NUMBER.$vm_number for active SSH connection (ctrl+c to interrupt)\n"
+	pmsg $P_DEBUG "checking the 192.168.$SUBNET_NUMBER.$vm_number for active SSH connection (ctrl+c to interrupt)\n"
 	ssh_ready=$(ssh-keyscan -T 1 "192.168.$SUBNET_NUMBER.$vm_number" 2>/dev/null|egrep '(ssh-|ecdsa-)'|wc -l)
 	while [ "$ssh_ready" -eq "0" ];
 	do
-		printf "."
+		if [ "$DISPLAY_LEVEL" = "$P_DEBUG" ]; then printf "."; fi
 		ssh_ready=$(ssh-keyscan -T 1 "192.168.$SUBNET_NUMBER.$vm_number" 2>/dev/null|egrep '(ssh-|ecdsa-)'|wc -l)
 		sleep 1
 	done
-	printf "\n$o_inf SSH ready\n"
+	pmsg $P_DEBUG "\nSSH ready\n"
 }
 
 check_file () {
@@ -44,23 +77,24 @@ check_file () {
 	file_size=0
 	file_local=0
 	error_prefix="$2"
+	if [ -z "$file_Path" ]; then pmsg $P_DEBUG "provided empty file path\n"; fi
 	if [ "$curl_ok" -eq 0 ] && [ "$(echo $file_path | awk  '{ s=substr($0, 0, 4); print s; }' )"  = "http" ]; then
-		curl_data=$(curl --head "$file_path" 2>/dev/null)
+		curl_data=$(curl $CURL_OPTS --head "$file_path" 2>/dev/null)
 		curl_exit="$?"
 		curl_httpok=$(echo "$curl_data"|egrep "HTTP.*200 OK"|wc -l)
 		if [ "$curl_httpok" -eq "1" ]; then
 			file_size=$(echo "$curl_data"|grep "Content-Length:"|awk '{print $2}'|sed 's/[^0-9]*//g')
-			printf "$o_inf Detected remote file with size $file_size\n"
+			pmsg $P_DEBUG "Detected remote file with size $file_size\n"
 		else
-			printf "$o_err $error_prefix: error checking remote file on the server.\nCURL exited with code %d and we got following information from server\n%s\n" "$curl_exit" "$curl_data"
-			exit 2
+			pmsg $P_ERROR "$error_prefix: error checking remote file on the server.\nCURL exited with code $curl_exit and we got following information from server\n$curl_data\n"
+			return 2
 		fi
 	else
 		if [ -f "$file_path" ]; then
 			file_local=1
 		else
-			printf "$o_err $error_prefix: local file not found\n"
-			exit 2
+			pmsg $P_ERROR "$error_prefix: local file '$file_path' not found\n"
+			return 2
 		fi
 	fi
 }
@@ -68,12 +102,12 @@ check_file () {
 download_file () {
 	file_url="$1"
 	tmp_file=$(mktemp)
-	printf "$o_inf downloading $file_url\ninto $tmp_file\n" >&2
-	curl -o $tmp_file -s "$file_url"
+	pmsg $P_DEBUG "downloading $file_url\ninto $tmp_file\n" >&2
+	curl $CURL_OPTS -o $tmp_file -s "$file_url"
 	if [ "$?" -eq 0 ]; then
 		echo "$tmp_file"
 	else
-		printf "$o_err Download failed\n" >&2
+		pmsg $P_ERROR "Download failed\n" >&2
 		exit 1
 	fi
 }
@@ -98,11 +132,11 @@ check_vm_number () {
 	vm_number="$1"
 	vm_state="$2"
 	if [ $(list_vm all|egrep "^$vm_number$"|wc -l) -eq 0 ]; then
-		printf "$o_err no VM with number '$vm_number' found\n"
+		pmsg $P_ERROR "no VM with number '$vm_number' found\n"
 		exit 1
 	fi
 	if [ $(list_vm $vm_state|egrep "^$vm_number$"|wc -l) -eq 1 ]; then
-		printf "$o_err VM with number '$vm_number' is $vm_state\n"
+		pmsg $P_ERROR "VM with number '$vm_number' is $vm_state\n"
 		exit 1
 	fi
 }
@@ -161,7 +195,7 @@ fast-vm stop VmNumber [graceful]
 fast-vm console VmNumber
 fast-vm ssh VmNumber [/path/to/custom/script]
 
-== fast-vm version 0.8 <ofamera@redhat.com> ==
+== fast-vm version 0.9 <ofamera@redhat.com> ==
 EOF
 			;;
 	esac
@@ -173,12 +207,6 @@ EOF
 # first parameter is compulsory
 if [ -z "$1" ]; then usage; fi
 
-# check if we are in libvirt group or if we are root
-if [ $(id |grep '(libvirt)'|wc -l) -eq 0 ] && [ $(whoami) != "root" ]; then
-	printf "$o_err User running fast-vm must be member of group 'libvirt'. You can easily add user to libvirt group using command below\n # usermod -a -G libvirt <user>\n"
-	exit 1
-fi
-
 # locate and load fast-vm configuration
 if [ -f "/etc/fast-vm.conf" ]; then
 	# load and verify configuration
@@ -189,21 +217,38 @@ if [ -f "/etc/fast-vm.conf" ]; then
 	check_empty "THINPOOL_VG" "$THINPOOL_VG"
 	check_empty "THINPOOL_LV" "$THINPOOL_LV"
 	check_empty "SUBNET_NUMBER" "$SUBNET_NUMBER"
+	check_empty "FASTVM_GROUP" "$FASTVM_GROUP"
 else
-	printf "$o_err no global configuration file /etc/fast-vm.conf not found please run configure-fast-vm as root before using fast-vm\n"
+	pmsg $P_ERROR "no global configuration file /etc/fast-vm.conf not found please run configure-fast-vm as root before using fast-vm\n"
 	exit 1
 fi
 
+# check if we are in $FASTVM_GROUP group or if we are root
+if [ $(id |grep "($FASTVM_GROUP)"|wc -l) -eq 0 ] && [ $(whoami) != "root" ]; then
+	pmsg $P_ERROR "User running fast-vm must be member of group '$FASTVM_GROUP'. You can easily add user to this group using command below\n # usermod -a -G $FASTVM_GROUP $(whoami)\n"
+	exit 1
+fi
+
+## try to detect if the defined thin pool is available
 double_dash_lv=$(echo "$THINPOOL_LV"|sed 's/-/--/g') # LVM uses double dash in the /dev/mapper
 double_dash_vg=$(echo "$THINPOOL_VG"|sed 's/-/--/g') # also for VGs
-if [ ! -b "/dev/mapper/${double_dash_vg}-${double_dash_lv}-tpool" ];then
-	printf "$o_err thinpool $THINPOOL_VG/$THINPOOL_LV not found or not a thinpool LV, try running configure-fast-vm as root to check/correct\n"
+if [ -b "/dev/mapper/${double_dash_vg}-${double_dash_lv}-tpool" ];then
+	THINPOOL_PATH="/dev/mapper/${double_dash_vg}-${double_dash_lv}-tpool"
+fi
+if [ -b "/dev/mapper/${double_dash_vg}-${double_dash_lv}_tdata" ] && [ -b "/dev/mapper/${double_dash_vg}-${double_dash_lv}_tmeta" ];then
+	THINPOOL_PATH="/dev/mapper/${double_dash_vg}-${double_dash_lv}"
+fi
+if [ -z "$THINPOOL_PATH" ]; then
+	pmsg $P_ERROR "thinpool $THINPOOL_VG/$THINPOOL_LV not found or not a thinpool LV, try running configure-fast-vm as root to check/correct\n"
 	exit 1
 fi
 
 # create local configuration directory if it doesn't exists
 if [ ! -d "$FASTVM_USER_CONF_DIR" ]; then
-	mkdir "$FASTVM_USER_CONF_DIR" >>$DEBUG_LOG 2>&1
+	mkdir "$FASTVM_USER_CONF_DIR" 2>&1 |$DEBUG_LOG_CMD
+fi
+if [ ! -d "$FASTVM_SYSTEM_CONF_DIR" ] && [ $(whoami) = "root" ]; then
+	mkdir "$FASTVM_SYSTEM_CONF_DIR" 2>&1 |$DEBUG_LOG_CMD
 fi
 
 ## check if there is curl available so we can fetch images from http/https
@@ -216,16 +261,17 @@ pv_ok="$?"
 case "$1" in
 	import_image)
 		image_name="$2"
-		if [ -z "$image_name" ]; then printf "$o_err missing image name\n"; usage import_image; fi
+		if [ -z "$image_name" ]; then pmsg $P_ERROR "missing image name\n"; usage import_image; fi
 		image_name_stripped=$(echo "$image_name"|tr -d -C '[:alnum:]\-.')
 		if [ "$image_name" != "$image_name_stripped" ]; then
-			printf "$o_err ImageName contains restricted characters, allowed are only letters, numbers, dot(.) and dash(-)\n"
+			pmsg $P_ERROR "ImageName contains restricted characters, allowed are only letters, numbers, dot(.) and dash(-)\n"
 			exit 1
 		fi
 		image_path="$3"
 		# skip path check for "empty" image file
 		if [ "$image_path" != "empty" ]; then
 			check_file "$image_path" "image file"
+			if [ "$?" = 2 ]; then  pmsg $P_ERROR "image file not found\n"; exit 2; fi
 			image_path="$file_path"
 		fi
 		image_size="$file_size"
@@ -235,7 +281,7 @@ case "$1" in
 			gz)
 				which gunzip >/dev/null 2>&1
 				if [ ! "$?" -eq 0 ]; then
-					printf "$o_err 'gunzip' binary missing, install it to have support for GZ\n"
+					pmsg $P_ERROR "'gunzip' binary missing, install it to have support for GZ\n"
 					exit 1
 				fi
 				decompress_cmd="gunzip -c"
@@ -243,100 +289,125 @@ case "$1" in
 			xz)
 				which xz >/dev/null 2>&1
 				if [ ! "$?" -eq 0 ]; then
-					printf "$o_err 'xz' binary missing, install it to have support for XZ\n"
+					pmsg $P_ERROR "'xz' binary missing, install it to have support for XZ\n"
 					exit 1
 				fi
 				decompress_cmd="xz -d -c"
 				;;
 			empty)
-				printf "$o_inf we are creating empty image file\n"
+				pmsg $P_DEBUG "we are creating empty image file\n"
 				;;
 			*)
-				printf "$o_err unknown image file extension $image_extension, (supported: xz, gz)\n"
+				pmsg $P_ERROR "unknown image file extension $image_extension, (supported: xz, gz)\n"
 				exit 1
 				;;
 		esac
 
 		image_xml_path="$4"
 		check_file "$image_xml_path" "XML VM definition"
-		if [ "$file_local" -eq '0' ]; then
+		if [ "$?" = 2 ]; then pmsg $P_ERROR "XML file $image_xml_path not found\n"; exit 2; fi
+		if [ "$file_local" = '0' ]; then
 			image_xml_path=$(download_file "$image_xml_path")
 		fi
 
 		hack_file="$5"
 		if [ ! -z "$hack_file" ]; then
 			check_file "$hack_file" "hack file"
-			if [ "$file_local" -eq '0' ]; then
+			if [ "$?" = 2 ]; then pmsg $P_ERROR "hack file $hack_file not found\n"; exit 2; fi
+			if [ "$file_local" = '0' ]; then
 				hack_file=$(download_file "$hack_file")
 			fi
 		fi
-
+		(
+		# beginning of locked section
+		flock -n 9 || exit 4
 		if [ -b "/dev/$THINPOOL_VG/$VM_PREFIX$image_name" ]; then
-			printf "$o_err base image for '$image_name' version already exists. To remove image use 'remove_image' parameter\n"
+			pmsg $P_ERROR "base image for '$image_name' version already exists. To remove image use 'remove_image' parameter\n"
 			exit 1
 
 		else
-			printf "$o_inf creating LV $VM_PREFIX$image_name ...\n"
+			pmsg $P_DEBUG "creating LV $VM_PREFIX$image_name ...\n"
 			echo "lvcreate" "base" "$image_name" | sudo -n $FASTVM_HELPER
 			if [ "$?" != "0" ]; then
-				echo "[err] Error creating thin LV for VM image"
+				pmsg $P_ERROR "Error creating thin LV for VM image\n"
 				exit 1
 			fi
 		fi
 
-		printf "$o_inf importing image $image_path into /dev/$THINPOOL_VG/$VM_PREFIX$image_name\n"
+		pmsg $P_DEBUG "importing image $image_path into /dev/$THINPOOL_VG/$VM_PREFIX$image_name\n"
 		echo "chgrp" "/dev/$THINPOOL_VG/$VM_PREFIX$image_name" | sudo -n $FASTVM_HELPER
 
 		if [ "$image_path" = "empty" ]; then
-			cp "$image_xml_path" "$FASTVM_USER_CONF_DIR/config-${image_name}.xml" >>$DEBUG_LOG 2>&1
-			printf "$o_ok Empty image imported\n"
+			if [ "$(whoami)" = 'root' ]; then
+				cp "$image_xml_path" "$FASTVM_SYSTEM_CONF_DIR/config-${image_name}.xml" 2>&1|$DEBUG_LOG_CMD
+			else
+				cp "$image_xml_path" "$FASTVM_USER_CONF_DIR/config-${image_name}.xml" 2>&1|$DEBUG_LOG_CMD
+			fi
+			pmsg $P_INFO "Empty image imported\n"
 			exit 0
 		fi
 
 		if [ "$image_local" = "1" ]; then
 			if [ "$pv_ok" -eq '0' ]; then
-				$decompress_cmd "$image_path"| pv -s 10G | dd of=/dev/$THINPOOL_VG/$VM_PREFIX$image_name bs=1M conv=sparse >>$DEBUG_LOG 2>&1
+				$decompress_cmd "$image_path"| pv -s 10G | dd of=/dev/$THINPOOL_VG/$VM_PREFIX$image_name bs=1M conv=sparse
 				import_exit="$?"
 			else
-				printf "$o_inf please wait while importing image (to show progress, install 'pv')\n"
-				$decompress_cmd "$image_path"| dd of=/dev/$THINPOOL_VG/$VM_PREFIX$image_name bs=1M conv=sparse >>$DEBUG_LOG 2>&1
+				pmsg $P_DEBUG "please wait while importing image (to show progress, install 'pv')\n"
+				$decompress_cmd "$image_path"| dd of=/dev/$THINPOOL_VG/$VM_PREFIX$image_name bs=1M conv=sparse
 				import_exit="$?"
 			fi
 		else
 			# import from http(s)
 			if [ "$pv_ok" -eq '0' ]; then
-				curl -s "$image_path" | pv -N download -c -s "$image_size" | $decompress_cmd | pv -N unpack -c -s 10737418240 | dd of=/dev/$THINPOOL_VG/$VM_PREFIX$image_name bs=1M conv=sparse >>$DEBUG_LOG 2>&1
+				curl $CURL_OPTS -s "$image_path" | pv -N download -c -s "$image_size" | $decompress_cmd | pv -N unpack -c -s 10737418240 | dd of=/dev/$THINPOOL_VG/$VM_PREFIX$image_name bs=1M conv=sparse
 				import_exit="$?"
 			else
-				printf "$o_inf please wait while importing image (to show image write progress, install 'pv')\n"
-				curl "$image_path" | $decompress_cmd | dd of=/dev/$THINPOOL_VG/$VM_PREFIX$image_name bs=1M conv=sparse 2>>$DEBUG_LOG
+				pmsg $P_DEBUG "please wait while importing image (to show image write progress, install 'pv')\n"
+				curl $CURL_OPTS "$image_path" | $decompress_cmd | dd of=/dev/$THINPOOL_VG/$VM_PREFIX$image_name bs=1M conv=sparse
 				import_exit="$?"
 			fi
 
 		fi
 		if [ "$import_exit" != "0" ]; then
-			printf "$o_err Error copying the image into thin LV\n"
+			pmsg $P_ERROR "Error copying the image into thin LV\n"
 			exit 1
 		fi
 
 		# copy the XML configuration file
-		cp "$image_xml_path" "$FASTVM_USER_CONF_DIR/config-${image_name}.xml" >>$DEBUG_LOG 2>&1
+		if [ $(whoami) = 'root' ]; then
+			cp "$image_xml_path" "$FASTVM_SYSTEM_CONF_DIR/config-${image_name}.xml" 2>&1|$DEBUG_LOG_CMD
+			chmod +r "$FASTVM_SYSTEM_CONF_DIR/config-${image_name}.xml" 2>&1|$DEBUG_LOG_CMD
+		else
+			cp "$image_xml_path" "$FASTVM_USER_CONF_DIR/config-${image_name}.xml" 2>&1|$DEBUG_LOG_CMD
+			chmod +r "$FASTVM_USER_CONF_DIR/config-${image_name}.xml" 2>&1|$DEBUG_LOG_CMD
+		fi
 		if [ ! -z "$hack_file" ] && [ -f "$hack_file" ]; then
-			cp "$hack_file" "$FASTVM_USER_CONF_DIR/hacks-${image_name}.sh" >>$DEBUG_LOG 2>&1
-			chmod +x "$FASTVM_USER_CONF_DIR/hacks-${image_name}.sh" >>$DEBUG_LOG 2>&1
+			if [ $(whoami) = 'root' ]; then
+				cp "$hack_file" "$FASTVM_SYSTEM_CONF_DIR/hacks-${image_name}.sh" 2>&1|$DEBUG_LOG_CMD
+				chmod +rx "$FASTVM_SYSTEM_CONF_DIR/hacks-${image_name}.sh" 2>&1|$DEBUG_LOG_CMD
+			else
+				cp "$hack_file" "$FASTVM_USER_CONF_DIR/hacks-${image_name}.sh" 2>&1|$DEBUG_LOG_CMD
+				chmod +rx "$FASTVM_USER_CONF_DIR/hacks-${image_name}.sh" 2>&1|$DEBUG_LOG_CMD
+			fi
 		fi
 
-		printf "$o_ok image imported\n"
+		pmsg $P_INFO "Image $image_name imported\n"
+		# end of locked section
+		) 9>/tmp/fast-vm.img.${image_name}.lock
+		if [ "$?" = "4" ]; then
+			pmsg $P_ERROR "It is not possible to import image $image_name now as it is being used by fast-vm at the moment\n"
+			exit 1
+		fi
 		;;
 	export_image)
 		image_name="$2"
-		if [ -z "$image_name" ]; then printf "$o_err missing image name\n"; usage export_image; fi
+		if [ -z "$image_name" ]; then pmsg $P_ERROR "missing image name\n"; usage export_image; fi
 		image_format="$3"
 		case "$image_format" in
 			gz)
 				which gzip >/dev/null 2>&1
 				if [ ! "$?" -eq 0 ]; then
-					printf "$o_err 'gzip' binary missing, install it to have support for GZ\n"
+					pmsg $P_ERROR "'gzip' binary missing, install it to have support for GZ\n"
 					exit 1
 				fi
 				compress_cmd="gzip -c"
@@ -344,86 +415,116 @@ case "$1" in
 			xz)
 				which xz >/dev/null 2>&1
 				if [ ! "$?" -eq 0 ]; then
-					printf "$o_err 'xz' binary missing, install it to have support for XZ\n"
+					pmsg $P_ERROR "'xz' binary missing, install it to have support for XZ\n"
 					exit 1
 				fi
 				compress_cmd="xz -c -k --best --block-size=16777216 -T 0"
 				;;
 			*)
-				printf "$o_err unknown image format $image_format (supported: xz, gz)\n"
+				pmsg $P_ERROR "unknown image format $image_format (supported: xz, gz)\n"
 				exit 1
 				;;
 		esac
 
+		(
+		# beginning of locked section
+		flock -n 9 || exit 4
 		if [ -b "/dev/$THINPOOL_VG/$VM_PREFIX$image_name" ]; then
 			echo "chgrp" "/dev/$THINPOOL_VG/$VM_PREFIX$image_name" | sudo -n $FASTVM_HELPER
-			printf "$o_inf compressing the image $image_name into $(pwd)/${image_name}.img.${image_format}\n"
+			pmsg $P_DEBUG "compressing the image $image_name into $(pwd)/${image_name}.img.${image_format}\n"
 			$compress_cmd /dev/$THINPOOL_VG/$VM_PREFIX$image_name > $(pwd)/${image_name}.img.${image_format}
 			if [ "$?" -eq "0" ]; then
-				printf "$o_ok Image compression finished\n"
+				pmsg $P_INFO "Image compression finished\n"
 			else
-				printf "$o_err There was error compressing the image, check output above\n"
+				pmsg $P_ERROR "There was error compressing the image, check output above\n"
 			fi
 		else
-			printf "$o_err image "$image_name" not found\n"
+			pmsg $P_ERROR "image "$image_name" not found\n"
 			usage export_image
+		fi
+		# end of locked section
+		) 9>/tmp/fast-vm.img.${image_name}.lock
+		if [ "$?" = "4" ]; then
+			pmsg $P_ERROR "It is not possible to export image $image_name now as it is being used by fast-vm at the moment\n"
+			exit 1
 		fi
 		;;
 	remove_image)
 		image_name="$2"
-		if [ -z "$image_name" ]; then printf "$o_err missing image name\n"; usage remove_image; fi
+		if [ -z "$image_name" ]; then pmsg $P_ERROR "missing image name\n"; usage remove_image; fi
 
+		(
+		# beginning of locked section
+		flock -n 9 || exit 4
 		if [ -b "/dev/$THINPOOL_VG/$VM_PREFIX$image_name" ]; then
-			printf "$o_inf stopping and undefining the base VM\n"
-			virsh --connect qemu:///system destroy $VM_PREFIX$image_name >>$DEBUG_LOG 2>&1
-			virsh --connect qemu:///system undefine $VM_PREFIX$image_name >>$DEBUG_LOG 2>&1
-			printf "$o_inf removing LV $VM_PREFIX$image_name ...\n"
+			pmsg $P_DEBUG "stopping and undefining the base VM of $image_name\n"
+			virsh --connect qemu:///system destroy $VM_PREFIX$image_name 2>&1|$DEBUG_LOG_CMD
+			virsh --connect qemu:///system undefine $VM_PREFIX$image_name 2>&1|$DEBUG_LOG_CMD
+			pmsg $P_DEBUG "removing LV $VM_PREFIX$image_name ...\n"
 			echo "lvremove" "/dev/$THINPOOL_VG/$VM_PREFIX$image_name" | sudo -n $FASTVM_HELPER
-			printf "$o_inf removing XML and hack file ...\n"
+			pmsg $P_DEBUG "removing XML and hack file of $image_name...\n"
 			if [ -f "$FASTVM_USER_CONF_DIR/config-${image_name}.xml" ]; then rm "$FASTVM_USER_CONF_DIR/config-${image_name}.xml"; fi
 			if [ -f "$FASTVM_USER_CONF_DIR/hacks-${image_name}.sh" ]; then rm "$FASTVM_USER_CONF_DIR/hacks-${image_name}.sh"; fi
-			printf "$o_ok image removed\n"
+			if [ $(whoami) = 'root' ]; then
+				pmsg $P_DEBUG "removing system-wide XML and hack file ...\n"
+				if [ -f "$FASTVM_SYSTEM_CONF_DIR/config-${image_name}.xml" ]; then rm "$FASTVM_SYSTEM_CONF_DIR/config-${image_name}.xml"; fi
+				if [ -f "$FASTVM_SYSTEM_CONF_DIR/hacks-${image_name}.sh" ]; then rm "$FASTVM_SYSTEM_CONF_DIR/hacks-${image_name}.sh"; fi
+			fi
+			pmsg $P_INFO "image $image_name removed\n"
 		else
-			printf "$o_err image "$image_name" not found\n"
+			pmsg $P_ERROR "image "$image_name" not found\n"
 			usage remove_image
+		fi
+		# end of locked section
+		) 9>/tmp/fast-vm.img.${image_name}.lock
+		if [ "$?" = "4" ]; then
+			pmsg $P_ERROR "It is not possible to remove image $image_name now as it is being used by fast-vm at the moment\n"
+			exit 1
 		fi
 		;;
 	create)
 		image_name="$2"
-		if [ -z "$image_name" ]; then printf "$o_err missing image name\n"; usage create; fi
+		if [ -z "$image_name" ]; then pmsg $P_ERROR "missing image name\n"; usage create; fi
 
-		image_xml_path="$4"
-		if [ ! -z "$image_xml_path" ]; then
-			check_file "$image_xml_path" "alternative XML VM definition"
-			if [ "$file_local" -eq '0' ]; then
-	                        image_xml_path=$(download_file "$image_xml_path")
-	                fi
-			printf "$o_inf using alternative xml file $image_xml_path\n"
-		else
-			if [ ! -f "$FASTVM_USER_CONF_DIR/config-${image_name}.xml" ]; then
-				printf "$o_err no VM XML definition for this version. $FASTVM_USER_CONF_DIR/config-${image_name}.xml not found. Import image again or supply alternative xml\n"
-				usage create
+		image_xml_path=""
+		for path in "$4" "$FASTVM_USER_CONF_DIR/config-${image_name}.xml" "$FASTVM_SYSTEM_CONF_DIR/config-${image_name}.xml"
+		do
+			check_file "$path" "test XML file" 2>&1 >/dev/null
+			if [ "$?" != 2 ]; then
+				if [ "$file_local" = '0' ]; then
+		                        image_xml_path=$(download_file "$path")
+				else
+					image_xml_path="$path"
+		                fi
+				pmsg $P_DEBUG "using file $path as libvirt XML\n"
+				break
 			fi
-			image_xml_path="$FASTVM_USER_CONF_DIR/config-${image_name}.xml"
+		done
+		if [ -z "$image_xml_path" ]; then
+			pmsg $P_ERROR "no VM XML definition for image ${image_name}. Import image again or supply alternative xml\n"
+			usage create
 		fi
 
-		hack_file="$5"
-		if [ ! -z "$hack_file" ]; then
-			check_file "$hack_file" "alternative hack file"
-			if [ "$file_local" -eq '0' ]; then
-                                hack_file=$(download_file "$hack_file")
-                        fi
-			printf "$o_inf using alternative hack file $hack_file\n"
-		else
-			if [ ! -f "$FASTVM_USER_CONF_DIR/hacks-${image_name}.sh" ]; then
-				printf "$o_wrn no default hacks file for this version. $FASTVM_USER_CONF_DIR/hacks-${image_name}.sh not found\n"
-			else
-				hack_file="$FASTVM_USER_CONF_DIR/hacks-${image_name}.sh"
+		hack_file=""
+		for path in "$5" "$FASTVM_USER_CONF_DIR/hacks-${image_name}.sh" "$FASTVM_SYSTEM_CONF_DIR/hacks-${image_name}.sh"
+		do
+			check_file "$path" "hack file at $path" 2>&1 >/dev/null
+			if [ "$?" != 2 ]; then
+				if [ "$file_local" = '0' ]; then
+		                        hack_file=$(download_file "$path")
+				else
+					hack_file="$path"
+		                fi
+				pmsg $P_DEBUG "using file $path as hack file\n"
+				break
 			fi
-		fi
+		done
 
+		(
+		# beginning of locked section
+		flock -n 9 || exit 4
 		if [ ! -b "/dev/$THINPOOL_VG/$VM_PREFIX$image_name" ]; then
-			printf "$o_err Missing image for this image name.\n/dev/$THINPOOL_VG/$VM_PREFIX$image_name not found.\nFirst import image using 'fast-vm image_import $image_name'\n"
+			pmsg $P_ERROR "Missing image for ${image_name}.\n/dev/$THINPOOL_VG/$VM_PREFIX$image_name not found.\nFirst import image using 'fast-vm image_import $image_name'\n"
 			exit 2
 		fi
 
@@ -433,18 +534,18 @@ case "$1" in
 		if [ "$?" -eq '0' ]
 		then
 			if [ "$vm_number" -lt 20 ] || [ "$vm_number" -gt 220 ];then
-				printf "$o_err VM number out of range (20-220)\n"
+				pmsg $P_ERROR "VM number out of range (20-220)\n"
 				usage create
 			fi
 			if [ $(list_vm all|egrep "^$vm_number$"|wc -l) -gt 0 ]; then
-				printf "$o_err VM with this VM number already exists\n"
+				pmsg $P_ERROR "VM with this VM number already exists\n"
 				exit 1
 			fi
 		else
 			if [ "$vm_number" = "base" ]; then
-				printf "$o_inf creating base image VM\n"
+				pmsg $P_DEBUG "creating base image VM for $image_name\n"
 			else
-				printf "$o_err only numbers from range 20-220 and word 'base' permited here\n"
+				pmsg $P_ERROR "only numbers from range 20-220 and word 'base' permited here\n"
 				usage create
 			fi
 		fi
@@ -455,71 +556,77 @@ case "$1" in
 			
 			tmp_xml=$(mktemp --suffix=.xml)
 			sed -e "s/VM_NAME/$VM_PREFIX$image_name/g; s/THINPOOL_VG/$THINPOOL_VG/g; s/LIBVIRT_NETWORK/$LIBVIRT_NETWORK/g;" "$image_xml_path" > $tmp_xml
-			virsh --connect qemu:///system define $tmp_xml >>$DEBUG_LOG 2>&1
+			virsh --connect qemu:///system define $tmp_xml
 			if [ ! "$?" -eq '0' ]; then
-				printf "$o_err defining base VM failed, doesn't exists alreadry?\n"
+				pmsg $P_ERROR "defining base VM for $image_name failed, doesn't it exists already?\n"
 				exit 2
 			fi
 
 			# source file with hacks and apply them
 			if [ ! -z "$hack_file" ]; then
 				hack_file=$(echo "$hack_file"|sed 's/^\([^\/]\)/\.\/\1/g')
-				printf "$o_inf applying hacks from $hack_file\n"
+				pmsg $P_DEBUG "applying hacks from $hack_file\n"
 				. $hack_file
 				if [ ! "$?" -eq "0" ]; then
-					printf "$o_wrn there was issue applying hacks to this machine, check $DEBUG_LOG for more details\n"
+					pmsg $P_WARNING "there was issue applying hacks to this machine, check syslog for more details\n"
 				fi
-				printf "$o_inf applying hacks finished\n"
+				pmsg $P_DEBUG "applying hacks finished\n"
 			fi
 
-			printf "$o_inf base image VM created, to start this VM use 'virsh --connect qemu:///system start $VM_PREFIX$image_name'.\n This VM is used for customizing the base image of '$image_name' VMs.\n All changes you make to this VM would be available in newly created VMs of that version, this will not affect already existing VMs of same version\n"
+			pmsg $P_DEBUG "base image VM created, to start this VM use 'virsh --connect qemu:///system start $VM_PREFIX$image_name'.\n This VM is used for customizing the base image of '$image_name' VMs.\n All changes you make to this VM would be available in newly created VMs of that version, this will not affect already existing VMs of same version\n"
 			exit 0
 		fi
 		
 		## check if the machine doesn't exists already
 		vm_disk_test=$(ls /dev/${THINPOOL_VG}/${VM_PREFIX}*-${vm_number} 2>/dev/null|wc -l )
 		if [ "$vm_disk_test" -gt 0 ]; then
-			printf "$o_err there is already disk for this machine, VM creation aborted\n"
+			pmsg $P_ERROR "there is already disk for machine ${vm_number}, VM creation aborted\n"
 			exit 1
 		fi
 
 		## create regular machine
 		VM_NAME="$VM_PREFIX$image_name-$vm_number"
 
-		printf "$o_inf defining virtual machine '$VM_PREFIX$image_name-$vm_number' in libvirt\n"
+		pmsg $P_DEBUG "defining virtual machine '$VM_PREFIX$image_name-$vm_number' in libvirt\n"
 		tmp_xml=$(mktemp --suffix=.xml)
-		sed -e "s/VM_NAME/$VM_PREFIX$image_name-$vm_number/g; s/THINPOOL_VG/$THINPOOL_VG/g; s/LIBVIRT_NETWORK/$LIBVIRT_NETWORK/g;" "$image_xml_path" > $tmp_xml 2>>$DEBUG_LOG
-		virsh --connect qemu:///system define $tmp_xml >>$DEBUG_LOG 2>&1
+		sed -e "s/VM_NAME/$VM_PREFIX$image_name-$vm_number/g; s/THINPOOL_VG/$THINPOOL_VG/g; s/LIBVIRT_NETWORK/$LIBVIRT_NETWORK/g;" "$image_xml_path" > $tmp_xml
+		virsh --connect qemu:///system define $tmp_xml
 		if [ ! "$?" -eq '0' ]; then
-			printf "$o_err Unable to define virtual machine from $tmp_xml. Check $DEBUG_LOG for more details\n"
+			pmsg $P_ERROR "Unable to define virtual machine from $tmp_xml. Check syslog for more details\n"
 			exit 2
 		fi
 
-		printf "$o_inf creating disk '$VM_PREFIX$image_name-$vm_number'\n"
+		pmsg $P_DEBUG "creating disk '$VM_PREFIX$image_name-$vm_number'\n"
 		echo "lvcreate" "newvm" "$image_name" "$image_name-$vm_number" | sudo -n $FASTVM_HELPER
 		echo "chgrp" "/dev/$THINPOOL_VG/$VM_PREFIX$image_name-$vm_number" | sudo -n $FASTVM_HELPER
 
-		printf "$o_inf adding static lease for 192.168.$SUBNET_NUMBER.$vm_number into libvirts DHCP\n"
+		pmsg $P_DEBUG "adding static lease for 192.168.$SUBNET_NUMBER.$vm_number into libvirts DHCP\n"
 		VM_MAC=$(virsh --connect qemu:///system dumpxml "$VM_PREFIX$image_name-$vm_number"|grep 'mac address'|cut -d\' -f 2)
-		virsh --connect qemu:///system net-update "$LIBVIRT_NETWORK" add-last ip-dhcp-host --xml "<host mac='$VM_MAC' ip='192.168.$SUBNET_NUMBER.$vm_number'/>" --live --config >>$DEBUG_LOG 2>&1
+		virsh --connect qemu:///system net-update "$LIBVIRT_NETWORK" add-last ip-dhcp-host --xml "<host mac='$VM_MAC' ip='192.168.$SUBNET_NUMBER.$vm_number'/>" --live --config 2>&1|$DEBUG_LOG_CMD
 
 		# source file with hacks and apply them
 		if [ ! -z "$hack_file" ]; then
 			hack_file=$(echo "$hack_file"|sed 's/^\([^\/]\)/\.\/\1/g')
-			printf "$o_inf applying hacks from $hack_file\n"
+			pmsg $P_DEBUG "applying hacks from $hack_file\n"
 			. $hack_file
 			if [ ! "$?" -eq "0" ]; then
-				printf "$o_wrn there was issue applying hacks to this machine, check $DEBUG_LOG for more details\n"
+				pmsg $P_WARNING "there was issue applying hacks to this machine, check syslog for more details\n"
 			fi
-			printf "$o_inf applying hacks finished\n"
+			pmsg $P_DEBUG "applying hacks finished\n"
 		fi
 
-		printf "$o_ok VM '$VM_NAME' created\n"
+		pmsg $P_INFO "VM '$VM_NAME' created\n"
+		# end of locked section
+		) 9>/tmp/fast-vm.img.${image_name}.lock
+		if [ "$?" = "4" ]; then
+			pmsg $P_ERROR "It is not possible to use image $image_name for creating VM now as it is being used by fast-vm at the moment\n"
+			exit 1
+		fi
 		;;
 
 	start)
 		vm_number="$2"
-		if [ -z "$vm_number" ]; then printf "$o_err VM number missing\n"; usage start; fi
+		if [ -z "$vm_number" ]; then pmsg $P_ERROR "VM number missing\n"; usage start; fi
 
 		check_vm_number "$vm_number" "active"
 
@@ -527,27 +634,27 @@ case "$1" in
 		
 		# if there is any third argument start VM and console after
 		if [ -z "$3" ]; then
-			printf "$o_inf starting VM $vm_name\n"
-			virsh --connect qemu:///system start $vm_name >>$DEBUG_LOG 2>&1
+			pmsg $P_DEBUG "starting VM $vm_name\n"
+			virsh --connect qemu:///system start $vm_name
 			if [ "$?" != '0' ]; then
-				printf "$o_err failed to start VM, check $DEBUG_LOG for more information\n"
+				pmsg $P_ERROR "failed to start VM, check syslog for more information\n"
 			fi
 		else
 			case "$3" in
 				console)
-					printf "$o_inf starting VM $vm_name and connecting to it serial console ...\n"
-					virsh --connect qemu:///system start $vm_name 2>>$DEBUG_LOG
+					pmsg $P_DEBUG "starting VM $vm_name and connecting to it serial console ...\n"
+					virsh --connect qemu:///system start $vm_name
 					if [ "$?" != '0' ]; then
-						printf "$o_err failed to start VM, check $DEBUG_LOG for more information\n"
+						pmsg $P_ERROR "failed to start VM $vm_name, check syslog for more information\n"
 					else
-						virsh --connect qemu:///system console $vm_name 2>>$DEBUG_LOG
+						virsh --connect qemu:///system console $vm_name
 					fi
 				;;
 				ssh)
-					printf "$o_inf starting VM $vm_name\n"
-					virsh --connect qemu:///system start $vm_name 2>>$DEBUG_LOG
+					pmsg $P_DEBUG "starting VM $vm_name\n"
+					virsh --connect qemu:///system start $vm_name
 					if [ "$?" != '0' ]; then
-						printf "$o_err failed to start VM, check $DEBUG_LOG for more information\n"
+						pmsg $P_ERROR "failed to start VM $vm_name, check syslog for more information\n"
 					else
 						wait_for_ssh "$vm_number"
 						if [ ! -z "$4" ] && [ -x "$4" ]; then
@@ -565,31 +672,31 @@ case "$1" in
 		;;
 	stop)
 		vm_number="$2"
-		if [ -z "$vm_number" ]; then printf "$o_err VM number missing\n"; usage stop; fi
+		if [ -z "$vm_number" ]; then pmsg $P_ERROR "VM number missing\n"; usage stop; fi
 
 		check_vm_number "$vm_number" "inactive"
 
 		vm_name=$(virsh --connect qemu:///system list --all |grep "$VM_PREFIX"|awk '{print $2}'|egrep "\-$vm_number$")
 
 		if [ ! -z "$3" ] && [ "$3" = "graceful" ]; then
-			printf "$o_inf Sending ACPI shutdown event\n"
-			virsh --connect qemu:///system shutdown $vm_name 2>>$DEBUG_LOG
+			pmsg $P_DEBUG "Sending ACPI shutdown event to $vm_name\n"
+			virsh --connect qemu:///system shutdown $vm_name
 			if [ "$?" != '0' ]; then
-				printf "$o_err failed to send gracefull shutdown to VM, check $DEBUG_LOG for more information\n"
+				pmsg $P_ERROR "failed to send gracefull shutdown to VM $vm_name, check syslog for more information\n"
 				exit 1
 			fi
 		else
-			printf "$o_inf Stopping VM now\n"
-			virsh --connect qemu:///system destroy $vm_name 2>>$DEBUG_LOG
+			pmsg $P_DEBUG "Stopping VM $vm_name now\n"
+			virsh --connect qemu:///system destroy $vm_name
 			if [ "$?" != '0' ]; then
-				printf "$o_err failed to forcefully shutdown VM, check $DEBUG_LOG for more information\n"
+				pmsg $P_ERROR "failed to forcefully shutdown VM $vm_name, check syslog for more information\n"
 				exit 1
 			fi
 		fi
 		;;
 	ssh)
 		vm_number="$2"
-		if [ -z "$vm_number" ]; then printf "$o_err VM number missing\n"; usage ssh; fi
+		if [ -z "$vm_number" ]; then pmsg $P_ERROR "VM number missing\n"; usage ssh; fi
 
 		check_vm_number "$vm_number" "inactive"
 
@@ -598,7 +705,7 @@ case "$1" in
 			if [ -x "$3" ]; then
 				eval "$3 192.168.$SUBNET_NUMBER.$vm_number"
 			else
-				printf "$o_err $3 not executable\n"
+				pmsg $P_ERROR "$3 not executable\n"
 			fi
 		else
 			ssh -o GlobalKnownHostsFile=/dev/null -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no "root@192.168.$SUBNET_NUMBER.$vm_number"
@@ -606,58 +713,58 @@ case "$1" in
 		;;
 	console)
 		vm_number="$2"
-		if [ -z "$vm_number" ]; then printf "$o_err VM number missing\n"; usage console; fi
+		if [ -z "$vm_number" ]; then pmsg $P_ERROR "VM number missing\n"; usage console; fi
 
 		check_vm_number "$vm_number" "inactive"
 
 		vm_name=$(virsh --connect qemu:///system list --all |grep "$VM_PREFIX"|awk '{print $2}'|egrep "\-$vm_number$")
 
-		virsh --connect qemu:///system console $vm_name 2>>$DEBUG_LOG
+		virsh --connect qemu:///system console $vm_name
 		;;
 	delete)
 		vm_number="$2"
-		if [ -z "$vm_number" ]; then printf "$o_err VM number missing\n"; usage delete; fi
+		if [ -z "$vm_number" ]; then pmsg $P_ERROR "VM number missing\n"; usage delete; fi
 
 		if [ $(list_vm all|egrep "^$vm_number$"|wc -l) -eq 0 ]; then
-			printf "$o_err no VM with number '$vm_number' found\n"
+			pmsg $P_ERROR "no VM with number '$vm_number' found\n"
 			exit 1
 		fi
 
 		vm_name=$(virsh --connect qemu:///system list --all |grep "$VM_PREFIX"|awk '{print $2}'|egrep "\-$vm_number$")
 
 		if [ $(list_vm active|egrep "^$vm_number$"|wc -l) -eq 1 ]; then
-			printf "$o_wrn VM is active, forcefully stopping it\n"
-			virsh --connect qemu:///system destroy $vm_name >>$DEBUG_LOG 2>&1
+			pmsg $P_WARNING "VM $vm_name is active, forcefully stopping it\n"
+			virsh --connect qemu:///system destroy $vm_name
 			if [ "$?" != '0' ]; then
-				printf "$o_err failed to stop VM, check $DEBUG_LOG for more information\n"
+				pmsg $P_ERROR "failed to stop VM $vm_name, check syslog for more information\n"
 				exit 1
 			fi
 		fi
 
 		VM_MAC=$(virsh --connect qemu:///system dumpxml "$vm_name"|grep 'mac address'|cut -d\' -f 2)
 
-		printf "$o_inf removing DHCP reservation\n"
-		virsh --connect qemu:///system net-update "$LIBVIRT_NETWORK" delete ip-dhcp-host --xml "<host mac='$VM_MAC' ip='192.168.$SUBNET_NUMBER.$vm_number'/>" --live --config >>$DEBUG_LOG 2>&1
+		pmsg $P_DEBUG "removing DHCP reservation 192.168.$SUBNET_NUMBER.$vm_number for $VM_MAC\n"
+		virsh --connect qemu:///system net-update "$LIBVIRT_NETWORK" delete ip-dhcp-host --xml "<host mac='$VM_MAC' ip='192.168.$SUBNET_NUMBER.$vm_number'/>" --live --config
 		if [ "$?" != '0' ]; then
-			printf "$o_wrn failed to remove DHCP reservation from libvirt, check $DEBUG_LOG for more information\n"
+			pmsg $P_WARNING "failed to remove DHCP reservation 192.168.$SUBNET_NUMBER.$vm_number for $VM_MAC from libvirt, check syslog for more information\n"
 		fi
 		PATH="$PATH:/usr/sbin" which dhcp_release >/dev/null 2>&1
 		if [ "$?" -eq '0' ]; then
 			echo "dhcp_release" "$LIBVIRT_NETWORK" "$vm_number" "$VM_MAC" | sudo -n $FASTVM_HELPER
 		else
-			printf "$o_wrn dhcp_release not found, to reuse the same VM number you would need to delete DHCP leases file for $LIBVIRT_NETWORK network and restart this network in the libvirt.\nhttp://lists.thekelleys.org.uk/pipermail/dnsmasq-discuss/2007q1/001094.html\n"
+			pmsg $P_WARNING "dhcp_release not found, to reuse the same VM number you would need to delete DHCP leases file for $LIBVIRT_NETWORK network and restart this network in the libvirt.\nhttp://lists.thekelleys.org.uk/pipermail/dnsmasq-discuss/2007q1/001094.html\n"
 		fi
 		
-		printf "$o_inf removing VM drive\n"
+		pmsg $P_DEBUG "removing VM drive\n"
 		echo "lvremove" "/dev/$THINPOOL_VG/$vm_name" | sudo -n $FASTVM_HELPER
 
-		printf "$o_inf undefining VM from libvirt\n"
-		virsh --connect qemu:///system undefine $vm_name >>$DEBUG_LOG 2>&1
+		pmsg $P_DEBUG "undefining VM $vm_name from libvirt\n"
+		virsh --connect qemu:///system undefine $vm_name
 		if [ "$?" != '0' ]; then
-			printf "$o_err failed to undefine VM, check $DEBUG_LOG for more information\n"
+			pmsg $P_ERROR "failed to undefine VM $vm_name, check syslog for more information\n"
 			exit 1
 		else
-			printf "$o_ok VM '$vm_name' deleted\n"
+			pmsg $P_INFO "VM '$vm_name' deleted\n"
 		fi
 		;;
 	list)
@@ -669,7 +776,7 @@ case "$1" in
 			echo "$vm_list"
 		else
 			printf "%3s %-20s %s\n" "VM#" "Image name" "Status"
-			data=$(virsh --connect qemu:///system list --all|awk '{print $2,$3,$4}'|egrep "^${VM_PREFIX}.*-[0-9]+"|sed "s/${VM_PREFIX}\(.\+\)-\([0-9]\+\) \([a-zA-Z ]\+\)$/\2 \1 \3/"|awk '{printf "%3s %-20s %s %s\n",$1,$2,$3,$4}')
+			data=$(virsh --connect qemu:///system list --all|awk '{print $2,$3,$4}'|egrep "^${VM_PREFIX}.*-[0-9]+ "|sed "s/${VM_PREFIX}\(.\+\)-\([0-9]\+\) \([a-zA-Z ]\+\)$/\2 \1 \3/"|awk '{printf "%3s %-20s %s %s\n",$1,$2,$3,$4}')
 			for vm in $vm_list;
 			do
 				echo "$data"|egrep "(^ $vm|^$vm)"
@@ -679,11 +786,8 @@ case "$1" in
 		;;
 	list_images)
 		short_output="$2" # if non-zero the output suitable for external processing
-		# first we need to determine the dm-XX of the thinpool
-		double_dash_lv=$(echo "$THINPOOL_LV"|sed 's/-/--/g') # LVM uses double dash in the /dev/mapper
-		double_dash_vg=$(echo "$THINPOOL_VG"|sed 's/-/--/g') # also for VGs
 		# lets get the dm-XX number of the thinpool
-		pool_dm=$(ls -l "/dev/mapper/${double_dash_vg}-${double_dash_lv}-tpool"|cut -d / -f 5)
+		pool_dm=$(ls -l "$THINPOOL_PATH"|cut -d / -f 5)
 		# from dm-XX of thinpool we can list the LVs inside the thinpool
 		holders=$(ls /sys/block/$pool_dm/holders)
 		holder_regexp=""
@@ -702,27 +806,41 @@ case "$1" in
 		if [ ! -z "$short_output" ] && [ "$short_output" = "short" ]; then
 			echo "$image_name_list"
 		else
-				printf '%-20s %-8s %-8s\n' 'Image name' 'XML' 'Hack file'
+				printf '%-20s|%-17s |%-17s |\n' 'Image' 'SYSTEM' 'USER'
+				printf '%-20s|%-8s %-9s|%-8s %-9s|\n' 'Image name' 'XML' 'Hack file' 'XML' 'Hack file'
 			for image_name in $image_name_list; do
 				# check the existence of the XML file
 				if [ -f "$FASTVM_USER_CONF_DIR/config-${image_name}.xml" ]; then
-					xml_exists="ok"
+					user_xml_exists="ok"
 				else
-					xml_exists="missing"
+					user_xml_exists="missing"
 				fi
 				# check existence of hack file
 				if [ -f "$FASTVM_USER_CONF_DIR/hacks-${image_name}.sh" ]; then
-					hacks_exists="ok"
+					user_hacks_exists="ok"
 				else
-					hacks_exists="missing"
+					user_hacks_exists="missing"
 				fi
-				printf "%-20s %-8s %-8s\n" "$image_name" "$xml_exists" "$hacks_exists"
+				# check the existence of the XML file
+				if [ -f "$FASTVM_SYSTEM_CONF_DIR/config-${image_name}.xml" ]; then
+					system_xml_exists="ok"
+				else
+					system_xml_exists="missing"
+				fi
+				# check existence of hack file
+				if [ -f "$FASTVM_SYSTEM_CONF_DIR/hacks-${image_name}.sh" ]; then
+					system_hacks_exists="ok"
+				else
+					system_hacks_exists="missing"
+				fi
+				printf "%-20s %-8s %-9s %-8s %-9s\n" "$image_name" "$system_xml_exists" "$system_hacks_exists" "$user_xml_exists" "$user_hacks_exists"
 			done
 			printf "\nNOTE: if image is missing XML it wouldn't be possible to create a VM from it!\n Image with missing hack file can work if it's not needed.\n"
+			printf "\n USER XML and hack files takes precendense before SYSTEM ones.\n"
 		fi
 		;;
 	*) 
-		printf "$o_err unknown action\n"
+		pmsg $P_ERROR "unknown action\n"
 		usage
 		;;
 esac	
