@@ -88,7 +88,7 @@ _fast-vm()
 				start)
 					vm_numbers=$(fast-vm list inactive short)
 				;;
-				delete)
+				delete|edit_note)
 					vm_numbers=$(fast-vm list all short)
 				;;
 				console|ssh|stop)
