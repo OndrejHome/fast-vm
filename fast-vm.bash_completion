@@ -102,7 +102,7 @@ _fast-vm()
 
 	$split && return 0
 	if [ "$cword" -lt 2 ]; then
-		COMPREPLY=( $( compgen -W 'import_image export_image remove_image list_images create start stop delete console ssh list' -- "$cur" ) )
+		COMPREPLY=( $( compgen -W 'import_image export_image remove_image edit_note list_images create start stop delete console ssh list' -- "$cur" ) )
 		return 0
 	fi
 
