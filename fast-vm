@@ -394,9 +394,11 @@ case "$1" in
 		pmsg $P_INFO "Image $image_name imported\n"
 		# end of locked section
 		) 9>/tmp/fast-vm.img.${image_name}.lock
-		if [ "$?" = "4" ]; then
-			pmsg $P_ERROR "It is not possible to import image $image_name now as it is being used by fast-vm at the moment\n"
+		if [ "$?" != "0" ]; then
+			pmsg $P_ERROR "It is not possible to import image $image_name now as it is being used by fast-vm or other process at the moment\n"
 			exit 1
+		else
+			rm -f /tmp/fast-vm.img.${image_name}.lock
 		fi
 		;;
 	export_image)
@@ -444,9 +446,11 @@ case "$1" in
 		fi
 		# end of locked section
 		) 9>/tmp/fast-vm.img.${image_name}.lock
-		if [ "$?" = "4" ]; then
-			pmsg $P_ERROR "It is not possible to export image $image_name now as it is being used by fast-vm at the moment\n"
+		if [ "$?" != "0" ]; then
+			pmsg $P_ERROR "It is not possible to export image $image_name now as it is being used by fast-vm or other process at the moment\n"
 			exit 1
+		else
+			rm -f /tmp/fast-vm.img.${image_name}.lock
 		fi
 		;;
 	remove_image)
@@ -477,9 +481,11 @@ case "$1" in
 		fi
 		# end of locked section
 		) 9>/tmp/fast-vm.img.${image_name}.lock
-		if [ "$?" = "4" ]; then
-			pmsg $P_ERROR "It is not possible to remove image $image_name now as it is being used by fast-vm at the moment\n"
+		if [ "$?" != "0" ]; then
+			pmsg $P_ERROR "It is not possible to remove image $image_name now as it is being used by fast-vm or other process at the moment\n"
 			exit 1
+		else
+			rm -f /tmp/fast-vm.img.${image_name}.lock
 		fi
 		;;
 	create)
@@ -618,9 +624,11 @@ case "$1" in
 		pmsg $P_INFO "VM '$VM_NAME' created\n"
 		# end of locked section
 		) 9>/tmp/fast-vm.img.${image_name}.lock
-		if [ "$?" = "4" ]; then
-			pmsg $P_ERROR "It is not possible to use image $image_name for creating VM now as it is being used by fast-vm at the moment\n"
+		if [ "$?" != "0" ]; then
+			pmsg $P_ERROR "It is not possible to use image $image_name for creating VM now as it is being used by fast-vm or other process at the moment\n"
 			exit 1
+		else
+			rm -f /tmp/fast-vm.img.${image_name}.lock
 		fi
 		;;
 
