@@ -771,6 +771,9 @@ case "$1" in
 		pmsg $P_DEBUG "removing VM drive\n"
 		echo "lvremove" "/dev/$THINPOOL_VG/$vm_name" | sudo -n $FASTVM_HELPER
 
+		pmsg $P_DEBUG "removing VM notes\n"
+		if [ -f "$FASTVM_NOTES_DIR/$vm_number" ]; then rm "$FASTVM_NOTES_DIR/$vm_number"; fi
+
 		pmsg $P_DEBUG "undefining VM $vm_name from libvirt\n"
 		virsh --connect qemu:///system undefine $vm_name
 		if [ "$?" != '0' ]; then
