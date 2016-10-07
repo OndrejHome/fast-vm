@@ -746,6 +746,14 @@ case "$1" in
 			exit 1
 		fi
 
+		if [ "$FASTVM_OWNER_ONLY_DELETE" == "yes" ]; then
+			owner=$(stat --format="%U" "$FASTVM_NOTES_DIR/$vm_number")
+			if [ $(whoami) != "root" ] && [ $(whoami) != "$owner" ]; then
+				pmsg $P_ERROR "only 'root' and '$owner' are allowed to delete this VM\n"
+				exit 1
+			fi
+		fi
+
 		vm_name=$(virsh --connect qemu:///system list --all |grep "$VM_PREFIX"|awk '{print $2}'|egrep "\-$vm_number$")
 
 		if [ $(list_vm active|egrep "^$vm_number$"|wc -l) -eq 1 ]; then

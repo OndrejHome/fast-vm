@@ -1,4 +1,4 @@
-.TH FAST-VM.CONF 5 "fast-vm 0.9 (2016-07-10)" "fast-vm" "/etc/fast-vm.conf" \" -*- nroff -*-
+.TH FAST-VM.CONF 5 "fast-vm 0.9 (2016-10-07)" "fast-vm" "/etc/fast-vm.conf" \" -*- nroff -*-
 .SH NAME
 .IR /etc/fast-vm.conf " \(em global configuration file for fast-vm"
 
@@ -56,6 +56,11 @@ Defines the minimum priority of messages that will be showed when running fast-v
 .B FASTVM_NOTES_DIR
 Directory in which to store notes for VMs taht are shown in 'Notes' column when listing VMs. Defaults to
 .BR /var/tmp
+
+.TP
+.B FASTVM_OWNER_ONLY_DELETE
+Allow only 'root' and VM 'owner' to delete VM. In fast-vm versions =< 0.9 all users able to use fast-vm can delete any fast-vm VM. Default is 
+.BR no ". To enable this behaviour set this to " yes .
 
 .SH SEE ALSO
 .BR fast-vm (8),
