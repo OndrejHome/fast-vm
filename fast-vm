@@ -586,6 +586,9 @@ case "$1" in
 
 			pmsg $P_DEBUG "base image VM created, to start this VM use 'virsh --connect qemu:///system start $VM_PREFIX$image_name'.\n This VM is used for customizing the base image of '$image_name' VMs.\n All changes you make to this VM would be available in newly created VMs of that version, this will not affect already existing VMs of same version\n"
 			exit 0
+		else
+			# create empty VM note to identify user which created VM only for non-base VMs
+			touch "$FASTVM_NOTES_DIR/$vm_number" 2>/dev/null
 		fi
 		
 		## check if the machine doesn't exists already
