@@ -75,6 +75,8 @@ do
 	ask_question "Libvirt network (bridge) name\n This configuration will create a libvirt \n network with this name providing NAT for VMs." "$LIBVIRT_NETWORK" "LIBVIRT_NETWORK"
 	ask_question "Libvirt subnet number (192.168.XX.0/24)" "$SUBNET_NUMBER" "SUBNET_NUMBER"
 
+	ask_question "Directory in which to store VM notes" "$FASTVM_NOTES_DIR" "FASTVM_NOTES_DIR"
+
 	## reload the configuration file and check the system for changes
 	. $config_file
 
