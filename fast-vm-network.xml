@@ -3,6 +3,14 @@
   <forward mode='nat'/>
   <bridge name='NET_NAME' stp='on' delay='0'/>
   <ip address='192.168.SUBNET_NUMBER.1' netmask='255.255.255.0'>
+    <dhcp>
+      <!-- workaround: dnsmasq doesn't accept the DHCPRELEASE request from dhcp_release and
+	   responds with 'port unreachable' when there are no static DHCP leases defined.
+	   As there still might be DHCP lease when the machine was last one this can cause
+	   issues. the DHCP reservation below is a dummy one to prevent this from happening
+	   so network has always at least 1 DHCP reservation and accepts the releases, -->
+      <host mac='52:54:00:99:ff:99' ip='192.168.SUBNET_NUMBER.2'/>
+    </dhcp>
   </ip>
 </network>
 
