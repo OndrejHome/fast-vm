@@ -21,7 +21,7 @@ while read mac ip; do
 
 	fi
 
-done < <(virsh --connect qemu:///system net-dumpxml fast-vm-nat|grep 'host mac'|awk '{print $2,$3}')
+done < <(virsh --connect qemu:///system net-dumpxml $LIBVIRT_NETWORK|grep 'host mac'|awk '{print $2,$3}')
 
 # TODO
 # - regenerate missing DHCP reservations for existing fastvm VMs
