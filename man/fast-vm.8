@@ -48,6 +48,7 @@ fast-vm \(em script for defining VMs from images provided in thin LVM pool
 
 .B fast-vm
 .B edit_note
+.I VmNumber
 .RI [ NoteText ]
 .br
 
@@ -243,7 +244,7 @@ Create machine with custom definition and hack file. Start it and after it's SSH
 
 .RB "Assign text note to VM. If note text is not provided, default editor from " "$EDITOR" " is launched."
 .sp
-.BI "fast-vm edit_note " "'this is testing machine'"
+.BI "fast-vm edit_note " "42 'this is testing machine'"
 
 .SH SEE ALSO
 .BR fast-vm.conf (5),
