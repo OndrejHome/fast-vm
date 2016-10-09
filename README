@@ -78,6 +78,7 @@ Distribution    Installation method
 * sometimes the VM doesn't get designated IP address because the dnsmasq holds
   the lease for some older MAC address (dhcp_release should be fixing this but
   it's not 100% working solution) - use fast-vm-net-cleanup to fix this issue
+* when upgrading from version =< 0.9 run 'fast-vm-net-cleanup' to address DHCP issue
 
 ====== FAQ ======
 Q: Why is it using LVM?

@@ -14,14 +14,20 @@ while read mac ip; do
 	vm_number=$(echo $ip|cut -d. -f4)
 	vm_name=$(virsh --connect qemu:///system list --all|awk '{print $2}'|egrep "^${VM_PREFIX}.*-$vm_number"|head -1)
 
-	if [ -z "$vm_name" ]; then
+	if [ -z "$vm_name" ] && [ "$vm_number" -gt 2 ]; then
 		echo "[inf] deleting reservation for non-existing VM number $vm_number"
 		echo "dhcp_release" "$LIBVIRT_NETWORK" "$vm_number" "$mac" | sudo -n $FASTVM_HELPER
                 virsh --connect qemu:///system net-update "$LIBVIRT_NETWORK" delete ip-dhcp-host --xml "<host mac='$mac' ip='$ip'/>" --live --config
 
 	fi
 
-done < <(virsh --connect qemu:///system net-dumpxml fast-vm-nat|grep 'host mac'|awk '{print $2,$3}')
+done < <(virsh --connect qemu:///system net-dumpxml $LIBVIRT_NETWORK|grep 'host mac'|awk '{print $2,$3}')
+
+echo "[inf] check for dummy DHCP reservation"
+if [ $(virsh --connect qemu:///system net-dumpxml $LIBVIRT_NETWORK|grep '52:54:00:99:ff:99'|wc -l) == "0" ]; then
+	echo "[inf] adding missing dummy DHCP reservation"
+	virsh --connect qemu:///system net-update "$LIBVIRT_NETWORK" add-last ip-dhcp-host --xml "<host mac='52:54:00:99:ff:99' ip='192.168.${SUBNET_NUMBER}.2'/>" --live --config
+fi
 
 # TODO
 # - regenerate missing DHCP reservations for existing fastvm VMs

@@ -1,4 +1,4 @@
-.TH FAST-VM 8 "fast-vm 0.9 (2016-05-20)" "fast-vm" "fast-vm" \" -*- nroff -*-
+.TH FAST-VM 8 "fast-vm 0.9.5 (2016-08-09)" "fast-vm" "fast-vm" \" -*- nroff -*-
 .SH NAME
 fast-vm \(em script for defining VMs from images provided in thin LVM pool
 .SH SYNOPSIS
@@ -44,6 +44,12 @@ fast-vm \(em script for defining VMs from images provided in thin LVM pool
 .B fast-vm
 .B delete
 .I VmNumber
+.br
+
+.B fast-vm
+.B edit_note
+.I VmNumber
+.RI [ NoteText ]
 .br
 
 .B fast-vm
@@ -235,6 +241,10 @@ Create machine with custom definition and hack file. Start it and after it's SSH
 .BI "fast-vm create " "6.7 42 /tmp/custom\-libvirt.xml /tmp/custom\-hacks.sh"
 && 
 .BI "fast-vm start " "42 ssh /tmp/test.sh"
+
+.RB "Assign text note to VM. If note text is not provided, default editor from " "$EDITOR" " is launched."
+.sp
+.BI "fast-vm edit_note " "42 'this is testing machine'"
 
 .SH SEE ALSO
 .BR fast-vm.conf (5),

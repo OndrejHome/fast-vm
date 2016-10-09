@@ -3,6 +3,7 @@ DEBUG_LOG_CMD="logger -p debug -t fast-vm-dbg"
 FASTVM_HELPER=/usr/libexec/fast-vm-helper.sh
 FASTVM_USER_CONF_DIR="$HOME/.fast-vm"
 FASTVM_SYSTEM_CONF_DIR="/etc/fast-vm"
+FASTVM_NOTES_DIR="/var/tmp"
 CURL_OPTS=""
 LOG_LEVEL=7
 DISPLAY_LEVEL=7
@@ -176,6 +177,9 @@ usage () {
 		delete)
 			echo "$0 delete VmNumber"
 			;;
+		edit_note)
+			echo "$0 edit_note VmNumber [NoteText]"
+			;;
 		list)
 			echo "$0 list [all|active|inactive [short]]"
 			;;
@@ -189,13 +193,14 @@ fast-vm remove_image ImageName
 fast-vm list_images [short]
 fast-vm create ImageName <base |VmNumber> [PathToLibvirtXML] [PathToHacksFile]
 fast-vm delete VmNumber
+fast-vm edit_note [NoteText]
 fast-vm list [all|active|inactive [short]]
 fast-vm start VmNumber [console|ssh [/path/to/custom/script]]
 fast-vm stop VmNumber [graceful]
 fast-vm console VmNumber
 fast-vm ssh VmNumber [/path/to/custom/script]
 
-== fast-vm version 0.9 <ofamera@redhat.com> ==
+== fast-vm version 0.9.5 <ofamera@redhat.com> ==
 EOF
 			;;
 	esac
@@ -581,6 +586,9 @@ case "$1" in
 
 			pmsg $P_DEBUG "base image VM created, to start this VM use 'virsh --connect qemu:///system start $VM_PREFIX$image_name'.\n This VM is used for customizing the base image of '$image_name' VMs.\n All changes you make to this VM would be available in newly created VMs of that version, this will not affect already existing VMs of same version\n"
 			exit 0
+		else
+			# create empty VM note to identify user which created VM only for non-base VMs
+			touch "$FASTVM_NOTES_DIR/$vm_number" 2>/dev/null
 		fi
 		
 		## check if the machine doesn't exists already
@@ -738,6 +746,14 @@ case "$1" in
 			exit 1
 		fi
 
+		if [ "$FASTVM_OWNER_ONLY_DELETE" == "yes" ]; then
+			owner=$(stat --format="%U" "$FASTVM_NOTES_DIR/$vm_number")
+			if [ $(whoami) != "root" ] && [ $(whoami) != "$owner" ]; then
+				pmsg $P_ERROR "only 'root' and '$owner' are allowed to delete this VM\n"
+				exit 1
+			fi
+		fi
+
 		vm_name=$(virsh --connect qemu:///system list --all |grep "$VM_PREFIX"|awk '{print $2}'|egrep "\-$vm_number$")
 
 		if [ $(list_vm active|egrep "^$vm_number$"|wc -l) -eq 1 ]; then
@@ -766,6 +782,9 @@ case "$1" in
 		pmsg $P_DEBUG "removing VM drive\n"
 		echo "lvremove" "/dev/$THINPOOL_VG/$vm_name" | sudo -n $FASTVM_HELPER
 
+		pmsg $P_DEBUG "removing VM notes\n"
+		if [ -f "$FASTVM_NOTES_DIR/$vm_number" ]; then rm "$FASTVM_NOTES_DIR/$vm_number"; fi
+
 		pmsg $P_DEBUG "undefining VM $vm_name from libvirt\n"
 		virsh --connect qemu:///system undefine $vm_name
 		if [ "$?" != '0' ]; then
@@ -775,19 +794,42 @@ case "$1" in
 			pmsg $P_INFO "VM '$vm_name' deleted\n"
 		fi
 		;;
+	edit_note)
+		vm_number="$2"
+		if [ -z "$vm_number" ]; then pmsg $P_ERROR "VM number missing\n"; usage delete; fi
+
+		if [ $(list_vm all|egrep "^$vm_number$"|wc -l) -eq 0 ]; then
+			pmsg $P_ERROR "no VM with number '$vm_number' found\n"
+			exit 1
+		fi
+		if [ -z "$3" ]; then
+			$EDITOR "$FASTVM_NOTES_DIR/$vm_number"
+		else
+			echo "$3" > "$FASTVM_NOTES_DIR/$vm_number"
+		fi
+		;;
 	list)
 		list_type="$2"
 		short_output="$3"
+		TERMINAL_WIDTH=$(stty size | cut -d ' ' -f 2)
 
 		vm_list=$(list_vm "$list_type")
 		if [ ! -z "$short_output" ] && [ "$short_output" = "short" ]; then
 			echo "$vm_list"
 		else
-			printf "%3s %-20s %s\n" "VM#" "Image name" "Status"
+			printf "%3s %-20s %-12s %s\n" "VM#" "Image name" "Status" "Notes"
 			data=$(virsh --connect qemu:///system list --all|awk '{print $2,$3,$4}'|egrep "^${VM_PREFIX}.*-[0-9]+ "|sed "s/${VM_PREFIX}\(.\+\)-\([0-9]\+\) \([a-zA-Z ]\+\)$/\2 \1 \3/"|awk '{printf "%3s %-20s %s %s\n",$1,$2,$3,$4}')
 			for vm in $vm_list;
 			do
-				echo "$data"|egrep "(^ $vm|^$vm)"
+				out=$(echo "$data"|egrep "(^ $vm|^$vm) ")
+				if [ -f "$FASTVM_NOTES_DIR/$vm" ]; then
+					owner=$(stat --format="%U" "$FASTVM_NOTES_DIR/$vm")
+					note=$(head -1 "$FASTVM_NOTES_DIR/$vm")
+					note=$(echo "$owner: $note"|cut -c 1-$(($TERMINAL_WIDTH-38)))
+					printf "%-37s %-s\n" "$out" "$note"
+				else
+					printf "%-37s -----\n" "$out"
+				fi
 			done
 
 		fi
