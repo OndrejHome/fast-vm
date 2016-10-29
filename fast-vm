@@ -193,7 +193,7 @@ fast-vm remove_image ImageName
 fast-vm list_images [short]
 fast-vm create ImageName <base |VmNumber> [PathToLibvirtXML] [PathToHacksFile]
 fast-vm delete VmNumber
-fast-vm edit_note [NoteText]
+fast-vm edit_note VmNumber [NoteText]
 fast-vm list [all|active|inactive [short]]
 fast-vm start VmNumber [console|ssh [/path/to/custom/script]]
 fast-vm stop VmNumber [graceful]
