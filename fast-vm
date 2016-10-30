@@ -747,9 +747,13 @@ case "$1" in
 		fi
 
 		if [ "$FASTVM_OWNER_ONLY_DELETE" == "yes" ]; then
-			owner=$(stat --format="%U" "$FASTVM_NOTES_DIR/$vm_number")
+			owner=$(stat --format="%U" "$FASTVM_NOTES_DIR/$vm_number" 2>/dev/null)
 			if [ $(whoami) != "root" ] && [ $(whoami) != "$owner" ]; then
-				pmsg $P_ERROR "only 'root' and '$owner' are allowed to delete this VM\n"
+				if [ -z "$owner" ]; then
+					pmsg $P_ERROR "only 'root' is allowed to delete this VM\n"
+				else
+					pmsg $P_ERROR "only 'root' and '$owner' are allowed to delete this VM\n"
+				fi
 				exit 1
 			fi
 		fi
