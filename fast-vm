@@ -462,9 +462,6 @@ case "$1" in
 		image_name="$2"
 		if [ -z "$image_name" ]; then pmsg $P_ERROR "missing image name\n"; usage remove_image; fi
 
-		(
-		# beginning of locked section
-		flock -n 9 || exit 4
 		if [ -b "/dev/$THINPOOL_VG/$VM_PREFIX$image_name" ]; then
 			pmsg $P_DEBUG "stopping and undefining the base VM of $image_name\n"
 			virsh --connect qemu:///system destroy $VM_PREFIX$image_name 2>&1|$DEBUG_LOG_CMD
@@ -483,14 +480,6 @@ case "$1" in
 		else
 			pmsg $P_ERROR "image "$image_name" not found\n"
 			usage remove_image
-		fi
-		# end of locked section
-		) 9>/tmp/fast-vm.img.${image_name}.lock
-		if [ "$?" != "0" ]; then
-			pmsg $P_ERROR "It is not possible to remove image $image_name now as it is being used by fast-vm or other process at the moment\n"
-			exit 1
-		else
-			rm -f /tmp/fast-vm.img.${image_name}.lock
 		fi
 		;;
 	create)
