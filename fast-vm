@@ -323,9 +323,6 @@ case "$1" in
 				hack_file=$(download_file "$hack_file")
 			fi
 		fi
-		(
-		# beginning of locked section
-		flock -n 9 || exit 4
 		if [ -b "/dev/$THINPOOL_VG/$VM_PREFIX$image_name" ]; then
 			pmsg $P_ERROR "base image for '$image_name' version already exists. To remove image use 'remove_image' parameter\n"
 			exit 1
@@ -339,6 +336,9 @@ case "$1" in
 			fi
 		fi
 
+		(
+		# beginning of locked section
+		flock -x -n 9 || exit 4
 		pmsg $P_DEBUG "importing image $image_path into /dev/$THINPOOL_VG/$VM_PREFIX$image_name\n"
 		echo "chgrp" "/dev/$THINPOOL_VG/$VM_PREFIX$image_name" | sudo -n $FASTVM_HELPER
 
@@ -398,7 +398,7 @@ case "$1" in
 
 		pmsg $P_INFO "Image $image_name imported\n"
 		# end of locked section
-		) 9>/tmp/fast-vm.img.${image_name}.lock
+		) 9</dev/$THINPOOL_VG/$VM_PREFIX$image_name
 		if [ "$?" != "0" ]; then
 			pmsg $P_ERROR "It is not possible to import image $image_name now as it is being used by fast-vm or other process at the moment\n"
 			exit 1
