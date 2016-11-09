@@ -435,7 +435,7 @@ case "$1" in
 
 		(
 		# beginning of locked section
-		flock -n 9 || exit 4
+		flock -s -n 9 || exit 4
 		if [ -b "/dev/$THINPOOL_VG/$VM_PREFIX$image_name" ]; then
 			echo "chgrp" "/dev/$THINPOOL_VG/$VM_PREFIX$image_name" | sudo -n $FASTVM_HELPER
 			pmsg $P_DEBUG "compressing the image $image_name into $(pwd)/${image_name}.img.${image_format}\n"
@@ -450,7 +450,7 @@ case "$1" in
 			usage export_image
 		fi
 		# end of locked section
-		) 9>/tmp/fast-vm.img.${image_name}.lock
+		) 9</dev/$THINPOOL_VG/$VM_PREFIX$image_name
 		if [ "$?" != "0" ]; then
 			pmsg $P_ERROR "It is not possible to export image $image_name now as it is being used by fast-vm or other process at the moment\n"
 			exit 1
@@ -533,7 +533,7 @@ case "$1" in
 
 		(
 		# beginning of locked section
-		flock -n 9 || exit 4
+		flock -s -n 9 || exit 4
 		if [ ! -b "/dev/$THINPOOL_VG/$VM_PREFIX$image_name" ]; then
 			pmsg $P_ERROR "Missing image for ${image_name}.\n/dev/$THINPOOL_VG/$VM_PREFIX$image_name not found.\nFirst import image using 'fast-vm image_import $image_name'\n"
 			exit 2
@@ -631,7 +631,7 @@ case "$1" in
 
 		pmsg $P_INFO "VM '$VM_NAME' created\n"
 		# end of locked section
-		) 9>/tmp/fast-vm.img.${image_name}.lock
+		) 9</dev/$THINPOOL_VG/$VM_PREFIX$image_name
 		if [ "$?" != "0" ]; then
 			pmsg $P_ERROR "It is not possible to use image $image_name for creating VM now as it is being used by fast-vm or other process at the moment\n"
 			exit 1
