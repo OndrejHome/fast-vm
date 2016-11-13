@@ -19,6 +19,7 @@ Requires:	ncurses
 Requires:	openssh-clients
 Requires:	sed
 Requires:	sudo
+Requires:	util-linux
 Requires:	qemu-kvm
 Requires:	libvirt-daemon-driver-storage
 Requires:	libvirt-daemon-driver-lxc
