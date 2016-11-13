@@ -1,5 +1,5 @@
 Name:		fast-vm
-Version:	0.9.5
+Version:	1.0
 Release:	1%{?dist}
 Summary:	Script for defining VMs from images provided in thin LVM pool
 
@@ -63,6 +63,12 @@ drive of new machine before starting VM using the 'hack files'.
 %config(noreplace) %{_sysconfdir}/sudoers.d/%{name}-sudoers
 
 %changelog
+* Sun Now 13 2016 Ondrej Famera <ofamera@redhat.com> 1.0-1
+- added support for handling machines with UEFI firmware
+- improve error messages and documentation
+- fix locking and make it dependent on image block device
+  (= no need for lock files and shared read lock for images)
+
 * Sun Oct 09 2016 Ondrej Famera <ofamera@redhat.com> 0.9.5-1
 - ability to have VM notes (also indicates the owners of VM)
 - fix issue with DHCP lease when last VM was deleted
