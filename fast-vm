@@ -522,9 +522,6 @@ case "$1" in
 			fi
 		done
 
-		(
-		# beginning of locked section
-		flock -s -n 9 || exit 4
 		if [ ! -b "/dev/$THINPOOL_VG/$VM_PREFIX$image_name" ]; then
 			pmsg $P_ERROR "Missing image for ${image_name}.\n/dev/$THINPOOL_VG/$VM_PREFIX$image_name not found.\nFirst import image using 'fast-vm image_import $image_name'\n"
 			exit 2
@@ -552,6 +549,11 @@ case "$1" in
 			fi
 		fi
 
+		# change group of LV so we can use it for locking
+		echo "chgrp" "/dev/$THINPOOL_VG/$VM_PREFIX$image_name" | sudo -n $FASTVM_HELPER
+		(
+		# beginning of locked section - FIXME: maybe only part with 'lvcreate' should be protected by lock
+		flock -s -n 9 || exit 4
 		# special case for creating only base image
 		if [ "$vm_number" = "base" ]; then
 			VM_NAME="$VM_PREFIX$image_name"
