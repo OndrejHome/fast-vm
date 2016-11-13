@@ -193,14 +193,14 @@ fast-vm remove_image ImageName
 fast-vm list_images [short]
 fast-vm create ImageName <base |VmNumber> [PathToLibvirtXML] [PathToHacksFile]
 fast-vm delete VmNumber
-fast-vm edit_note [NoteText]
+fast-vm edit_note VmNumber [NoteText]
 fast-vm list [all|active|inactive [short]]
 fast-vm start VmNumber [console|ssh [/path/to/custom/script]]
 fast-vm stop VmNumber [graceful]
 fast-vm console VmNumber
 fast-vm ssh VmNumber [/path/to/custom/script]
 
-== fast-vm version 0.9.5 <ofamera@redhat.com> ==
+== fast-vm version 1.0 <ofamera@redhat.com> ==
 EOF
 			;;
 	esac
@@ -323,9 +323,6 @@ case "$1" in
 				hack_file=$(download_file "$hack_file")
 			fi
 		fi
-		(
-		# beginning of locked section
-		flock -n 9 || exit 4
 		if [ -b "/dev/$THINPOOL_VG/$VM_PREFIX$image_name" ]; then
 			pmsg $P_ERROR "base image for '$image_name' version already exists. To remove image use 'remove_image' parameter\n"
 			exit 1
@@ -339,8 +336,12 @@ case "$1" in
 			fi
 		fi
 
-		pmsg $P_DEBUG "importing image $image_path into /dev/$THINPOOL_VG/$VM_PREFIX$image_name\n"
+		# change group of LV so we can use it for locking
 		echo "chgrp" "/dev/$THINPOOL_VG/$VM_PREFIX$image_name" | sudo -n $FASTVM_HELPER
+		(
+		# beginning of locked section
+		flock -x -n 9 || exit 4
+		pmsg $P_DEBUG "importing image $image_path into /dev/$THINPOOL_VG/$VM_PREFIX$image_name\n"
 
 		if [ "$image_path" = "empty" ]; then
 			if [ "$(whoami)" = 'root' ]; then
@@ -398,7 +399,7 @@ case "$1" in
 
 		pmsg $P_INFO "Image $image_name imported\n"
 		# end of locked section
-		) 9>/tmp/fast-vm.img.${image_name}.lock
+		) 9</dev/$THINPOOL_VG/$VM_PREFIX$image_name
 		if [ "$?" != "0" ]; then
 			pmsg $P_ERROR "It is not possible to import image $image_name now as it is being used by fast-vm or other process at the moment\n"
 			exit 1
@@ -433,11 +434,12 @@ case "$1" in
 				;;
 		esac
 
+		# change group of LV so we can use it for locking
+		echo "chgrp" "/dev/$THINPOOL_VG/$VM_PREFIX$image_name" | sudo -n $FASTVM_HELPER
 		(
 		# beginning of locked section
-		flock -n 9 || exit 4
+		flock -s -n 9 || exit 4
 		if [ -b "/dev/$THINPOOL_VG/$VM_PREFIX$image_name" ]; then
-			echo "chgrp" "/dev/$THINPOOL_VG/$VM_PREFIX$image_name" | sudo -n $FASTVM_HELPER
 			pmsg $P_DEBUG "compressing the image $image_name into $(pwd)/${image_name}.img.${image_format}\n"
 			$compress_cmd /dev/$THINPOOL_VG/$VM_PREFIX$image_name > $(pwd)/${image_name}.img.${image_format}
 			if [ "$?" -eq "0" ]; then
@@ -450,7 +452,7 @@ case "$1" in
 			usage export_image
 		fi
 		# end of locked section
-		) 9>/tmp/fast-vm.img.${image_name}.lock
+		) 9</dev/$THINPOOL_VG/$VM_PREFIX$image_name
 		if [ "$?" != "0" ]; then
 			pmsg $P_ERROR "It is not possible to export image $image_name now as it is being used by fast-vm or other process at the moment\n"
 			exit 1
@@ -462,13 +464,10 @@ case "$1" in
 		image_name="$2"
 		if [ -z "$image_name" ]; then pmsg $P_ERROR "missing image name\n"; usage remove_image; fi
 
-		(
-		# beginning of locked section
-		flock -n 9 || exit 4
 		if [ -b "/dev/$THINPOOL_VG/$VM_PREFIX$image_name" ]; then
 			pmsg $P_DEBUG "stopping and undefining the base VM of $image_name\n"
 			virsh --connect qemu:///system destroy $VM_PREFIX$image_name 2>&1|$DEBUG_LOG_CMD
-			virsh --connect qemu:///system undefine $VM_PREFIX$image_name 2>&1|$DEBUG_LOG_CMD
+			virsh --connect qemu:///system undefine $VM_PREFIX$image_name --nvram 2>&1|$DEBUG_LOG_CMD
 			pmsg $P_DEBUG "removing LV $VM_PREFIX$image_name ...\n"
 			echo "lvremove" "/dev/$THINPOOL_VG/$VM_PREFIX$image_name" | sudo -n $FASTVM_HELPER
 			pmsg $P_DEBUG "removing XML and hack file of $image_name...\n"
@@ -483,14 +482,6 @@ case "$1" in
 		else
 			pmsg $P_ERROR "image "$image_name" not found\n"
 			usage remove_image
-		fi
-		# end of locked section
-		) 9>/tmp/fast-vm.img.${image_name}.lock
-		if [ "$?" != "0" ]; then
-			pmsg $P_ERROR "It is not possible to remove image $image_name now as it is being used by fast-vm or other process at the moment\n"
-			exit 1
-		else
-			rm -f /tmp/fast-vm.img.${image_name}.lock
 		fi
 		;;
 	create)
@@ -531,9 +522,6 @@ case "$1" in
 			fi
 		done
 
-		(
-		# beginning of locked section
-		flock -n 9 || exit 4
 		if [ ! -b "/dev/$THINPOOL_VG/$VM_PREFIX$image_name" ]; then
 			pmsg $P_ERROR "Missing image for ${image_name}.\n/dev/$THINPOOL_VG/$VM_PREFIX$image_name not found.\nFirst import image using 'fast-vm image_import $image_name'\n"
 			exit 2
@@ -561,6 +549,11 @@ case "$1" in
 			fi
 		fi
 
+		# change group of LV so we can use it for locking
+		echo "chgrp" "/dev/$THINPOOL_VG/$VM_PREFIX$image_name" | sudo -n $FASTVM_HELPER
+		(
+		# beginning of locked section - FIXME: maybe only part with 'lvcreate' should be protected by lock
+		flock -s -n 9 || exit 4
 		# special case for creating only base image
 		if [ "$vm_number" = "base" ]; then
 			VM_NAME="$VM_PREFIX$image_name"
@@ -631,7 +624,7 @@ case "$1" in
 
 		pmsg $P_INFO "VM '$VM_NAME' created\n"
 		# end of locked section
-		) 9>/tmp/fast-vm.img.${image_name}.lock
+		) 9</dev/$THINPOOL_VG/$VM_PREFIX$image_name
 		if [ "$?" != "0" ]; then
 			pmsg $P_ERROR "It is not possible to use image $image_name for creating VM now as it is being used by fast-vm or other process at the moment\n"
 			exit 1
@@ -747,9 +740,13 @@ case "$1" in
 		fi
 
 		if [ "$FASTVM_OWNER_ONLY_DELETE" == "yes" ]; then
-			owner=$(stat --format="%U" "$FASTVM_NOTES_DIR/$vm_number")
+			owner=$(stat --format="%U" "$FASTVM_NOTES_DIR/$vm_number" 2>/dev/null)
 			if [ $(whoami) != "root" ] && [ $(whoami) != "$owner" ]; then
-				pmsg $P_ERROR "only 'root' and '$owner' are allowed to delete this VM\n"
+				if [ -z "$owner" ]; then
+					pmsg $P_ERROR "only 'root' is allowed to delete this VM\n"
+				else
+					pmsg $P_ERROR "only 'root' and '$owner' are allowed to delete this VM\n"
+				fi
 				exit 1
 			fi
 		fi
@@ -786,7 +783,7 @@ case "$1" in
 		if [ -f "$FASTVM_NOTES_DIR/$vm_number" ]; then rm "$FASTVM_NOTES_DIR/$vm_number"; fi
 
 		pmsg $P_DEBUG "undefining VM $vm_name from libvirt\n"
-		virsh --connect qemu:///system undefine $vm_name
+		virsh --connect qemu:///system undefine $vm_name --nvram
 		if [ "$?" != '0' ]; then
 			pmsg $P_ERROR "failed to undefine VM $vm_name, check syslog for more information\n"
 			exit 1

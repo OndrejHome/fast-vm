@@ -18,9 +18,11 @@ starting VM using the 'hack files'.
 ** you can use 'losetup' to create a loopback device with LVM
 * preconfigured VM disk images and XML files (downloadable separately)
 * 'dhcp_release' for proper DHCP static leases release
+* 'flock' for image locking (prevent use of not fully imported images)
 * (optional) 'bash-completion' for bash completion to work
 * (optional) 'pv' to show import progress
 * (optional) 'curl' to pass http(s) link for image_import
+* (optional) OVMF EUFI image for UEFI support in images
 
 ====== Installation ======
 === From source
