@@ -1,4 +1,4 @@
-.TH FAST-VM 8 "fast-vm 0.9.5 (2016-08-09)" "fast-vm" "fast-vm" \" -*- nroff -*-
+.TH FAST-VM 8 "fast-vm 0.9.5 (2016-11-13)" "fast-vm" "fast-vm" \" -*- nroff -*-
 .SH NAME
 fast-vm \(em script for defining VMs from images provided in thin LVM pool
 .SH SYNOPSIS
@@ -218,6 +218,11 @@ to VM by other means that through network to figure out its IP address.
 
 It is save to alter imported image after you have created fast-vm VMs that are based on it. The changes you do to the imported image will be present only
 in the newly created VMs. It's strongly discouraged to create VMs based on imported image when the base VM is running.
+
+.SH UEFI SUPPORT (from fast-vm-1.0)
+To use virtual machines with UEFI you will need a UEFI firmware for qemu which is most probably distributed separately from qemu.
+When creating the custom image you will have to specify location of UEFI firmware and provide the location of UEFI variable files in
+.RI " " "/etc/libvirt/qemu.conf" " file so the libvirt can automaticaly take care of UEFI vars creation and deletion."
 
 .SH EXAMPLES
 Import local image into fast-vm
