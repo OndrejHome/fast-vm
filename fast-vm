@@ -336,11 +336,12 @@ case "$1" in
 			fi
 		fi
 
+		# change group of LV so we can use it for locking
+		echo "chgrp" "/dev/$THINPOOL_VG/$VM_PREFIX$image_name" | sudo -n $FASTVM_HELPER
 		(
 		# beginning of locked section
 		flock -x -n 9 || exit 4
 		pmsg $P_DEBUG "importing image $image_path into /dev/$THINPOOL_VG/$VM_PREFIX$image_name\n"
-		echo "chgrp" "/dev/$THINPOOL_VG/$VM_PREFIX$image_name" | sudo -n $FASTVM_HELPER
 
 		if [ "$image_path" = "empty" ]; then
 			if [ "$(whoami)" = 'root' ]; then
@@ -433,11 +434,12 @@ case "$1" in
 				;;
 		esac
 
+		# change group of LV so we can use it for locking
+		echo "chgrp" "/dev/$THINPOOL_VG/$VM_PREFIX$image_name" | sudo -n $FASTVM_HELPER
 		(
 		# beginning of locked section
 		flock -s -n 9 || exit 4
 		if [ -b "/dev/$THINPOOL_VG/$VM_PREFIX$image_name" ]; then
-			echo "chgrp" "/dev/$THINPOOL_VG/$VM_PREFIX$image_name" | sudo -n $FASTVM_HELPER
 			pmsg $P_DEBUG "compressing the image $image_name into $(pwd)/${image_name}.img.${image_format}\n"
 			$compress_cmd /dev/$THINPOOL_VG/$VM_PREFIX$image_name > $(pwd)/${image_name}.img.${image_format}
 			if [ "$?" -eq "0" ]; then
