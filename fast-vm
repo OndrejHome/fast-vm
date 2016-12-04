@@ -799,10 +799,17 @@ case "$1" in
 			pmsg $P_ERROR "no VM with number '$vm_number' found\n"
 			exit 1
 		fi
+		vm_name=$(virsh --connect qemu:///system list --all |grep "$VM_PREFIX"|awk '{print $2}'|egrep "\-$vm_number$")
 		if [ -z "$3" ]; then
 			$EDITOR "$FASTVM_NOTES_DIR/$vm_number"
 		else
 			echo "$3" > "$FASTVM_NOTES_DIR/$vm_number"
+			owner="-----"
+			if [ -f "$FASTVM_NOTES_DIR/$vm_number" ]; then
+				owner=$(stat --format="%U" "$FASTVM_NOTES_DIR/$vm_number")
+			fi
+			# edit also title in libvirt XMl definition so applications like virt-manager can show same notes as seen in 'fast-vm list'
+			virsh --connect qemu:///system desc $vm_name --title --new-desc "$vm_number $owner $3" --config
 		fi
 		;;
 	list)
