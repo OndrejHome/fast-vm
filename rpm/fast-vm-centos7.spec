@@ -14,6 +14,7 @@ Requires:	coreutils
 Requires:	gawk
 Requires:	libvirt-client
 Requires:	libvirt-daemon
+Requires:	libxml2
 Requires:	lvm2
 Requires:	ncurses
 Requires:	openssh-clients

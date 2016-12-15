@@ -608,7 +608,7 @@ case "$1" in
 		echo "chgrp" "/dev/$THINPOOL_VG/$VM_PREFIX$image_name-$vm_number" | sudo -n $FASTVM_HELPER
 
 		pmsg $P_DEBUG "adding static lease for 192.168.$SUBNET_NUMBER.$vm_number into libvirts DHCP\n"
-		VM_MAC=$(virsh --connect qemu:///system dumpxml "$VM_PREFIX$image_name-$vm_number"|grep 'mac address'|cut -d\' -f 2)
+		VM_MAC=$(virsh --connect qemu:///system dumpxml "$VM_PREFIX$image_name-$vm_number"|xmllint --xpath "//interface[.//source[@network='$LIBVIRT_NETWORK']]/mac/@address" -|cut -d\" -f 2|head -1)
 		virsh --connect qemu:///system net-update "$LIBVIRT_NETWORK" add-last ip-dhcp-host --xml "<host mac='$VM_MAC' ip='192.168.$SUBNET_NUMBER.$vm_number'/>" --live --config 2>&1|$DEBUG_LOG_CMD
 
 		# source file with hacks and apply them
@@ -762,7 +762,7 @@ case "$1" in
 			fi
 		fi
 
-		VM_MAC=$(virsh --connect qemu:///system dumpxml "$vm_name"|grep 'mac address'|cut -d\' -f 2)
+		VM_MAC=$(virsh --connect qemu:///system dumpxml "$vm_name"|xmllint --xpath "//interface[.//source[@network='$LIBVIRT_NETWORK']]/mac/@address" -|cut -d\" -f 2|head -1)
 
 		pmsg $P_DEBUG "removing DHCP reservation 192.168.$SUBNET_NUMBER.$vm_number for $VM_MAC\n"
 		virsh --connect qemu:///system net-update "$LIBVIRT_NETWORK" delete ip-dhcp-host --xml "<host mac='$VM_MAC' ip='192.168.$SUBNET_NUMBER.$vm_number'/>" --live --config

@@ -13,6 +13,7 @@ starting VM using the 'hack files'.
 
 ====== Requirements ======
 * libvirt with qemu/kvm 
+* libxml2 (xmllint)
 * LVM thin pool support
 * LVM VG with reasonable amount of free space (to create LV with thin pool)
 ** you can use 'losetup' to create a loopback device with LVM
