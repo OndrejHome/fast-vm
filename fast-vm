@@ -643,7 +643,7 @@ case "$1" in
 		
 		# if there is any third argument start VM and console after
 		if [ -z "$3" ]; then
-			pmsg $P_DEBUG "starting VM $vm_name\n"
+			pmsg $P_DEBUG "starting VM $vm_name (192.168.$SUBNET_NUMBER.$vm_number)\n"
 			virsh --connect qemu:///system start $vm_name
 			if [ "$?" != '0' ]; then
 				pmsg $P_ERROR "failed to start VM, check syslog for more information\n"
