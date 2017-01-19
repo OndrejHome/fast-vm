@@ -82,13 +82,13 @@ _fast-vm()
 			COMPREPLY=( $( compgen -W "all active inactive" -- "$cur" ) )
 			return 0
 			;;
-		start|stop|delete|console|ssh)
+		start|stop|delete|console|ssh|info)
 			local vm_numbers
 			case $prev in
 				start)
 					vm_numbers=$(fast-vm list inactive short)
 				;;
-				delete|edit_note)
+				delete|edit_note|info)
 					vm_numbers=$(fast-vm list all short)
 				;;
 				console|ssh|stop)
@@ -102,7 +102,7 @@ _fast-vm()
 
 	$split && return 0
 	if [ "$cword" -lt 2 ]; then
-		COMPREPLY=( $( compgen -W 'import_image export_image remove_image edit_note list_images create start stop delete console ssh list' -- "$cur" ) )
+		COMPREPLY=( $( compgen -W 'import_image export_image remove_image edit_note list_images create start stop delete console ssh list info' -- "$cur" ) )
 		return 0
 	fi
 

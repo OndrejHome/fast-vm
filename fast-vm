@@ -180,6 +180,9 @@ usage () {
 		edit_note)
 			echo "$0 edit_note VmNumber [NoteText]"
 			;;
+		info)
+			echo "$0 info VmNumber"
+			;;
 		list)
 			echo "$0 list [all|active|inactive [short]]"
 			;;
@@ -194,6 +197,7 @@ fast-vm list_images [short]
 fast-vm create ImageName <base |VmNumber> [PathToLibvirtXML] [PathToHacksFile]
 fast-vm delete VmNumber
 fast-vm edit_note VmNumber [NoteText]
+fast-vm info VmNumber
 fast-vm list [all|active|inactive [short]]
 fast-vm start VmNumber [console|ssh [/path/to/custom/script]]
 fast-vm stop VmNumber [graceful]
@@ -892,6 +896,11 @@ case "$1" in
 			printf "\nNOTE: if image is missing XML it wouldn't be possible to create a VM from it!\n Image with missing hack file can work if it's not needed.\n"
 			printf "\n USER XML and hack files takes precendense before SYSTEM ones.\n"
 		fi
+		;;
+	info)
+		vm_number="$2"
+		if [ -z "$vm_number" ]; then pmsg $P_ERROR "VM number missing\n"; usage delete; fi
+		pmsg $P_DEBUG "IP: 192.168.$SUBNET_NUMBER.$vm_number\n"
 		;;
 	*) 
 		pmsg $P_ERROR "unknown action\n"
