@@ -1,4 +1,4 @@
-.TH FAST-VM 8 "fast-vm 1.0 (2017-01-19)" "fast-vm" "fast-vm" \" -*- nroff -*-
+.TH FAST-VM 8 "fast-vm 1.0 (2017-02-04)" "fast-vm" "fast-vm" \" -*- nroff -*-
 .SH NAME
 fast-vm \(em script for defining VMs from images provided in thin LVM pool
 .SH SYNOPSIS
@@ -14,6 +14,7 @@ fast-vm \(em script for defining VMs from images provided in thin LVM pool
 .RI | PathToImage >
 .IR PathToLibvirtXML 
 .RI [ PathToHacksFile ]
+.RI [ PathToDeleteHacksFile ]
 .br
 
 .B fast-vm
@@ -49,6 +50,7 @@ fast-vm \(em script for defining VMs from images provided in thin LVM pool
 .B fast-vm
 .B delete
 .I VmNumber
+.RI [ PathToDeleteHacksFile ]
 .br
 
 .B fast-vm
@@ -130,6 +132,13 @@ for list of supported macros.
 .BI "PathToHacksFile " http://url/to/hacks.sh
 Local path or http/https URL to shell script which will be executed after creation of the VM and allows
 to access the disk drive of the VM before first running it. 
+
+.TP
+.BI "PathToDeleteHacksFile " /path/to/delete-hacks.sh
+.TP
+.BI "PathToDeleteHacksFile " http://url/to/delete-hacks.sh
+Local path or http/https URL to shell script which will be executed during VM delete process as last step
+before the VM is undefined from the libvirt.
 
 .TP
 .B VmNumber
