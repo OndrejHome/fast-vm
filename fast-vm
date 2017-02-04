@@ -648,8 +648,9 @@ case "$1" in
 		for profile_base_image in "$FASTVM_USER_CONF_DIR/${image_name}/base_image" "$FASTVM_SYSTEM_CONF_DIR/${image_name}/base_image"
 		do
 			if [ -f "$profile_base_image" ]; then
+				profile_name=$image_name
 				image_name=$(cat $profile_base_image)
-				pmsg $P_DEBUG "using image $image_name with this profile\n"
+				pmsg $P_DEBUG "using image $image_name with profile $profile_name\n"
 				break
 			fi
 		done
@@ -714,6 +715,10 @@ case "$1" in
 		else
 			# create empty VM note to identify user which created VM only for non-base VMs
 			touch "$FASTVM_NOTES_DIR/$vm_number" 2>/dev/null
+			# if machine was created using profile put information about used profile into VM note
+			if [ "$profile_name" != "$image_name" ]; then
+				echo "$profile_name" > "$FASTVM_NOTES_DIR/$vm_number"
+			fi
 		fi
 		
 		## check if the machine doesn't exists already
