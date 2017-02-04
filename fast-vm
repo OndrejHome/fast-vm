@@ -156,11 +156,17 @@ usage () {
 		remove_image)
 			echo "$0 remove_image ImageName"
 			;;
+		import_profile)
+			echo "$0 import_profile ProfileName ImageName PathToLibvirtXML [PathToHacksFile] [PathToDeleteHackFile]"
+			;;
+		remove_profile)
+			echo "$0 remove_profile ProfileName"
+			;;
 		list_images)
 			echo "$0 list_images [short]"
 			;;
 		create)
-			echo "$0 create ImageName <base |VmNumber> [PathToLibvirtXML] [PathToHacksFile]"
+			echo "$0 create <ImageName|ProfileName> <base |VmNumber> [PathToLibvirtXML] [PathToHacksFile]"
 			;;
 		start)
 			echo "$0 start VmNumber [console|ssh [/path/to/custom/script]]"
@@ -193,8 +199,10 @@ fast-vm <action> <options>
 fast-vm import_image ImageName <empty |PathToImage> PathToLibvirtXML [PathToHacksFile] [PathToDeleteHackFile]
 fast-vm export_image ImageName <xz|gz>
 fast-vm remove_image ImageName
+fast-vm import_profile ProfileName ImageName PathToLibvirtXML [PathToHacksFile] [PathToDeleteHackFile]
+fast-vm remove_profile ProfileName
 fast-vm list_images [short]
-fast-vm create ImageName <base |VmNumber> [PathToLibvirtXML] [PathToHacksFile]
+fast-vm create <ImageName|ProfileName> <base |VmNumber> [PathToLibvirtXML] [PathToHacksFile]
 fast-vm delete VmNumber [PathToDeleteHackFile]
 fast-vm edit_note VmNumber [NoteText]
 fast-vm info VmNumber
@@ -508,12 +516,101 @@ case "$1" in
 			usage remove_image
 		fi
 		;;
+	import_profile)
+		profile_name="$2"
+		if [ -z "$profile_name" ]; then pmsg $P_ERROR "missing profile name\n"; usage import_profile; fi
+		profile_name_stripped=$(echo "$profile_name"|tr -d -C '[:alnum:]\-.')
+		if [ "$profile_name" != "$profile_name_stripped" ]; then
+			pmsg $P_ERROR "ProfileName contains restricted characters, allowed are only letters, numbers, dot(.) and dash(-)\n"
+			exit 1
+		fi
+		image_name="$3"
+		if [ -z "$image_name" ]; then pmsg $P_ERROR "missing image name\n"; usage import_profile; fi
+
+		image_xml_path="$4"
+		check_file "$image_xml_path" "XML VM definition"
+		if [ "$?" = 2 ]; then pmsg $P_ERROR "XML file $image_xml_path not found\n"; exit 2; fi
+		if [ "$file_local" = '0' ]; then
+			image_xml_path=$(download_file "$image_xml_path")
+		fi
+
+		hack_file="$5"
+		if [ ! -z "$hack_file" ]; then
+			check_file "$hack_file" "hack file"
+			if [ "$?" = 2 ]; then pmsg $P_ERROR "hack file $hack_file not found\n"; exit 2; fi
+			if [ "$file_local" = '0' ]; then
+				hack_file=$(download_file "$hack_file")
+			fi
+		fi
+		delete_hack_file="$6"
+		if [ ! -z "$delete_hack_file" ]; then
+			check_file "$delete_hack_file" "delete hack file"
+			if [ "$?" = 2 ]; then pmsg $P_ERROR "delete hack file $delete_hack_file not found\n"; exit 2; fi
+			if [ "$file_local" = '0' ]; then
+				delete_hack_file=$(download_file "$delete_hack_file")
+			fi
+		fi
+
+		if [ ! -b "/dev/$THINPOOL_VG/$VM_PREFIX$image_name" ]; then
+			pmsg $P_ERROR "Missing image for ${image_name}.\n/dev/$THINPOOL_VG/$VM_PREFIX$image_name not found.\nFirst import image using 'fast-vm image_import $image_name'\n"
+			exit 2
+		fi
+
+		# create profile and copy files to right places
+		if [ $(whoami) = 'root' ]; then
+			if [ ! -d "$FASTVM_SYSTEM_CONF_DIR/${profile_name}" ]; then mkdir "$FASTVM_SYSTEM_CONF_DIR/${profile_name}"; fi
+			echo "$image_name" > "$FASTVM_SYSTEM_CONF_DIR/${profile_name}/base_image"
+			cp "$image_xml_path" "$FASTVM_SYSTEM_CONF_DIR/${profile_name}/config.xml" 2>&1|$DEBUG_LOG_CMD
+			chmod +r "$FASTVM_SYSTEM_CONF_DIR/${profile_name}/config.xml" 2>&1|$DEBUG_LOG_CMD
+		else
+			if [ ! -d "$FASTVM_USER_CONF_DIR/${profile_name}" ]; then mkdir "$FASTVM_USER_CONF_DIR/${profile_name}"; fi
+			echo "$image_name" > "$FASTVM_USER_CONF_DIR/${profile_name}/base_image"
+			cp "$image_xml_path" "$FASTVM_USER_CONF_DIR/${profile_name}/config.xml" 2>&1|$DEBUG_LOG_CMD
+			chmod +r "$FASTVM_USER_CONF_DIR/${profile_name}/config.xml" 2>&1|$DEBUG_LOG_CMD
+		fi
+		if [ ! -z "$hack_file" ] && [ -f "$hack_file" ]; then
+			if [ $(whoami) = 'root' ]; then
+				cp "$hack_file" "$FASTVM_SYSTEM_CONF_DIR/${profile_name}/hacks.sh" 2>&1|$DEBUG_LOG_CMD
+				chmod +rx "$FASTVM_SYSTEM_CONF_DIR/${profile_name}/hacks.sh" 2>&1|$DEBUG_LOG_CMD
+			else
+				cp "$hack_file" "$FASTVM_USER_CONF_DIR/${profile_name}/hacks.sh" 2>&1|$DEBUG_LOG_CMD
+				chmod +rx "$FASTVM_USER_CONF_DIR/${profile_name}/hacks.sh" 2>&1|$DEBUG_LOG_CMD
+			fi
+		fi
+		if [ ! -z "$delete_hack_file" ] && [ -f "$delete_hack_file" ]; then
+			if [ $(whoami) = 'root' ]; then
+				cp "$delete_hack_file" "$FASTVM_SYSTEM_CONF_DIR/${profile_name}/delete-hacks.sh" 2>&1|$DEBUG_LOG_CMD
+				chmod +rx "$FASTVM_SYSTEM_CONF_DIR/${profile_name}/delete-hacks.sh" 2>&1|$DEBUG_LOG_CMD
+			else
+				cp "$delete_hack_file" "$FASTVM_USER_CONF_DIR/${profile_name}/delete-hacks.sh" 2>&1|$DEBUG_LOG_CMD
+				chmod +rx "$FASTVM_USER_CONF_DIR/${profile_name}/delete-hacks.sh" 2>&1|$DEBUG_LOG_CMD
+			fi
+		fi
+
+		pmsg $P_INFO "Profile $profile_name based on Image $image_name imported\n"
+		;;
+	remove_profile)
+		profile_name="$2"
+		if [ -z "$profile_name" ]; then pmsg $P_ERROR "missing profile name\n"; usage remove_profile; fi
+
+		profile_path="$FASTVM_USER_CONF_DIR/${profile_name}"
+		if [ $(whoami) = 'root' ]; then
+			profile_path="$FASTVM_SYSTEM_CONF_DIR/${profile_name}"
+		fi
+		if [ ! -d "$profile_path" ]; then
+			pmsg $P_ERROR "profile "$profile_name" not found\n"
+			usage remove_profile
+		fi
+
+		rm -rf "$profile_path" 2>&1|$DEBUG_LOG_CMD
+		pmsg $P_INFO "Profile $profile_name removed\n"
+		;;
 	create)
 		image_name="$2"
-		if [ -z "$image_name" ]; then pmsg $P_ERROR "missing image name\n"; usage create; fi
+		if [ -z "$image_name" ]; then pmsg $P_ERROR "missing image or profile name\n"; usage create; fi
 
 		image_xml_path=""
-		for path in "$4" "$FASTVM_USER_CONF_DIR/config-${image_name}.xml" "$FASTVM_SYSTEM_CONF_DIR/config-${image_name}.xml"
+		for path in "$4" "$FASTVM_USER_CONF_DIR/config-${image_name}.xml" "$FASTVM_SYSTEM_CONF_DIR/config-${image_name}.xml" "$FASTVM_USER_CONF_DIR/${image_name}/config.xml" "$FASTVM_SYSTEM_CONF_DIR/${image_name}/config.xml"
 		do
 			check_file "$path" "test XML file" 2>&1 >/dev/null
 			if [ "$?" != 2 ]; then
@@ -532,7 +629,7 @@ case "$1" in
 		fi
 
 		hack_file=""
-		for path in "$5" "$FASTVM_USER_CONF_DIR/hacks-${image_name}.sh" "$FASTVM_SYSTEM_CONF_DIR/hacks-${image_name}.sh"
+		for path in "$5" "$FASTVM_USER_CONF_DIR/hacks-${image_name}.sh" "$FASTVM_SYSTEM_CONF_DIR/hacks-${image_name}.sh" "$FASTVM_USER_CONF_DIR/${image_name}/hacks.sh" "$FASTVM_SYSTEM_CONF_DIR/${image_name}/hacks.sh"
 		do
 			check_file "$path" "hack file at $path" 2>&1 >/dev/null
 			if [ "$?" != 2 ]; then
@@ -542,6 +639,17 @@ case "$1" in
 					hack_file="$path"
 		                fi
 				pmsg $P_DEBUG "using file $path as hack file\n"
+				break
+			fi
+		done
+		# NOTE: if profile doesn't contain hacks file the one from base image of that profile is used!
+
+		# if the image_name looks like ProfileName
+		for profile_base_image in "$FASTVM_USER_CONF_DIR/${image_name}/base_image" "$FASTVM_SYSTEM_CONF_DIR/${image_name}/base_image"
+		do
+			if [ -f "$profile_base_image" ]; then
+				image_name=$(cat $profile_base_image)
+				pmsg $P_DEBUG "using image $image_name with this profile\n"
 				break
 			fi
 		done
