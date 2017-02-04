@@ -609,6 +609,22 @@ case "$1" in
 		image_name="$2"
 		if [ -z "$image_name" ]; then pmsg $P_ERROR "missing image or profile name\n"; usage create; fi
 
+		# if the image_name looks like ProfileName
+		for profile_base_image in "$FASTVM_USER_CONF_DIR/${image_name}/base_image" "$FASTVM_SYSTEM_CONF_DIR/${image_name}/base_image"
+		do
+			if [ -f "$profile_base_image" ]; then
+				profile_name=$image_name
+				image_name=$(cat $profile_base_image)
+				pmsg $P_DEBUG "using image $image_name with profile $profile_name\n"
+				break
+			fi
+		done
+
+		if [ ! -b "/dev/$THINPOOL_VG/$VM_PREFIX$image_name" ]; then
+			pmsg $P_ERROR "Missing image for ${image_name}.\n/dev/$THINPOOL_VG/$VM_PREFIX$image_name not found.\nFirst import image using 'fast-vm image_import $image_name'\n"
+			exit 2
+		fi
+
 		image_xml_path=""
 		for path in "$4" "$FASTVM_USER_CONF_DIR/config-${image_name}.xml" "$FASTVM_SYSTEM_CONF_DIR/config-${image_name}.xml" "$FASTVM_USER_CONF_DIR/${image_name}/config.xml" "$FASTVM_SYSTEM_CONF_DIR/${image_name}/config.xml"
 		do
@@ -643,22 +659,6 @@ case "$1" in
 			fi
 		done
 		# NOTE: if profile doesn't contain hacks file the one from base image of that profile is used!
-
-		# if the image_name looks like ProfileName
-		for profile_base_image in "$FASTVM_USER_CONF_DIR/${image_name}/base_image" "$FASTVM_SYSTEM_CONF_DIR/${image_name}/base_image"
-		do
-			if [ -f "$profile_base_image" ]; then
-				profile_name=$image_name
-				image_name=$(cat $profile_base_image)
-				pmsg $P_DEBUG "using image $image_name with profile $profile_name\n"
-				break
-			fi
-		done
-
-		if [ ! -b "/dev/$THINPOOL_VG/$VM_PREFIX$image_name" ]; then
-			pmsg $P_ERROR "Missing image for ${image_name}.\n/dev/$THINPOOL_VG/$VM_PREFIX$image_name not found.\nFirst import image using 'fast-vm image_import $image_name'\n"
-			exit 2
-		fi
 
 		vm_number="$3"
 		# validate vm_number is a 'number'
