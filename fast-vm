@@ -145,7 +145,6 @@ check_vm_number () {
 usage () {
 	part="$1"
 
-	echo ''
 	case $part in
 		import_image)
 			echo "$0 import_image ImageName <empty |PathToImage> PathToLibvirtXML [PathToHacksFile] [PathToDeleteHackFile]"
@@ -193,30 +192,16 @@ usage () {
 			echo "$0 list [all|active|inactive [short]]"
 			;;
 		*)
-cat <<EOF
-fast-vm <action> <options>
-
-fast-vm import_image ImageName <empty |PathToImage> PathToLibvirtXML [PathToHacksFile] [PathToDeleteHackFile]
-fast-vm export_image ImageName <xz|gz>
-fast-vm remove_image ImageName
-fast-vm import_profile ProfileName ImageName PathToLibvirtXML [PathToHacksFile] [PathToDeleteHackFile]
-fast-vm remove_profile ProfileName
-fast-vm list_images [short]
-fast-vm create <ImageName|ProfileName> <base |VmNumber> [PathToLibvirtXML] [PathToHacksFile]
-fast-vm delete VmNumber [PathToDeleteHackFile]
-fast-vm edit_note VmNumber [NoteText]
-fast-vm info VmNumber
-fast-vm list [all|active|inactive [short]]
-fast-vm start VmNumber [console|ssh [/path/to/custom/script]]
-fast-vm stop VmNumber [graceful]
-fast-vm console VmNumber
-fast-vm ssh VmNumber [/path/to/custom/script]
-
-== fast-vm version 1.0 <ofamera@redhat.com> ==
-EOF
+			echo "== fast-vm version 1.0 <ofamera@redhat.com> =="
+			echo "$0 <action> <options>"
+			for cmd in import_image export_image remove_image import_profile remove_profile list_images create delete edit_note info list start stop console ssh;
+			do
+				usage $cmd noexit
+			done
 			;;
 	esac
-	exit 1
+	# exit only when second parameter is not specified, otherwise just return and continue
+	if [ -z "$2" ]; then exit 1; fi
 }
 
 #### end common functions
