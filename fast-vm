@@ -142,6 +142,17 @@ check_vm_number () {
 	fi
 }
 
+config_file_operation () {
+	cmd="$1"
+	options="$2"
+
+	if [ "$(whoami)" = 'root' ]; then
+		"$cmd $FASTVM_SYSTEM_CONF_DIR/$options" 2>&1|$DEBUG_LOG_CMD
+	else
+		"$cmd $FASTVM_USER_CONF_DIR/$options" 2>&1|$DEBUG_LOG_CMD
+	fi
+}
+
 usage () {
 	part="$1"
 
@@ -353,11 +364,7 @@ case "$1" in
 		pmsg $P_DEBUG "importing image $image_path into /dev/$THINPOOL_VG/$VM_PREFIX$image_name\n"
 
 		if [ "$image_path" = "empty" ]; then
-			if [ "$(whoami)" = 'root' ]; then
-				cp "$image_xml_path" "$FASTVM_SYSTEM_CONF_DIR/config-${image_name}.xml" 2>&1|$DEBUG_LOG_CMD
-			else
-				cp "$image_xml_path" "$FASTVM_USER_CONF_DIR/config-${image_name}.xml" 2>&1|$DEBUG_LOG_CMD
-			fi
+			config_file_operation "cp $image_xml_path" "config-${image_name}.xml"
 			pmsg $P_INFO "Empty image imported\n"
 			exit 0
 		fi
@@ -389,30 +396,15 @@ case "$1" in
 		fi
 
 		# copy the XML configuration file
-		if [ $(whoami) = 'root' ]; then
-			cp "$image_xml_path" "$FASTVM_SYSTEM_CONF_DIR/config-${image_name}.xml" 2>&1|$DEBUG_LOG_CMD
-			chmod +r "$FASTVM_SYSTEM_CONF_DIR/config-${image_name}.xml" 2>&1|$DEBUG_LOG_CMD
-		else
-			cp "$image_xml_path" "$FASTVM_USER_CONF_DIR/config-${image_name}.xml" 2>&1|$DEBUG_LOG_CMD
-			chmod +r "$FASTVM_USER_CONF_DIR/config-${image_name}.xml" 2>&1|$DEBUG_LOG_CMD
-		fi
+		config_file_operation "cp $image_xml_path" "config-${image_name}.xml"
+		config_file_operation "chmod +r" "config-${image_name}.xml"
 		if [ ! -z "$hack_file" ] && [ -f "$hack_file" ]; then
-			if [ $(whoami) = 'root' ]; then
-				cp "$hack_file" "$FASTVM_SYSTEM_CONF_DIR/hacks-${image_name}.sh" 2>&1|$DEBUG_LOG_CMD
-				chmod +rx "$FASTVM_SYSTEM_CONF_DIR/hacks-${image_name}.sh" 2>&1|$DEBUG_LOG_CMD
-			else
-				cp "$hack_file" "$FASTVM_USER_CONF_DIR/hacks-${image_name}.sh" 2>&1|$DEBUG_LOG_CMD
-				chmod +rx "$FASTVM_USER_CONF_DIR/hacks-${image_name}.sh" 2>&1|$DEBUG_LOG_CMD
-			fi
+			config_file_operation "cp $hack_file" "hacks-${image_name}.sh"
+			config_file_operation "chmod +rx" "hacks-${image_name}.sh"
 		fi
 		if [ ! -z "$delete_hack_file" ] && [ -f "$delete_hack_file" ]; then
-			if [ $(whoami) = 'root' ]; then
-				cp "$delete_hack_file" "$FASTVM_SYSTEM_CONF_DIR/delete-hacks-${image_name}.sh" 2>&1|$DEBUG_LOG_CMD
-				chmod +rx "$FASTVM_SYSTEM_CONF_DIR/delete-hacks-${image_name}.sh" 2>&1|$DEBUG_LOG_CMD
-			else
-				cp "$delete_hack_file" "$FASTVM_USER_CONF_DIR/delete-hacks-${image_name}.sh" 2>&1|$DEBUG_LOG_CMD
-				chmod +rx "$FASTVM_USER_CONF_DIR/delete-hacks-${image_name}.sh" 2>&1|$DEBUG_LOG_CMD
-			fi
+			config_file_operation "cp $delete_hack_file" "delete-hacks-${image_name}.sh"
+			config_file_operation "chmod +rx" "delete-hacks-${image_name}.sh"
 		fi
 
 		pmsg $P_INFO "Image $image_name imported\n"
@@ -488,16 +480,10 @@ case "$1" in
 			virsh --connect qemu:///system undefine $VM_PREFIX$image_name --nvram 2>&1|$DEBUG_LOG_CMD
 			pmsg $P_DEBUG "removing LV $VM_PREFIX$image_name ...\n"
 			echo "lvremove" "/dev/$THINPOOL_VG/$VM_PREFIX$image_name" | sudo -n $FASTVM_HELPER
-			pmsg $P_DEBUG "removing XML and hack file of $image_name...\n"
-			if [ -f "$FASTVM_USER_CONF_DIR/config-${image_name}.xml" ]; then rm "$FASTVM_USER_CONF_DIR/config-${image_name}.xml"; fi
-			if [ -f "$FASTVM_USER_CONF_DIR/hacks-${image_name}.sh" ]; then rm "$FASTVM_USER_CONF_DIR/hacks-${image_name}.sh"; fi
-			if [ -f "$FASTVM_USER_CONF_DIR/delete-hacks-${image_name}.sh" ]; then rm "$FASTVM_USER_CONF_DIR/delete-hacks-${image_name}.sh"; fi
-			if [ $(whoami) = 'root' ]; then
-				pmsg $P_DEBUG "removing system-wide XML and hack file ...\n"
-				if [ -f "$FASTVM_SYSTEM_CONF_DIR/config-${image_name}.xml" ]; then rm "$FASTVM_SYSTEM_CONF_DIR/config-${image_name}.xml"; fi
-				if [ -f "$FASTVM_SYSTEM_CONF_DIR/hacks-${image_name}.sh" ]; then rm "$FASTVM_SYSTEM_CONF_DIR/hacks-${image_name}.sh"; fi
-				if [ -f "$FASTVM_SYSTEM_CONF_DIR/delete-hacks-${image_name}.sh" ]; then rm "$FASTVM_SYSTEM_CONF_DIR/delete-hacks-${image_name}.sh"; fi
-			fi
+			pmsg $P_DEBUG "removing XML and hack file(s) of $image_name...\n"
+			config_file_operation "rm" "config-${image_name}.xml"
+			config_file_operation "rm" "hacks-${image_name}.sh"
+			config_file_operation "rm" "delete-hacks-${image_name}.sh"
 			pmsg $P_INFO "image $image_name removed\n"
 		else
 			pmsg $P_ERROR "image "$image_name" not found\n"
@@ -545,34 +531,17 @@ case "$1" in
 		fi
 
 		# create profile and copy files to right places
-		if [ $(whoami) = 'root' ]; then
-			if [ ! -d "$FASTVM_SYSTEM_CONF_DIR/${profile_name}" ]; then mkdir "$FASTVM_SYSTEM_CONF_DIR/${profile_name}"; fi
-			echo "$image_name" > "$FASTVM_SYSTEM_CONF_DIR/${profile_name}/base_image"
-			cp "$image_xml_path" "$FASTVM_SYSTEM_CONF_DIR/${profile_name}/config.xml" 2>&1|$DEBUG_LOG_CMD
-			chmod +r "$FASTVM_SYSTEM_CONF_DIR/${profile_name}/config.xml" 2>&1|$DEBUG_LOG_CMD
-		else
-			if [ ! -d "$FASTVM_USER_CONF_DIR/${profile_name}" ]; then mkdir "$FASTVM_USER_CONF_DIR/${profile_name}"; fi
-			echo "$image_name" > "$FASTVM_USER_CONF_DIR/${profile_name}/base_image"
-			cp "$image_xml_path" "$FASTVM_USER_CONF_DIR/${profile_name}/config.xml" 2>&1|$DEBUG_LOG_CMD
-			chmod +r "$FASTVM_USER_CONF_DIR/${profile_name}/config.xml" 2>&1|$DEBUG_LOG_CMD
-		fi
+		config_file_operation "mkdir" "${profile_name}"
+		config_file_operation "echo $image_name >" "${profile_name}/base_image"
+		config_file_operation "cp $image_xml_path" "${profile_name}/config.xml"
+		config_file_operation "chmod +r" "${profile_name}/config.xml"
 		if [ ! -z "$hack_file" ] && [ -f "$hack_file" ]; then
-			if [ $(whoami) = 'root' ]; then
-				cp "$hack_file" "$FASTVM_SYSTEM_CONF_DIR/${profile_name}/hacks.sh" 2>&1|$DEBUG_LOG_CMD
-				chmod +rx "$FASTVM_SYSTEM_CONF_DIR/${profile_name}/hacks.sh" 2>&1|$DEBUG_LOG_CMD
-			else
-				cp "$hack_file" "$FASTVM_USER_CONF_DIR/${profile_name}/hacks.sh" 2>&1|$DEBUG_LOG_CMD
-				chmod +rx "$FASTVM_USER_CONF_DIR/${profile_name}/hacks.sh" 2>&1|$DEBUG_LOG_CMD
-			fi
+			config_file_operation "cp $hack_file" "${profile_name}/hacks.sh"
+			config_file_operation "chmod +rx" "${profile_name}/hacks.sh"
 		fi
 		if [ ! -z "$delete_hack_file" ] && [ -f "$delete_hack_file" ]; then
-			if [ $(whoami) = 'root' ]; then
-				cp "$delete_hack_file" "$FASTVM_SYSTEM_CONF_DIR/${profile_name}/delete-hacks.sh" 2>&1|$DEBUG_LOG_CMD
-				chmod +rx "$FASTVM_SYSTEM_CONF_DIR/${profile_name}/delete-hacks.sh" 2>&1|$DEBUG_LOG_CMD
-			else
-				cp "$delete_hack_file" "$FASTVM_USER_CONF_DIR/${profile_name}/delete-hacks.sh" 2>&1|$DEBUG_LOG_CMD
-				chmod +rx "$FASTVM_USER_CONF_DIR/${profile_name}/delete-hacks.sh" 2>&1|$DEBUG_LOG_CMD
-			fi
+			config_file_operation "cp $delete_hack_file" "${profile_name}/delete-hacks.sh"
+			config_file_operation "chmod +rx" "${profile_name}/delete-hacks.sh"
 		fi
 
 		pmsg $P_INFO "Profile $profile_name based on Image $image_name imported\n"
@@ -581,16 +550,12 @@ case "$1" in
 		profile_name="$2"
 		if [ -z "$profile_name" ]; then pmsg $P_ERROR "missing profile name\n"; usage remove_profile; fi
 
-		profile_path="$FASTVM_USER_CONF_DIR/${profile_name}"
-		if [ $(whoami) = 'root' ]; then
-			profile_path="$FASTVM_SYSTEM_CONF_DIR/${profile_name}"
-		fi
-		if [ ! -d "$profile_path" ]; then
+		if [ ! -d "$FASTVM_USER_CONF_DIR/${profile_name}" ] && [ ! -d "$FASTVM_SYSTEM_CONF_DIR/${profile_name}" ]; then
 			pmsg $P_ERROR "profile "$profile_name" not found\n"
 			usage remove_profile
 		fi
 
-		rm -rf "$profile_path" 2>&1|$DEBUG_LOG_CMD
+		config_file_operation "rm -rf" "$profile_name"
 		pmsg $P_INFO "Profile $profile_name removed\n"
 		;;
 	create)
