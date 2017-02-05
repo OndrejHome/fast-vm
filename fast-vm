@@ -164,6 +164,9 @@ usage () {
 		list_images)
 			echo "$0 list_images [short]"
 			;;
+		list_profiles)
+			echo "$0 list_profiles [short]"
+			;;
 		create)
 			echo "$0 create <ImageName|ProfileName> <base |VmNumber> [PathToLibvirtXML] [PathToHacksFile]"
 			;;
@@ -1046,6 +1049,36 @@ case "$1" in
 			done
 			printf "\nNOTE: if image is missing XML it wouldn't be possible to create a VM from it!\n Image with missing hack file(s) can work if it's not needed.\n"
 			printf "\n USER XML and hack file(s) takes precendense before SYSTEM ones.\n"
+		fi
+		;;
+	list_profiles)
+		short_output="$2" # if non-zero the output suitable for external processing
+		profile_dir_list=$(find $FASTVM_SYSTEM_CONF_DIR/ $FASTVM_USER_CONF_DIR/ -mindepth 1 -maxdepth 1 -type d 2>/dev/null)
+		if [ ! -z "$short_output" ] && [ "$short_output" = "short" ]; then
+			for dir in $profile_dir_list;
+			do
+				# valid profile must contain at least base image name
+				if [ -f "$dir/base_image" ]; then
+					basename $dir
+				fi
+			done
+		else
+			printf "%-41s|%-41s\n" 'Names' 'Changes provided by profile'
+			printf "%-20s|%-20s|%-5s|%-7s|%-14s\n" 'Profile Name' 'Base Image Name' 'XML' 'hacks' 'delete-hacks'
+			for dir in $profile_dir_list;
+			do
+				profile_name=$(basename $dir)
+				base_image_name=$(cat $dir/base_image 2>/dev/null)
+				# skip directories not containing base image name
+				if [ -z "$base_image_name" ]; then continue; fi
+				profile_xml='no'
+				profile_hacks='no'
+				profile_delete_hacks='no'
+				if [ -f "$dir/config.xml" ]; then profile_xml='yes'; fi
+				if [ -f "$dir/hacks.sh" ]; then profile_hacks='yes'; fi
+				if [ -f "$dir/delete-hacks.sh" ]; then profile_delete_hacks='yes'; fi
+				printf "%-20s|%-20s|%-5s|%-7s|%-14s\n" "$profile_name" "$base_image_name" "$profile_xml" "$profile_hacks" "$profile_delete_hacks"
+			done
 		fi
 		;;
 	info)
