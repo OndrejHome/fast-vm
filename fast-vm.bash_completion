@@ -20,7 +20,7 @@ _fast-vm()
 		_filedir '@(xml)'
 		return 0
 	fi
-	if [ "$cword" -eq 5 ] && [ ${COMP_WORDS[1]} == "import_image" ]; then
+	if [ "$cword" -eq 5 ] || [ "$cword" -eq 6 ] && [ ${COMP_WORDS[1]} == "import_image" ]; then
 		_filedir '@(sh)'
 		return 0
 	fi
@@ -59,6 +59,10 @@ _fast-vm()
 		return 0
 	fi
 	if [ "$cword" -eq 5 ] && [ ${COMP_WORDS[1]} == "create" ]; then
+		_filedir '@(sh)'
+		return 0
+	fi
+	if [ "$cword" -eq 3 ] && [ ${COMP_WORDS[1]} == "delete" ]; then
 		_filedir '@(sh)'
 		return 0
 	fi
