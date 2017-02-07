@@ -582,7 +582,7 @@ case "$1" in
 		fi
 
 		image_xml_path=""
-		for path in "$4" "$FASTVM_USER_CONF_DIR/config-${image_name}.xml" "$FASTVM_SYSTEM_CONF_DIR/config-${image_name}.xml" "$FASTVM_USER_CONF_DIR/${image_name}/config.xml" "$FASTVM_SYSTEM_CONF_DIR/${image_name}/config.xml"
+		for path in "$4" "$FASTVM_USER_CONF_DIR/config-${image_name}.xml" "$FASTVM_SYSTEM_CONF_DIR/config-${image_name}.xml" "$FASTVM_USER_CONF_DIR/${profile_name}/config.xml" "$FASTVM_SYSTEM_CONF_DIR/${profile_name}/config.xml"
 		do
 			check_file "$path" "test XML file" 2>&1 >/dev/null
 			if [ "$?" != 2 ]; then
@@ -601,7 +601,7 @@ case "$1" in
 		fi
 
 		hack_file=""
-		for path in "$5" "$FASTVM_USER_CONF_DIR/hacks-${image_name}.sh" "$FASTVM_SYSTEM_CONF_DIR/hacks-${image_name}.sh" "$FASTVM_USER_CONF_DIR/${image_name}/hacks.sh" "$FASTVM_SYSTEM_CONF_DIR/${image_name}/hacks.sh"
+		for path in "$5" "$FASTVM_USER_CONF_DIR/hacks-${image_name}.sh" "$FASTVM_SYSTEM_CONF_DIR/hacks-${image_name}.sh" "$FASTVM_USER_CONF_DIR/${profile_name}/hacks.sh" "$FASTVM_SYSTEM_CONF_DIR/${profile_name}/hacks.sh"
 		do
 			check_file "$path" "hack file at $path" 2>&1 >/dev/null
 			if [ "$?" != 2 ]; then
