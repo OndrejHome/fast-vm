@@ -147,9 +147,9 @@ config_file_operation () {
 	options="$2"
 
 	if [ "$(whoami)" = 'root' ]; then
-		"$cmd $FASTVM_SYSTEM_CONF_DIR/$options" 2>&1|$DEBUG_LOG_CMD
+		$cmd $FASTVM_SYSTEM_CONF_DIR/$options 2>&1|$DEBUG_LOG_CMD
 	else
-		"$cmd $FASTVM_USER_CONF_DIR/$options" 2>&1|$DEBUG_LOG_CMD
+		$cmd $FASTVM_USER_CONF_DIR/$options 2>&1|$DEBUG_LOG_CMD
 	fi
 }
 
