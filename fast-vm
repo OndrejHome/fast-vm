@@ -532,7 +532,10 @@ case "$1" in
 
 		# create profile and copy files to right places
 		config_file_operation "mkdir" "${profile_name}"
-		config_file_operation "echo $image_name >" "${profile_name}/base_image"
+		tmp_base_image=$(mktemp)
+                echo $image_name > $tmp_base_image
+		config_file_operation "cp $tmp_base_image" "${profile_name}/base_image"
+		rm -f $tmp_base_image
 		config_file_operation "cp $image_xml_path" "${profile_name}/config.xml"
 		config_file_operation "chmod +r" "${profile_name}/config.xml"
 		if [ ! -z "$hack_file" ] && [ -f "$hack_file" ]; then
