@@ -58,7 +58,7 @@ drive of new machine before starting VM using the 'hack files'.
 %config(noreplace) %{_sysconfdir}/sudoers.d/%{name}-sudoers
 
 %changelog
-* Sun Now 13 2016 Ondrej Famera <ofamera@redhat.com> 1.0-1
+* Sun Nov 13 2016 Ondrej Famera <ofamera@redhat.com> 1.0-1
 - added support for handling machines with UEFI firmware
 - improve error messages and documentation
 - fix locking and make it dependent on image block device
