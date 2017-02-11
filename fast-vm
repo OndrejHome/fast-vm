@@ -566,7 +566,8 @@ case "$1" in
 		if [ -z "$image_name" ]; then pmsg $P_ERROR "missing image or profile name\n"; usage create; fi
 
 		# if the image_name looks like ProfileName
-		for profile_base_image in "$FASTVM_USER_CONF_DIR/${image_name}/base_image" "$FASTVM_SYSTEM_CONF_DIR/${image_name}/base_image"
+		profile_name=$image_name
+		for profile_base_image in "$FASTVM_USER_CONF_DIR/${profile_name}/base_image" "$FASTVM_SYSTEM_CONF_DIR/${profile_name}/base_image"
 		do
 			if [ -f "$profile_base_image" ]; then
 				profile_name=$image_name
