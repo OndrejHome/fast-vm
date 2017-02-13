@@ -5,7 +5,6 @@ fast-vm \(em script for defining VMs from images provided in thin LVM pool
 .B fast-vm
 .RB <action>
 .RB <options>
-.br
 
 .B fast-vm
 .BR import_image
@@ -15,18 +14,15 @@ fast-vm \(em script for defining VMs from images provided in thin LVM pool
 .IR PathToLibvirtXML 
 .RI [ PathToHacksFile ]
 .RI [ PathToDeleteHacksFile ]
-.br
 
 .B fast-vm
 .BR export_image
 .IR ImageName
 .RB < xz | gz >
-.br
 
 .B fast-vm
 .BR remove_image
 .IR ImageName
-.br
 
 .B fast-vm
 .BR import_profile
@@ -35,22 +31,18 @@ fast-vm \(em script for defining VMs from images provided in thin LVM pool
 .IR PathToLibvirtXML 
 .RI [ PathToHacksFile ]
 .RI [ PathToDeleteHacksFile ]
-.br
 
 .B fast-vm
 .BR remove_profile
 .IR ProfileName
-.br
 
 .B fast-vm
 .BR list_images
 .RB [ short ]
-.br
 
 .B fast-vm
 .BR list_profiles
 .RB [ short ]
-.br
 
 .B fast-vm
 .B create 
@@ -59,50 +51,41 @@ fast-vm \(em script for defining VMs from images provided in thin LVM pool
 .RI | VmNumber >
 .RI [ PathToLibvirtXML ]
 .RI [ PathToHacksFile ]
-.br
 
 .B fast-vm
 .B info
 .I VmNumber
-.br
 
 .B fast-vm
 .B delete
 .I VmNumber
 .RI [ PathToDeleteHacksFile ]
-.br
 
 .B fast-vm
 .B edit_note
 .I VmNumber
 .RI [ NoteText ]
-.br
 
 .B fast-vm
 .B list
 .RB [ all | active | inactive
 .RB [ short ]]
-.br
 
 .B fast-vm
 .BI "start " VmNumber
 .RB [ console | ssh 
 .RI [ /path/to/custom/script ]]
-.br
 
 .B fast-vm
 .BI "stop " VmNumber
 .RB [ graceful ]
-.br
 
 .B fast-vm
 .BI "console " VmNumber
-.br
 
 .B fast-vm
 .BI "ssh " VmNumber
 .RI [ /path/to/custom/script ]
-.br
 
 .SH DESCRIPTION
 fast-vm is provides command-line interface to create virtual machines (VMs) in 
@@ -127,35 +110,42 @@ Primary use case of fast-vm is creation of scratch VMs on single local machine.
 
 .TP
 .B ImageName
-Name of image imported in the fast-vm. It should contain only alpha-numerical characters.
-.B ImageName 
+.RB "Name of image imported in the fast-vm. It should contain only alpha-numerical characters. " "ImageName"
 is part of the LV name and libvirt machine name.
 
-.TP
+.TP 
+.B PathToImage
 .BI "PathToImage " /path/to/image.{gz,xz}
-.TP
+.br
 .BI "PathToImage " http://url/to/image.{gz,xz}
+.sp
 Local path or http/https URL to image file in GZIP or XZ format.
 
 .TP
+.B PathToLibvirtXML
 .BI "PathToLibvirtXML " /path/to/libvirt.xml
-.TP
+.br
 .BI "PathToLibvirtXML " htto://url/to/libvirt.xml
+.sp
 Local path or http/https URL to libvirt VM XML template. Check the
 .B TEMPLATE MACROS
 for list of supported macros.
 
 .TP 
+.B PathToHacksFile
 .BI "PathToHacksFile " /path/to/hacks.sh
-.TP
+.br
 .BI "PathToHacksFile " http://url/to/hacks.sh
+.sp
 Local path or http/https URL to shell script which will be executed after creation of the VM and allows
 to access the disk drive of the VM before first running it. 
 
 .TP
+.B PathToDeleteHacksFile
 .BI "PathToDeleteHacksFile " /path/to/delete-hacks.sh
-.TP
+.br
 .BI "PathToDeleteHacksFile " http://url/to/delete-hacks.sh
+.sp
 Local path or http/https URL to shell script which will be executed during VM delete process as last step
 before the VM is undefined from the libvirt.
 
@@ -224,7 +214,7 @@ try to send TRIM (ATA devices) or UNMAP (SCSI devices) so the storage can mark f
 When you have done all modification to your image export it to GZ or XZ compressed file using one of the commands below.
 
 .B fast-vm export_image cool_image xz
-
+.br
 .B fast-vm export_image cool_image gz
 
 TIP: To test how the fast-vm VM would be created from this image, simply create it based on your custom image
