@@ -65,9 +65,9 @@ configure-fast-vm(8)
 
 ====== Supported/Tested OS =====
 Distribution    Installation method
-- RHEL 7.2	RPM
-- CentOS 7.2	RPM
-- Fedora 24	RPM
+- RHEL 7.3	RPM
+- CentOS 7.3	RPM
+- Fedora 25	RPM
 - Gentoo	make install
 
 ====== Known bugs/limitation ======
