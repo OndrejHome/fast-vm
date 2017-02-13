@@ -1,5 +1,5 @@
 Name:		fast-vm
-Version:	1.0
+Version:	1.1
 Release:	1%{?dist}
 Summary:	Script for defining VMs from images provided in thin LVM pool
 
@@ -64,6 +64,12 @@ drive of new machine before starting VM using the 'hack files'.
 %config(noreplace) %{_sysconfdir}/sudoers.d/%{name}-sudoers
 
 %changelog
+* Mon Feb 13 2017 Ondrej Famera <ofamera@redhat.com> 1.1-1
+- image profiles support
+- delete hack files added
+- multi-nic VM removal fix
+- store VM notes also in libvirt XML definition for external applications
+
 * Sun Nov 13 2016 Ondrej Famera <ofamera@redhat.com> 1.0-1
 - added support for handling machines with UEFI firmware
 - improve error messages and documentation
