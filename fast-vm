@@ -142,13 +142,23 @@ check_vm_number () {
 	fi
 }
 
+config_file_operation () {
+	cmd="$1"
+	options="$2"
+
+	if [ "$(whoami)" = 'root' ]; then
+		$cmd $FASTVM_SYSTEM_CONF_DIR/$options 2>&1|$DEBUG_LOG_CMD
+	else
+		$cmd $FASTVM_USER_CONF_DIR/$options 2>&1|$DEBUG_LOG_CMD
+	fi
+}
+
 usage () {
 	part="$1"
 
-	echo ''
 	case $part in
 		import_image)
-			echo "$0 import_image ImageName <empty |PathToImage> PathToLibvirtXML [PathToHacksFile]"
+			echo "$0 import_image ImageName <empty |PathToImage> PathToLibvirtXML [PathToHacksFile] [PathToDeleteHackFile]"
 			;;
 		export_image)
 			echo "$0 export_image ImageName <xz|gz>"
@@ -156,11 +166,20 @@ usage () {
 		remove_image)
 			echo "$0 remove_image ImageName"
 			;;
+		import_profile)
+			echo "$0 import_profile ProfileName ImageName PathToLibvirtXML [PathToHacksFile] [PathToDeleteHackFile]"
+			;;
+		remove_profile)
+			echo "$0 remove_profile ProfileName"
+			;;
 		list_images)
 			echo "$0 list_images [short]"
 			;;
+		list_profiles)
+			echo "$0 list_profiles [short]"
+			;;
 		create)
-			echo "$0 create ImageName <base |VmNumber> [PathToLibvirtXML] [PathToHacksFile]"
+			echo "$0 create <ImageName|ProfileName> <base |VmNumber> [PathToLibvirtXML] [PathToHacksFile]"
 			;;
 		start)
 			echo "$0 start VmNumber [console|ssh [/path/to/custom/script]]"
@@ -175,36 +194,28 @@ usage () {
 			echo "$0 ssh VmNumber [/path/to/custom/script]"
 			;;
 		delete)
-			echo "$0 delete VmNumber"
+			echo "$0 delete VmNumber [PathToDeleteHackFile]"
 			;;
 		edit_note)
 			echo "$0 edit_note VmNumber [NoteText]"
+			;;
+		info)
+			echo "$0 info VmNumber"
 			;;
 		list)
 			echo "$0 list [all|active|inactive [short]]"
 			;;
 		*)
-cat <<EOF
-fast-vm <action> <options>
-
-fast-vm import_image ImageName <empty |PathToImage> PathToLibvirtXML [PathToHacksFile]
-fast-vm export_image ImageName <xz|gz>
-fast-vm remove_image ImageName
-fast-vm list_images [short]
-fast-vm create ImageName <base |VmNumber> [PathToLibvirtXML] [PathToHacksFile]
-fast-vm delete VmNumber
-fast-vm edit_note VmNumber [NoteText]
-fast-vm list [all|active|inactive [short]]
-fast-vm start VmNumber [console|ssh [/path/to/custom/script]]
-fast-vm stop VmNumber [graceful]
-fast-vm console VmNumber
-fast-vm ssh VmNumber [/path/to/custom/script]
-
-== fast-vm version 1.0 <ofamera@redhat.com> ==
-EOF
+			echo "== fast-vm version 1.1 <ofamera@redhat.com> =="
+			echo "$0 <action> <options>"
+			for cmd in import_image export_image remove_image import_profile remove_profile list_images create delete edit_note info list start stop console ssh;
+			do
+				usage $cmd noexit
+			done
 			;;
 	esac
-	exit 1
+	# exit only when second parameter is not specified, otherwise just return and continue
+	if [ -z "$2" ]; then exit 1; fi
 }
 
 #### end common functions
@@ -323,6 +334,15 @@ case "$1" in
 				hack_file=$(download_file "$hack_file")
 			fi
 		fi
+		delete_hack_file="$6"
+		if [ ! -z "$delete_hack_file" ]; then
+			check_file "$delete_hack_file" "delete hack file"
+			if [ "$?" = 2 ]; then pmsg $P_ERROR "delete hack file $delete_hack_file not found\n"; exit 2; fi
+			if [ "$file_local" = '0' ]; then
+				delete_hack_file=$(download_file "$delete_hack_file")
+			fi
+		fi
+
 		if [ -b "/dev/$THINPOOL_VG/$VM_PREFIX$image_name" ]; then
 			pmsg $P_ERROR "base image for '$image_name' version already exists. To remove image use 'remove_image' parameter\n"
 			exit 1
@@ -344,11 +364,7 @@ case "$1" in
 		pmsg $P_DEBUG "importing image $image_path into /dev/$THINPOOL_VG/$VM_PREFIX$image_name\n"
 
 		if [ "$image_path" = "empty" ]; then
-			if [ "$(whoami)" = 'root' ]; then
-				cp "$image_xml_path" "$FASTVM_SYSTEM_CONF_DIR/config-${image_name}.xml" 2>&1|$DEBUG_LOG_CMD
-			else
-				cp "$image_xml_path" "$FASTVM_USER_CONF_DIR/config-${image_name}.xml" 2>&1|$DEBUG_LOG_CMD
-			fi
+			config_file_operation "cp $image_xml_path" "config-${image_name}.xml"
 			pmsg $P_INFO "Empty image imported\n"
 			exit 0
 		fi
@@ -380,21 +396,15 @@ case "$1" in
 		fi
 
 		# copy the XML configuration file
-		if [ $(whoami) = 'root' ]; then
-			cp "$image_xml_path" "$FASTVM_SYSTEM_CONF_DIR/config-${image_name}.xml" 2>&1|$DEBUG_LOG_CMD
-			chmod +r "$FASTVM_SYSTEM_CONF_DIR/config-${image_name}.xml" 2>&1|$DEBUG_LOG_CMD
-		else
-			cp "$image_xml_path" "$FASTVM_USER_CONF_DIR/config-${image_name}.xml" 2>&1|$DEBUG_LOG_CMD
-			chmod +r "$FASTVM_USER_CONF_DIR/config-${image_name}.xml" 2>&1|$DEBUG_LOG_CMD
-		fi
+		config_file_operation "cp $image_xml_path" "config-${image_name}.xml"
+		config_file_operation "chmod +r" "config-${image_name}.xml"
 		if [ ! -z "$hack_file" ] && [ -f "$hack_file" ]; then
-			if [ $(whoami) = 'root' ]; then
-				cp "$hack_file" "$FASTVM_SYSTEM_CONF_DIR/hacks-${image_name}.sh" 2>&1|$DEBUG_LOG_CMD
-				chmod +rx "$FASTVM_SYSTEM_CONF_DIR/hacks-${image_name}.sh" 2>&1|$DEBUG_LOG_CMD
-			else
-				cp "$hack_file" "$FASTVM_USER_CONF_DIR/hacks-${image_name}.sh" 2>&1|$DEBUG_LOG_CMD
-				chmod +rx "$FASTVM_USER_CONF_DIR/hacks-${image_name}.sh" 2>&1|$DEBUG_LOG_CMD
-			fi
+			config_file_operation "cp $hack_file" "hacks-${image_name}.sh"
+			config_file_operation "chmod +rx" "hacks-${image_name}.sh"
+		fi
+		if [ ! -z "$delete_hack_file" ] && [ -f "$delete_hack_file" ]; then
+			config_file_operation "cp $delete_hack_file" "delete-hacks-${image_name}.sh"
+			config_file_operation "chmod +rx" "delete-hacks-${image_name}.sh"
 		fi
 
 		pmsg $P_INFO "Image $image_name imported\n"
@@ -470,26 +480,110 @@ case "$1" in
 			virsh --connect qemu:///system undefine $VM_PREFIX$image_name --nvram 2>&1|$DEBUG_LOG_CMD
 			pmsg $P_DEBUG "removing LV $VM_PREFIX$image_name ...\n"
 			echo "lvremove" "/dev/$THINPOOL_VG/$VM_PREFIX$image_name" | sudo -n $FASTVM_HELPER
-			pmsg $P_DEBUG "removing XML and hack file of $image_name...\n"
-			if [ -f "$FASTVM_USER_CONF_DIR/config-${image_name}.xml" ]; then rm "$FASTVM_USER_CONF_DIR/config-${image_name}.xml"; fi
-			if [ -f "$FASTVM_USER_CONF_DIR/hacks-${image_name}.sh" ]; then rm "$FASTVM_USER_CONF_DIR/hacks-${image_name}.sh"; fi
-			if [ $(whoami) = 'root' ]; then
-				pmsg $P_DEBUG "removing system-wide XML and hack file ...\n"
-				if [ -f "$FASTVM_SYSTEM_CONF_DIR/config-${image_name}.xml" ]; then rm "$FASTVM_SYSTEM_CONF_DIR/config-${image_name}.xml"; fi
-				if [ -f "$FASTVM_SYSTEM_CONF_DIR/hacks-${image_name}.sh" ]; then rm "$FASTVM_SYSTEM_CONF_DIR/hacks-${image_name}.sh"; fi
-			fi
+			pmsg $P_DEBUG "removing XML and hack file(s) of $image_name...\n"
+			config_file_operation "rm" "config-${image_name}.xml"
+			config_file_operation "rm" "hacks-${image_name}.sh"
+			config_file_operation "rm" "delete-hacks-${image_name}.sh"
 			pmsg $P_INFO "image $image_name removed\n"
 		else
 			pmsg $P_ERROR "image "$image_name" not found\n"
 			usage remove_image
 		fi
 		;;
+	import_profile)
+		profile_name="$2"
+		if [ -z "$profile_name" ]; then pmsg $P_ERROR "missing profile name\n"; usage import_profile; fi
+		profile_name_stripped=$(echo "$profile_name"|tr -d -C '[:alnum:]\-.')
+		if [ "$profile_name" != "$profile_name_stripped" ]; then
+			pmsg $P_ERROR "ProfileName contains restricted characters, allowed are only letters, numbers, dot(.) and dash(-)\n"
+			exit 1
+		fi
+		image_name="$3"
+		if [ -z "$image_name" ]; then pmsg $P_ERROR "missing image name\n"; usage import_profile; fi
+
+		image_xml_path="$4"
+		check_file "$image_xml_path" "XML VM definition"
+		if [ "$?" = 2 ]; then pmsg $P_ERROR "XML file $image_xml_path not found\n"; exit 2; fi
+		if [ "$file_local" = '0' ]; then
+			image_xml_path=$(download_file "$image_xml_path")
+		fi
+
+		hack_file="$5"
+		if [ ! -z "$hack_file" ]; then
+			check_file "$hack_file" "hack file"
+			if [ "$?" = 2 ]; then pmsg $P_ERROR "hack file $hack_file not found\n"; exit 2; fi
+			if [ "$file_local" = '0' ]; then
+				hack_file=$(download_file "$hack_file")
+			fi
+		fi
+		delete_hack_file="$6"
+		if [ ! -z "$delete_hack_file" ]; then
+			check_file "$delete_hack_file" "delete hack file"
+			if [ "$?" = 2 ]; then pmsg $P_ERROR "delete hack file $delete_hack_file not found\n"; exit 2; fi
+			if [ "$file_local" = '0' ]; then
+				delete_hack_file=$(download_file "$delete_hack_file")
+			fi
+		fi
+
+		if [ ! -b "/dev/$THINPOOL_VG/$VM_PREFIX$image_name" ]; then
+			pmsg $P_ERROR "Missing image for ${image_name}.\n/dev/$THINPOOL_VG/$VM_PREFIX$image_name not found.\nFirst import image using 'fast-vm image_import $image_name'\n"
+			exit 2
+		fi
+
+		# create profile and copy files to right places
+		config_file_operation "mkdir" "${profile_name}"
+		tmp_base_image=$(mktemp)
+                echo $image_name > $tmp_base_image
+		config_file_operation "cp $tmp_base_image" "${profile_name}/base_image"
+		rm -f $tmp_base_image
+		config_file_operation "cp $image_xml_path" "${profile_name}/config.xml"
+		config_file_operation "chmod +r" "${profile_name}/config.xml"
+		if [ ! -z "$hack_file" ] && [ -f "$hack_file" ]; then
+			config_file_operation "cp $hack_file" "${profile_name}/hacks.sh"
+			config_file_operation "chmod +rx" "${profile_name}/hacks.sh"
+		fi
+		if [ ! -z "$delete_hack_file" ] && [ -f "$delete_hack_file" ]; then
+			config_file_operation "cp $delete_hack_file" "${profile_name}/delete-hacks.sh"
+			config_file_operation "chmod +rx" "${profile_name}/delete-hacks.sh"
+		fi
+
+		pmsg $P_INFO "Profile $profile_name based on Image $image_name imported\n"
+		;;
+	remove_profile)
+		profile_name="$2"
+		if [ -z "$profile_name" ]; then pmsg $P_ERROR "missing profile name\n"; usage remove_profile; fi
+
+		if [ ! -d "$FASTVM_USER_CONF_DIR/${profile_name}" ] && [ ! -d "$FASTVM_SYSTEM_CONF_DIR/${profile_name}" ]; then
+			pmsg $P_ERROR "profile "$profile_name" not found\n"
+			usage remove_profile
+		fi
+
+		config_file_operation "rm -rf" "$profile_name"
+		pmsg $P_INFO "Profile $profile_name removed\n"
+		;;
 	create)
 		image_name="$2"
-		if [ -z "$image_name" ]; then pmsg $P_ERROR "missing image name\n"; usage create; fi
+		if [ -z "$image_name" ]; then pmsg $P_ERROR "missing image or profile name\n"; usage create; fi
+
+		# if the image_name looks like ProfileName
+		profile_name=$image_name
+		for profile_base_image in "$FASTVM_USER_CONF_DIR/${profile_name}/base_image" "$FASTVM_SYSTEM_CONF_DIR/${profile_name}/base_image"
+		do
+			if [ -f "$profile_base_image" ]; then
+				profile_name=$image_name
+				image_name=$(cat $profile_base_image)
+				pmsg $P_DEBUG "using image $image_name with profile $profile_name\n"
+				break
+			fi
+		done
+
+		if [ ! -b "/dev/$THINPOOL_VG/$VM_PREFIX$image_name" ]; then
+			pmsg $P_ERROR "Missing image for ${image_name}.\n/dev/$THINPOOL_VG/$VM_PREFIX$image_name not found.\nFirst import image using 'fast-vm image_import $image_name'\n"
+			exit 2
+		fi
 
 		image_xml_path=""
-		for path in "$4" "$FASTVM_USER_CONF_DIR/config-${image_name}.xml" "$FASTVM_SYSTEM_CONF_DIR/config-${image_name}.xml"
+		for path in "$4" "$FASTVM_USER_CONF_DIR/${profile_name}/config.xml" "$FASTVM_SYSTEM_CONF_DIR/${profile_name}/config.xml" "$FASTVM_USER_CONF_DIR/config-${image_name}.xml" "$FASTVM_SYSTEM_CONF_DIR/config-${image_name}.xml"
 		do
 			check_file "$path" "test XML file" 2>&1 >/dev/null
 			if [ "$?" != 2 ]; then
@@ -508,7 +602,7 @@ case "$1" in
 		fi
 
 		hack_file=""
-		for path in "$5" "$FASTVM_USER_CONF_DIR/hacks-${image_name}.sh" "$FASTVM_SYSTEM_CONF_DIR/hacks-${image_name}.sh"
+		for path in "$5" "$FASTVM_USER_CONF_DIR/${profile_name}/hacks.sh" "$FASTVM_SYSTEM_CONF_DIR/${profile_name}/hacks.sh" "$FASTVM_USER_CONF_DIR/hacks-${image_name}.sh" "$FASTVM_SYSTEM_CONF_DIR/hacks-${image_name}.sh"
 		do
 			check_file "$path" "hack file at $path" 2>&1 >/dev/null
 			if [ "$?" != 2 ]; then
@@ -521,11 +615,7 @@ case "$1" in
 				break
 			fi
 		done
-
-		if [ ! -b "/dev/$THINPOOL_VG/$VM_PREFIX$image_name" ]; then
-			pmsg $P_ERROR "Missing image for ${image_name}.\n/dev/$THINPOOL_VG/$VM_PREFIX$image_name not found.\nFirst import image using 'fast-vm image_import $image_name'\n"
-			exit 2
-		fi
+		# NOTE: if profile doesn't contain hacks file the one from base image of that profile is used!
 
 		vm_number="$3"
 		# validate vm_number is a 'number'
@@ -559,7 +649,7 @@ case "$1" in
 			VM_NAME="$VM_PREFIX$image_name"
 			
 			tmp_xml=$(mktemp --suffix=.xml)
-			sed -e "s/VM_NAME/$VM_PREFIX$image_name/g; s/THINPOOL_VG/$THINPOOL_VG/g; s/LIBVIRT_NETWORK/$LIBVIRT_NETWORK/g;" "$image_xml_path" > $tmp_xml
+			sed -e "s/VM_NAME/$VM_PREFIX$image_name/g; s/THINPOOL_VG/$THINPOOL_VG/g; s/LIBVIRT_NETWORK/$LIBVIRT_NETWORK/g; s/VM_NUMBER/$vm_number/g;" "$image_xml_path" > $tmp_xml
 			virsh --connect qemu:///system define $tmp_xml
 			if [ ! "$?" -eq '0' ]; then
 				pmsg $P_ERROR "defining base VM for $image_name failed, doesn't it exists already?\n"
@@ -582,6 +672,10 @@ case "$1" in
 		else
 			# create empty VM note to identify user which created VM only for non-base VMs
 			touch "$FASTVM_NOTES_DIR/$vm_number" 2>/dev/null
+			# if machine was created using profile put information about used profile into VM note
+			if [ "$profile_name" != "$image_name" ]; then
+				echo "$profile_name" > "$FASTVM_NOTES_DIR/$vm_number.profile"
+			fi
 		fi
 		
 		## check if the machine doesn't exists already
@@ -596,7 +690,7 @@ case "$1" in
 
 		pmsg $P_DEBUG "defining virtual machine '$VM_PREFIX$image_name-$vm_number' in libvirt\n"
 		tmp_xml=$(mktemp --suffix=.xml)
-		sed -e "s/VM_NAME/$VM_PREFIX$image_name-$vm_number/g; s/THINPOOL_VG/$THINPOOL_VG/g; s/LIBVIRT_NETWORK/$LIBVIRT_NETWORK/g;" "$image_xml_path" > $tmp_xml
+		sed -e "s/VM_NAME/$VM_PREFIX$image_name-$vm_number/g; s/THINPOOL_VG/$THINPOOL_VG/g; s/LIBVIRT_NETWORK/$LIBVIRT_NETWORK/g; s/VM_NUMBER/$vm_number/g;" "$image_xml_path" > $tmp_xml
 		virsh --connect qemu:///system define $tmp_xml
 		if [ ! "$?" -eq '0' ]; then
 			pmsg $P_ERROR "Unable to define virtual machine from $tmp_xml. Check syslog for more details\n"
@@ -608,7 +702,7 @@ case "$1" in
 		echo "chgrp" "/dev/$THINPOOL_VG/$VM_PREFIX$image_name-$vm_number" | sudo -n $FASTVM_HELPER
 
 		pmsg $P_DEBUG "adding static lease for 192.168.$SUBNET_NUMBER.$vm_number into libvirts DHCP\n"
-		VM_MAC=$(virsh --connect qemu:///system dumpxml "$VM_PREFIX$image_name-$vm_number"|grep 'mac address'|cut -d\' -f 2)
+		VM_MAC=$(virsh --connect qemu:///system dumpxml "$VM_PREFIX$image_name-$vm_number"|xmllint --xpath "//interface[.//source[@network='$LIBVIRT_NETWORK']]/mac/@address" -|cut -d\" -f 2|head -1)
 		virsh --connect qemu:///system net-update "$LIBVIRT_NETWORK" add-last ip-dhcp-host --xml "<host mac='$VM_MAC' ip='192.168.$SUBNET_NUMBER.$vm_number'/>" --live --config 2>&1|$DEBUG_LOG_CMD
 
 		# source file with hacks and apply them
@@ -643,7 +737,7 @@ case "$1" in
 		
 		# if there is any third argument start VM and console after
 		if [ -z "$3" ]; then
-			pmsg $P_DEBUG "starting VM $vm_name\n"
+			pmsg $P_DEBUG "starting VM $vm_name (192.168.$SUBNET_NUMBER.$vm_number)\n"
 			virsh --connect qemu:///system start $vm_name
 			if [ "$?" != '0' ]; then
 				pmsg $P_ERROR "failed to start VM, check syslog for more information\n"
@@ -739,6 +833,28 @@ case "$1" in
 			exit 1
 		fi
 
+		if [ -f "$FASTVM_NOTES_DIR/$vm_number.profile" ]; then
+			profile_name=$(cat $FASTVM_NOTES_DIR/$vm_number.profile)
+		fi
+
+		# determine image name of VM
+		image_name=$(virsh --connect qemu:///system list --all|awk '{print $2,$3,$4}'|egrep "^${VM_PREFIX}.*-[0-9]+ "|sed "s/${VM_PREFIX}\(.\+\)-\([0-9]\+\) \(.\+\)$/\2 \1 \3/"|awk "\$1==$vm_number {printf \"%s\",\$2}")
+
+		delete_hack_file=""
+		for path in "$3" "$FASTVM_USER_CONF_DIR/${profile_name}/delete-hacks.sh" "$FASTVM_SYSTEM_CONF_DIR/${profile_name}/delete-hacks.sh" "$FASTVM_USER_CONF_DIR/delete-hacks-${image_name}.sh" "$FASTVM_SYSTEM_CONF_DIR/delete-hacks-${image_name}.sh"
+		do
+			check_file "$path" "delete hack file at $path" 2>&1 >/dev/null
+			if [ "$?" != 2 ]; then
+				if [ "$file_local" = '0' ]; then
+		                        delete_hack_file=$(download_file "$path")
+				else
+					delete_hack_file="$path"
+		                fi
+				pmsg $P_DEBUG "using file $path as delete hack file\n"
+				break
+			fi
+		done
+
 		if [ "$FASTVM_OWNER_ONLY_DELETE" == "yes" ]; then
 			owner=$(stat --format="%U" "$FASTVM_NOTES_DIR/$vm_number" 2>/dev/null)
 			if [ $(whoami) != "root" ] && [ $(whoami) != "$owner" ]; then
@@ -762,7 +878,7 @@ case "$1" in
 			fi
 		fi
 
-		VM_MAC=$(virsh --connect qemu:///system dumpxml "$vm_name"|grep 'mac address'|cut -d\' -f 2)
+		VM_MAC=$(virsh --connect qemu:///system dumpxml "$vm_name"|xmllint --xpath "//interface[.//source[@network='$LIBVIRT_NETWORK']]/mac/@address" -|cut -d\" -f 2|head -1)
 
 		pmsg $P_DEBUG "removing DHCP reservation 192.168.$SUBNET_NUMBER.$vm_number for $VM_MAC\n"
 		virsh --connect qemu:///system net-update "$LIBVIRT_NETWORK" delete ip-dhcp-host --xml "<host mac='$VM_MAC' ip='192.168.$SUBNET_NUMBER.$vm_number'/>" --live --config
@@ -782,6 +898,19 @@ case "$1" in
 		pmsg $P_DEBUG "removing VM notes\n"
 		if [ -f "$FASTVM_NOTES_DIR/$vm_number" ]; then rm "$FASTVM_NOTES_DIR/$vm_number"; fi
 
+		## apply delete hack file
+		if [ ! -z "$delete_hack_file" ]; then
+			delete_hack_file=$(echo "$delete_hack_file"|sed 's/^\([^\/]\)/\.\/\1/g')
+			pmsg $P_DEBUG "applying delete hacks from $delete_hack_file\n"
+			. $delete_hack_file
+			if [ ! "$?" -eq "0" ]; then
+				pmsg $P_WARNING "there was issue applying delete hacks to this machine, check syslog for more details\n"
+			fi
+			pmsg $P_DEBUG "applying delete hacks finished\n"
+		fi
+		# remove profile identifier once delete-hacks.sh were applied in case this machine was based on profile
+		if [ -f "$FASTVM_NOTES_DIR/$vm_number.profile" ]; then rm "$FASTVM_NOTES_DIR/$vm_number.profile"; fi
+
 		pmsg $P_DEBUG "undefining VM $vm_name from libvirt\n"
 		virsh --connect qemu:///system undefine $vm_name --nvram
 		if [ "$?" != '0' ]; then
@@ -799,10 +928,17 @@ case "$1" in
 			pmsg $P_ERROR "no VM with number '$vm_number' found\n"
 			exit 1
 		fi
+		vm_name=$(virsh --connect qemu:///system list --all |grep "$VM_PREFIX"|awk '{print $2}'|egrep "\-$vm_number$")
 		if [ -z "$3" ]; then
 			$EDITOR "$FASTVM_NOTES_DIR/$vm_number"
 		else
 			echo "$3" > "$FASTVM_NOTES_DIR/$vm_number"
+			owner="-----"
+			if [ -f "$FASTVM_NOTES_DIR/$vm_number" ]; then
+				owner=$(stat --format="%U" "$FASTVM_NOTES_DIR/$vm_number")
+			fi
+			# edit also title in libvirt XMl definition so applications like virt-manager can show same notes as seen in 'fast-vm list'
+			virsh --connect qemu:///system desc $vm_name --title --new-desc "$vm_number $owner $3" --config
 		fi
 		;;
 	list)
@@ -814,18 +950,22 @@ case "$1" in
 		if [ ! -z "$short_output" ] && [ "$short_output" = "short" ]; then
 			echo "$vm_list"
 		else
-			printf "%3s %-20s %-12s %s\n" "VM#" "Image name" "Status" "Notes"
-			data=$(virsh --connect qemu:///system list --all|awk '{print $2,$3,$4}'|egrep "^${VM_PREFIX}.*-[0-9]+ "|sed "s/${VM_PREFIX}\(.\+\)-\([0-9]\+\) \([a-zA-Z ]\+\)$/\2 \1 \3/"|awk '{printf "%3s %-20s %s %s\n",$1,$2,$3,$4}')
+			printf "%3s %-15s %-12s %-15s %s\n" "VM#" "Image name" "Status" "Profile_name" "Notes"
+			data=$(virsh --connect qemu:///system list --all|awk '{print $2,$3,$4}'|egrep "^${VM_PREFIX}.*-[0-9]+ "|sed "s/${VM_PREFIX}\(.\+\)-\([0-9]\+\) \(.\+\)$/\2 \1 \3/"|awk '{printf "%3s %-15s %s %s\n",$1,$2,$3,$4}')
 			for vm in $vm_list;
 			do
 				out=$(echo "$data"|egrep "(^ $vm|^$vm) ")
+				profile_name='---'
 				if [ -f "$FASTVM_NOTES_DIR/$vm" ]; then
 					owner=$(stat --format="%U" "$FASTVM_NOTES_DIR/$vm")
 					note=$(head -1 "$FASTVM_NOTES_DIR/$vm")
 					note=$(echo "$owner: $note"|cut -c 1-$(($TERMINAL_WIDTH-38)))
-					printf "%-37s %-s\n" "$out" "$note"
+					if [ -f "$FASTVM_NOTES_DIR/$vm.profile" ]; then
+						profile_name=$(cat $FASTVM_NOTES_DIR/$vm.profile)
+					fi
+					printf "%-32s %-15s %-s\n" "$out" "$profile_name" "$note"
 				else
-					printf "%-37s -----\n" "$out"
+					printf "%-32s -----\n" "$out"
 				fi
 			done
 
@@ -853,8 +993,8 @@ case "$1" in
 		if [ ! -z "$short_output" ] && [ "$short_output" = "short" ]; then
 			echo "$image_name_list"
 		else
-				printf '%-20s|%-17s |%-17s |\n' 'Image' 'SYSTEM' 'USER'
-				printf '%-20s|%-8s %-9s|%-8s %-9s|\n' 'Image name' 'XML' 'Hack file' 'XML' 'Hack file'
+				printf '%-20s|%-21s |%-21s |\n' 'Image' 'SYSTEM' 'USER'
+				printf '%-20s|%-8s %-13s|%-8s %-13s|\n' 'Image name' 'XML' 'Hack file for' 'XML' 'Hack file for'
 			for image_name in $image_name_list; do
 				# check the existence of the XML file
 				if [ -f "$FASTVM_USER_CONF_DIR/config-${image_name}.xml" ]; then
@@ -863,10 +1003,12 @@ case "$1" in
 					user_xml_exists="missing"
 				fi
 				# check existence of hack file
+				user_hacks_exists="no hack files"
 				if [ -f "$FASTVM_USER_CONF_DIR/hacks-${image_name}.sh" ]; then
-					user_hacks_exists="ok"
-				else
-					user_hacks_exists="missing"
+					user_hacks_exists="create"
+				fi
+				if [ -f "$FASTVM_USER_CONF_DIR/delete-hacks-${image_name}.sh" ]; then
+					user_hacks_exists+=",delete"
 				fi
 				# check the existence of the XML file
 				if [ -f "$FASTVM_SYSTEM_CONF_DIR/config-${image_name}.xml" ]; then
@@ -875,16 +1017,53 @@ case "$1" in
 					system_xml_exists="missing"
 				fi
 				# check existence of hack file
+				system_hacks_exists="no hack files"
 				if [ -f "$FASTVM_SYSTEM_CONF_DIR/hacks-${image_name}.sh" ]; then
-					system_hacks_exists="ok"
-				else
-					system_hacks_exists="missing"
+					system_hacks_exists="create"
 				fi
-				printf "%-20s %-8s %-9s %-8s %-9s\n" "$image_name" "$system_xml_exists" "$system_hacks_exists" "$user_xml_exists" "$user_hacks_exists"
+				if [ -f "$FASTVM_SYSTEM_CONF_DIR/delete-hacks-${image_name}.sh" ]; then
+					system_hacks_exists=",delete"
+				fi
+				printf "%-20s|%-8s %-13s|%-8s %-13s|\n" "$image_name" "$system_xml_exists" "$system_hacks_exists" "$user_xml_exists" "$user_hacks_exists"
 			done
-			printf "\nNOTE: if image is missing XML it wouldn't be possible to create a VM from it!\n Image with missing hack file can work if it's not needed.\n"
-			printf "\n USER XML and hack files takes precendense before SYSTEM ones.\n"
+			printf "\nNOTE: if image is missing XML it wouldn't be possible to create a VM from it!\n Image with missing hack file(s) can work if it's not needed.\n"
+			printf "\n USER XML and hack file(s) takes precendense before SYSTEM ones.\n"
 		fi
+		;;
+	list_profiles)
+		short_output="$2" # if non-zero the output suitable for external processing
+		profile_dir_list=$(find $FASTVM_SYSTEM_CONF_DIR/ $FASTVM_USER_CONF_DIR/ -mindepth 1 -maxdepth 1 -type d 2>/dev/null)
+		if [ ! -z "$short_output" ] && [ "$short_output" = "short" ]; then
+			for dir in $profile_dir_list;
+			do
+				# valid profile must contain at least base image name
+				if [ -f "$dir/base_image" ]; then
+					basename $dir
+				fi
+			done
+		else
+			printf "%-41s|%-41s\n" 'Names' 'Changes provided by profile'
+			printf "%-20s|%-20s|%-5s|%-7s|%-14s\n" 'Profile Name' 'Base Image Name' 'XML' 'hacks' 'delete-hacks'
+			for dir in $profile_dir_list;
+			do
+				profile_name=$(basename $dir)
+				base_image_name=$(cat $dir/base_image 2>/dev/null)
+				# skip directories not containing base image name
+				if [ -z "$base_image_name" ]; then continue; fi
+				profile_xml='no'
+				profile_hacks='no'
+				profile_delete_hacks='no'
+				if [ -f "$dir/config.xml" ]; then profile_xml='yes'; fi
+				if [ -f "$dir/hacks.sh" ]; then profile_hacks='yes'; fi
+				if [ -f "$dir/delete-hacks.sh" ]; then profile_delete_hacks='yes'; fi
+				printf "%-20s|%-20s|%-5s|%-7s|%-14s\n" "$profile_name" "$base_image_name" "$profile_xml" "$profile_hacks" "$profile_delete_hacks"
+			done
+		fi
+		;;
+	info)
+		vm_number="$2"
+		if [ -z "$vm_number" ]; then pmsg $P_ERROR "VM number missing\n"; usage delete; fi
+		pmsg $P_DEBUG "IP: 192.168.$SUBNET_NUMBER.$vm_number\n"
 		;;
 	*) 
 		pmsg $P_ERROR "unknown action\n"

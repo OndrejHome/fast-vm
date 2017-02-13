@@ -20,7 +20,22 @@ _fast-vm()
 		_filedir '@(xml)'
 		return 0
 	fi
-	if [ "$cword" -eq 5 ] && [ ${COMP_WORDS[1]} == "import_image" ]; then
+	if [ "$cword" -eq 5 ] || [ "$cword" -eq 6 ] && [ ${COMP_WORDS[1]} == "import_image" ]; then
+		_filedir '@(sh)'
+		return 0
+	fi
+	if [ "$cword" -eq 3 ] && [ ${COMP_WORDS[1]} == "import_profile" ]; then
+		local image_name
+
+		image_name=$(fast-vm list_images short)
+		COMPREPLY=( $( compgen -W "$image_name" -- "$cur" ) )
+		return 0
+	fi
+	if [ "$cword" -eq 4 ] && [ ${COMP_WORDS[1]} == "import_profile" ]; then
+		_filedir '@(xml)'
+		return 0
+	fi
+	if [ "$cword" -eq 5 ] || [ "$cword" -eq 6 ] && [ ${COMP_WORDS[1]} == "import_profile" ]; then
 		_filedir '@(sh)'
 		return 0
 	fi
@@ -62,19 +77,32 @@ _fast-vm()
 		_filedir '@(sh)'
 		return 0
 	fi
+	if [ "$cword" -eq 3 ] && [ ${COMP_WORDS[1]} == "delete" ]; then
+		_filedir '@(sh)'
+		return 0
+	fi
 
 	case $prev in
-		import_image)
+		import_image|import_profile)
 			return 0
 			;;
 		create|remove_image|export_image)
 			local image_name
+			local profile_name
 
 			image_name=$(fast-vm list_images short)
-			COMPREPLY=( $( compgen -W "$image_name" -- "$cur" ) )
+			profile_name=$(fast-vm list_profiles short)
+			COMPREPLY=( $( compgen -W "$image_name $profile_name" -- "$cur" ) )
 			return 0
 			;;
-		list_images)
+		remove_profile)
+			local profile_name
+
+			profile_name=$(fast-vm list_profiles short)
+			COMPREPLY=( $( compgen -W "$profile_name" -- "$cur" ) )
+			return 0
+			;;
+		list_images|list_profiles)
 			COMPREPLY=( $( compgen -W "short" -- "$cur" ) )
 			return 0
 			;;
@@ -82,13 +110,13 @@ _fast-vm()
 			COMPREPLY=( $( compgen -W "all active inactive" -- "$cur" ) )
 			return 0
 			;;
-		start|stop|delete|console|ssh)
+		start|stop|delete|console|ssh|info)
 			local vm_numbers
 			case $prev in
 				start)
 					vm_numbers=$(fast-vm list inactive short)
 				;;
-				delete|edit_note)
+				delete|edit_note|info)
 					vm_numbers=$(fast-vm list all short)
 				;;
 				console|ssh|stop)
@@ -102,7 +130,7 @@ _fast-vm()
 
 	$split && return 0
 	if [ "$cword" -lt 2 ]; then
-		COMPREPLY=( $( compgen -W 'import_image export_image remove_image edit_note list_images create start stop delete console ssh list' -- "$cur" ) )
+		COMPREPLY=( $( compgen -W 'import_image export_image remove_image import_profile remove_profile edit_note list_images list_profiles create start stop delete console ssh list info' -- "$cur" ) )
 		return 0
 	fi
 

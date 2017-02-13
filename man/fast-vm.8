@@ -1,11 +1,10 @@
-.TH FAST-VM 8 "fast-vm 1.0 (2016-11-13)" "fast-vm" "fast-vm" \" -*- nroff -*-
+.TH FAST-VM 8 "fast-vm 1.1 (2017-02-04)" "fast-vm" "fast-vm" \" -*- nroff -*-
 .SH NAME
 fast-vm \(em script for defining VMs from images provided in thin LVM pool
 .SH SYNOPSIS
 .B fast-vm
 .RB <action>
 .RB <options>
-.br
 
 .B fast-vm
 .BR import_image
@@ -14,69 +13,79 @@ fast-vm \(em script for defining VMs from images provided in thin LVM pool
 .RI | PathToImage >
 .IR PathToLibvirtXML 
 .RI [ PathToHacksFile ]
-.br
+.RI [ PathToDeleteHacksFile ]
 
 .B fast-vm
 .BR export_image
 .IR ImageName
 .RB < xz | gz >
-.br
 
 .B fast-vm
 .BR remove_image
 .IR ImageName
-.br
+
+.B fast-vm
+.BR import_profile
+.IR ProfileName
+.IR ImageName
+.IR PathToLibvirtXML 
+.RI [ PathToHacksFile ]
+.RI [ PathToDeleteHacksFile ]
+
+.B fast-vm
+.BR remove_profile
+.IR ProfileName
 
 .B fast-vm
 .BR list_images
 .RB [ short ]
-.br
+
+.B fast-vm
+.BR list_profiles
+.RB [ short ]
 
 .B fast-vm
 .B create 
-.I ImageName
+.RI < ImageName | ProfileName >
 .RB < base 
 .RI | VmNumber >
 .RI [ PathToLibvirtXML ]
 .RI [ PathToHacksFile ]
-.br
+
+.B fast-vm
+.B info
+.I VmNumber
 
 .B fast-vm
 .B delete
 .I VmNumber
-.br
+.RI [ PathToDeleteHacksFile ]
 
 .B fast-vm
 .B edit_note
 .I VmNumber
 .RI [ NoteText ]
-.br
 
 .B fast-vm
 .B list
 .RB [ all | active | inactive
 .RB [ short ]]
-.br
 
 .B fast-vm
 .BI "start " VmNumber
 .RB [ console | ssh 
 .RI [ /path/to/custom/script ]]
-.br
 
 .B fast-vm
 .BI "stop " VmNumber
 .RB [ graceful ]
-.br
 
 .B fast-vm
 .BI "console " VmNumber
-.br
 
 .B fast-vm
 .BI "ssh " VmNumber
 .RI [ /path/to/custom/script ]
-.br
 
 .SH DESCRIPTION
 fast-vm is provides command-line interface to create virtual machines (VMs) in 
@@ -101,30 +110,44 @@ Primary use case of fast-vm is creation of scratch VMs on single local machine.
 
 .TP
 .B ImageName
-Name of image imported in the fast-vm. It should contain only alpha-numerical characters.
-.B ImageName 
+.RB "Name of image imported in the fast-vm. It should contain only alpha-numerical characters. " "ImageName"
 is part of the LV name and libvirt machine name.
 
-.TP
+.TP 
+.B PathToImage
 .BI "PathToImage " /path/to/image.{gz,xz}
-.TP
+.br
 .BI "PathToImage " http://url/to/image.{gz,xz}
+.sp
 Local path or http/https URL to image file in GZIP or XZ format.
 
 .TP
+.B PathToLibvirtXML
 .BI "PathToLibvirtXML " /path/to/libvirt.xml
-.TP
+.br
 .BI "PathToLibvirtXML " htto://url/to/libvirt.xml
+.sp
 Local path or http/https URL to libvirt VM XML template. Check the
 .B TEMPLATE MACROS
 for list of supported macros.
 
 .TP 
+.B PathToHacksFile
 .BI "PathToHacksFile " /path/to/hacks.sh
-.TP
+.br
 .BI "PathToHacksFile " http://url/to/hacks.sh
+.sp
 Local path or http/https URL to shell script which will be executed after creation of the VM and allows
 to access the disk drive of the VM before first running it. 
+
+.TP
+.B PathToDeleteHacksFile
+.BI "PathToDeleteHacksFile " /path/to/delete-hacks.sh
+.br
+.BI "PathToDeleteHacksFile " http://url/to/delete-hacks.sh
+.sp
+Local path or http/https URL to shell script which will be executed during VM delete process as last step
+before the VM is undefined from the libvirt.
 
 .TP
 .B VmNumber
@@ -191,7 +214,7 @@ try to send TRIM (ATA devices) or UNMAP (SCSI devices) so the storage can mark f
 When you have done all modification to your image export it to GZ or XZ compressed file using one of the commands below.
 
 .B fast-vm export_image cool_image xz
-
+.br
 .B fast-vm export_image cool_image gz
 
 TIP: To test how the fast-vm VM would be created from this image, simply create it based on your custom image
@@ -224,6 +247,10 @@ To use virtual machines with UEFI you will need a UEFI firmware for qemu which i
 When creating the custom image you will have to specify location of UEFI firmware and provide the location of UEFI variable files in
 .RI " " "/etc/libvirt/qemu.conf" " file so the libvirt can automaticaly take care of UEFI vars creation and deletion."
 
+.SH IMAGE PROFILES (from fast-vm-1.1)
+Profiles simplyfies the use of alternative libvirt XML files and hack files. Profile defines the set of alternative libvirt XML, hack files under one
+profile name that can be used as imageName when creating the new VM. If VM was created using profile this will be indicated in the list output of machines.
+
 .SH EXAMPLES
 Import local image into fast-vm
 .sp
@@ -250,6 +277,12 @@ Create machine with custom definition and hack file. Start it and after it's SSH
 .RB "Assign text note to VM. If note text is not provided, default editor from " "$EDITOR" " is launched."
 .sp
 .BI "fast-vm edit_note " "42 'this is testing machine'"
+
+.RB "Define new profile " "small-6.7" " based on image " "6.7" " with custom libvirt XML and hack files and create machine " "41" " using new profile"
+.sp
+.BI "fast-vm import_profile " "small-6.7 6.7 /tmp/alternative\-libvirt.xml /tmp/custom\-create\-hacks.sh /tmp/custom\-delete\-hacks.sh"
+.br
+.BI "fast-vm create " "small-6.7 41"
 
 .SH SEE ALSO
 .BR fast-vm.conf (5),
