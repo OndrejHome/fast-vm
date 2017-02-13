@@ -257,6 +257,10 @@ To use virtual machines with UEFI you will need a UEFI firmware for qemu which i
 When creating the custom image you will have to specify location of UEFI firmware and provide the location of UEFI variable files in
 .RI " " "/etc/libvirt/qemu.conf" " file so the libvirt can automaticaly take care of UEFI vars creation and deletion."
 
+.SH IMAGE PROFILES (from fast-vm-1.1)
+Profiles simplyfies the use of alternative libvirt XML files and hack files. Profile defines the set of alternative libvirt XML, hack files under one
+profile name that can be used as imageName when creating the new VM. If VM was created using profile this will be indicated in the list output of machines.
+
 .SH EXAMPLES
 Import local image into fast-vm
 .sp
@@ -283,6 +287,12 @@ Create machine with custom definition and hack file. Start it and after it's SSH
 .RB "Assign text note to VM. If note text is not provided, default editor from " "$EDITOR" " is launched."
 .sp
 .BI "fast-vm edit_note " "42 'this is testing machine'"
+
+.RB "Define new profile " "small-6.7" " based on image " "6.7" " with custom libvirt XML and hack files and create machine " "41" " using new profile"
+.sp
+.BI "fast-vm import_profile " "small-6.7 6.7 /tmp/alternative\-libvirt.xml /tmp/custom\-create\-hacks.sh /tmp/custom\-delete\-hacks.sh"
+.br
+.BI "fast-vm create " "small-6.7 41"
 
 .SH SEE ALSO
 .BR fast-vm.conf (5),
