@@ -535,6 +535,7 @@ case "$1" in
 		tmp_base_image=$(mktemp)
                 echo $image_name > $tmp_base_image
 		config_file_operation "cp $tmp_base_image" "${profile_name}/base_image"
+		config_file_operation "chmod +r" "${profile_name}/base_image"
 		rm -f $tmp_base_image
 		config_file_operation "cp $image_xml_path" "${profile_name}/config.xml"
 		config_file_operation "chmod +r" "${profile_name}/config.xml"
