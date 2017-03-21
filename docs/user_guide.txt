@@ -160,7 +160,7 @@ proper functionality</p>
 traditional Makefile that is available in the Git repository. To install use
 command below.</p>
 
-<pre>make install</pre>
+<pre># make install</pre>
 
 <h3 id='updates'>2.3. Updating <code>fast-vm</code></h3>
 <p>Always check the notes in <a
@@ -177,6 +177,167 @@ enough to check the <code>Makefile</code> and remove all files it creates in
 system. Additionally you can remove the directories
 <code>/etc/fast-vm/</code>, <code>$HOME/.fast-vm/</code>, and notes for fast-vm
 which gets by default generated int <code>/var/tmp/</code>.</p>
+
+<h3 id='configuring_fast-vm'>2.5. Configuring <code>fast-vm</code></h3>
+<p>After initial installation or update of <code>fast-vm</code> it is highly
+recommended to run command below to perform configuration with validation.</p>
+
+<pre># configure-fast-vm</pre>
+
+<p><b>Important:</b><code>configure-fast-vm</code> must be run as <code>root</code> user.</p>
+
+<p>Script will create and validate configuration file
+<code>/etc/fast-vm.conf</code>. Further it will allow during initial
+configuration the creation of storage for <code>fast-vm</code> and libvirt
+network that will provide networking to VMs.</p>
+
+<h4 id='configure-fast-vm-example'>2.5.1. <code>configure-fast-vm</code>
+walkthrough with examples</h4>
+
+a) Start configuration script.
+<pre>
+[root@mypc ~]# configure-fast-vm
+[inf] ==>> fast-vm configuration script
+You can run this script repeatedly and interrupt it with ctrl+c.
+Script will always recheck all configuration options. fast-vm system configuration will be saved in /etc/fast-vm.conf.
+</pre>
+
+b) Enter on which VG the fast-vm will have thinpool LV as storage.
+<pre>
+[?] VG for LVM thin pool
+ fast-vm is using LVM thin LV to store VM images and data.
+ On which existing VG should be this thin LV?
+[]: f25
+</pre>
+
+c) Provide name of thinpool LV. If thinpool LV doesn't exist script will create for you later.
+<pre>
+[?] LVM thin pool name
+ Name the thin LV on which data would be stored.
+ NOTE: This can be both 'name of existing thinpool LV' or 'name for a new one'.
+ If LV with this name doesn't exists, it will get created by this setup.
+[fastvm-pool]:
+</pre>
+
+d) (only when thinpool LV doesn't exit) Enter size for thinpool LV that will be created.
+<pre>
+[?] LVM thin pool size
+ You can use units understood by LVM like M,G,T.
+ NOTE: This applies only when thin LV doesn't exists yet.
+[50G]: 20G
+</pre>
+
+e) Enter prefix that will be used for VMs created in libvirt.
+<pre>
+[?] VM name prefix in libvirt
+ Prefix is used in VM names and VM drive names.
+[fastvm-]:
+</pre>
+
+f) Enter system group name that will be allowed to use fast-vm. Only one group is allowed.
+<pre>
+[?] Users that want to use fast-vm must be members of following group.
+ WARNING: if this group is different from 'libivrt' you would have to adjust libvirt configuration.
+ Please check the fast-vm.conf(5) if setting this to something else than 'libvirt'.
+[libvirt]:
+</pre>
+
+g) Enter name of libvirt network that will be used by fast-vm. If network doesn't exist the configurator will create it later.
+<pre>
+[?] Libvirt network (bridge) name
+ This configuration will create a libvirt
+ network with this name providing NAT for VMs.
+[fastvm-nat]:
+</pre>
+
+h) Choose the subnet number that will be used by fast-vm to allocate IP addresses.
+<pre>
+[?] Libvirt subnet number (192.168.XX.0/24)
+[22]: 23
+</pre>
+
+i) Choose directory in which fast-vm will store stateful data about VMs such as notes.
+<pre>
+[?] Directory in which to store VM notes
+[/var/tmp]:
+</pre>
+
+j) Decide if fast-vm should prevent delete of machines created by other users.
+<pre>
+[?] Only 'root' and 'owner' of VM should be able to delete VM through fast-vm?
+ "yes" - only 'root' and 'owner' can delete VM
+ "no" - anyone allowed to use fast-vm can delete VM (default in versions =< 0.9)
+[no]:
+</pre>
+
+k) (only if thinpool LV didn't existed) Configurator will ask if you wanna create the thinpool LV.
+<pre>
+[wrn] LV 'f25/fastvm-pool' not found
+Following commands would be executed to create thin pool:
+  lvcreate -n fastvm-pool -L 20G f25
+  lvconvert --type thin-pool f25/fastvm-pool
+[?] Create now? (y/n) y
+[inf] Creating ...
+  Logical volume "fastvm-pool" created.
+  WARNING: Converting logical volume f25/fastvm-pool to thin pool's data volume with metadata wiping.
+  THIS WILL DESTROY CONTENT OF LOGICAL VOLUME (filesystem etc.)
+Do you really want to convert f25/fastvm-pool? [y/n]: y
+  Converted f25/fastvm-pool to thin pool.
+[ok] LVM thinpool successfuly created
+</pre>
+
+l) (only if libvirt network didn't existed) Configurator will ask if to create libvirt network for fast-vm.
+<pre>
+[?] Network fastvm-nat is not defined in libvirt, define now? (y/n) y
+[inf] Creating ...
+Network fastvm-nat defined from /tmp/tmp.MBoYPmWE2g.xml
+
+Network fastvm-nat marked as autostarted
+
+Network fastvm-nat started
+
+[inf] fast-vm libvirt network created and autostarted
+</pre>
+
+m) End of configuration
+<pre>
+[ok] fast-vm configured
+</pre>
+
+<h3 id='ovmf_uefi_support'>2.6. UEFI boot support with OVMF</h3>
+<p>To use libvirt with UEFI boot a special firmware is required.
+<code>fast-vm</code> doesn't require any special configuration for UEFI boot
+except of having needed firmware and image that was pre-installed with UEFI
+support. More on how to install UEFI firmware into libvirt check <a
+href="https://fedoraproject.org/wiki/Using_UEFI_with_QEMU">Fedora: Using UEFI
+with QEMU</a> article.</p>
+
+<p>To use images provided by the Author with UEFI on Fedora following steps
+needs to be taken.</p>
+
+<p>1. Install package <code>edk2-ovmf</code> (Fedora 24+) containing firmware
+files.</p>
+<pre># dnf install edk2-ovmf</pre>
+
+<p>2. Ensure that <code>/etc/libvirt/qemu.conf</code> contains following
+variable with value below.</p>
+<pre>
+nvram = [
+   "/usr/share/OVMF/OVMF_CODE.fd:/usr/share/OVMF/OVMF_VARS.fd"
+      ]
+</pre>
+
+<p>3. Ensure that variable from previous steps is pointing to correct firmware
+files. With defaut installation on Fedora 24 the following additional commands
+are needed.</p>
+
+<pre>
+# mkdir /usr/share/OVMF  # as this directory is usually not present on system
+# ln -s /usr/share/edk2/ovmf/OVMF_CODE.fd /usr/share/OVMF/OVMF_CODE.fd
+# ln -s /usr/share/edk2/ovmf/OVMF_VARS.fd /usr/share/OVMF/OVMF_VARS.fd
+</pre>
+
+<p>For more information check also <a href="https://ssl.famera.cz/blog/computers/fast-vm-1.0-and-uefi.html">the blog post</a> of the Author.</p>
 
 <h2 id='basic_operations'>3. Basic operations in <code>fast-vm</code></h2>
 
