@@ -477,7 +477,7 @@ case "$1" in
 		if [ -b "/dev/$THINPOOL_VG/$VM_PREFIX$image_name" ]; then
 			pmsg $P_DEBUG "stopping and undefining the base VM of $image_name\n"
 			virsh --connect qemu:///system destroy $VM_PREFIX$image_name 2>&1|$DEBUG_LOG_CMD
-			virsh --connect qemu:///system undefine $VM_PREFIX$image_name --nvram 2>&1|$DEBUG_LOG_CMD
+			virsh --connect qemu:///system undefine $VM_PREFIX$image_name --nvram --managed-save 2>&1|$DEBUG_LOG_CMD
 			pmsg $P_DEBUG "removing LV $VM_PREFIX$image_name ...\n"
 			echo "lvremove" "/dev/$THINPOOL_VG/$VM_PREFIX$image_name" | sudo -n $FASTVM_HELPER
 			pmsg $P_DEBUG "removing XML and hack file(s) of $image_name...\n"
@@ -913,7 +913,7 @@ case "$1" in
 		if [ -f "$FASTVM_NOTES_DIR/$vm_number.profile" ]; then rm "$FASTVM_NOTES_DIR/$vm_number.profile"; fi
 
 		pmsg $P_DEBUG "undefining VM $vm_name from libvirt\n"
-		virsh --connect qemu:///system undefine $vm_name --nvram
+		virsh --connect qemu:///system undefine $vm_name --nvram --managed-save
 		if [ "$?" != '0' ]; then
 			pmsg $P_ERROR "failed to undefine VM $vm_name, check syslog for more information\n"
 			exit 1
