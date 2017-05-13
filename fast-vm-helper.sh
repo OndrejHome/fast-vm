@@ -93,13 +93,18 @@ case "$action" in
 
 		case "$arg1" in
 			base)
-				lvcreate -n $VM_PREFIX$arg2 -V 10G --thinpool $THINPOOL_VG/$THINPOOL_LV 2>&1|$DEBUG_LOG_CMD
+				arg3=$(echo "$arg3"|egrep '^[0-9]+$')
+				if  [ -z "$arg3" ]; then
+					echo "[err] LV size validation failed"
+					exit 1
+				fi
+				lvcreate -n $VM_PREFIX$arg2 -V ${arg3}G --thinpool $THINPOOL_VG/$THINPOOL_LV 2>&1|$DEBUG_LOG_CMD
 			;;
 			newvm)
 				lvcreate -k n -s --thinpool $THINPOOL_VG/$THINPOOL_LV /dev/$THINPOOL_VG/$VM_PREFIX$arg2 --name $VM_PREFIX$arg3 2>&1|$DEBUG_LOG_CMD
 			;;
 			*)
-				pmsg $P_ERROR "wrong action for lvcreat\n"
+				pmsg $P_ERROR "wrong action for lvcreate\n"
 				exit 1
 		esac
 		;;
