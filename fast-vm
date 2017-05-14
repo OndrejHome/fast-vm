@@ -160,6 +160,9 @@ usage () {
 		import_image)
 			echo "$0 import_image ImageName <empty |PathToImage> PathToLibvirtXML [PathToHacksFile] [PathToDeleteHackFile]"
 			;;
+		import_custom_image)
+			echo "$0 import_custom_image ImageSizeInGiB ImageName <empty |PathToImage> PathToLibvirtXML [PathToHacksFile] [PathToDeleteHackFile]"
+			;;
 		export_image)
 			echo "$0 export_image ImageName <xz|gz>"
 			;;
@@ -208,7 +211,7 @@ usage () {
 		*)
 			echo "== fast-vm version 1.1 <ofamera@redhat.com> =="
 			echo "$0 <action> <options>"
-			for cmd in import_image export_image remove_image import_profile remove_profile list_images create delete edit_note info list start stop console ssh;
+			for cmd in import_image import_custom_image export_image remove_image import_profile remove_profile list_images create delete edit_note info list start stop console ssh;
 			do
 				usage $cmd noexit
 			done
@@ -275,7 +278,13 @@ pv_ok="$?"
 
 #### main script
 case "$1" in
-	import_image)
+	import_image|import_custom_image)
+		unpacked_image_size="10"
+		if [ "$1" == "import_custom_image" ]; then
+			unpacked_image_size=$(echo "$2"|egrep '^[0-9]+$')
+			if [ -z "$unpacked_image_size" ]; then pmsg $P_ERROR "invalid image size. Use only whole decimal numbers\n"; usage import_custom_image; fi
+			shift
+		fi
 		image_name="$2"
 		if [ -z "$image_name" ]; then pmsg $P_ERROR "missing image name\n"; usage import_image; fi
 		image_name_stripped=$(echo "$image_name"|tr -d -C '[:alnum:]\-.')
@@ -349,7 +358,7 @@ case "$1" in
 
 		else
 			pmsg $P_DEBUG "creating LV $VM_PREFIX$image_name ...\n"
-			echo "lvcreate" "base" "$image_name" | sudo -n $FASTVM_HELPER
+			echo "lvcreate" "base" "$image_name" "$unpacked_image_size" | sudo -n $FASTVM_HELPER
 			if [ "$?" != "0" ]; then
 				pmsg $P_ERROR "Error creating thin LV for VM image\n"
 				exit 1
@@ -371,7 +380,7 @@ case "$1" in
 
 		if [ "$image_local" = "1" ]; then
 			if [ "$pv_ok" -eq '0' ]; then
-				$decompress_cmd "$image_path"| pv -s 10G | dd of=/dev/$THINPOOL_VG/$VM_PREFIX$image_name bs=1M conv=sparse
+				$decompress_cmd "$image_path"| pv -s ${unpacked_image_size}G | dd of=/dev/$THINPOOL_VG/$VM_PREFIX$image_name bs=1M conv=sparse
 				import_exit="$?"
 			else
 				pmsg $P_DEBUG "please wait while importing image (to show progress, install 'pv')\n"
@@ -381,7 +390,7 @@ case "$1" in
 		else
 			# import from http(s)
 			if [ "$pv_ok" -eq '0' ]; then
-				curl $CURL_OPTS -s "$image_path" | pv -N download -c -s "$image_size" | $decompress_cmd | pv -N unpack -c -s 10737418240 | dd of=/dev/$THINPOOL_VG/$VM_PREFIX$image_name bs=1M conv=sparse
+				curl $CURL_OPTS -s "$image_path" | pv -N download -c -s "$image_size" | $decompress_cmd | pv -N unpack -c -s ${unpacked_image_size}G | dd of=/dev/$THINPOOL_VG/$VM_PREFIX$image_name bs=1M conv=sparse
 				import_exit="$?"
 			else
 				pmsg $P_DEBUG "please wait while importing image (to show image write progress, install 'pv')\n"

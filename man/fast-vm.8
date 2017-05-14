@@ -11,7 +11,17 @@ fast-vm \(em script for defining VMs from images provided in thin LVM pool
 .IR ImageName
 .RB < empty
 .RI | PathToImage >
-.IR PathToLibvirtXML 
+.IR PathToLibvirtXML
+.RI [ PathToHacksFile ]
+.RI [ PathToDeleteHacksFile ]
+
+.B fast-vm
+.BR import_custom_image
+.IR ImageSizeInGiB
+.IR ImageName
+.RB < empty
+.RI | PathToImage >
+.IR PathToLibvirtXML
 .RI [ PathToHacksFile ]
 .RI [ PathToDeleteHacksFile ]
 
