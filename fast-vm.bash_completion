@@ -98,7 +98,7 @@ _fast-vm()
 		import_image|import_custom_image|import_profile)
 			return 0
 			;;
-		create|remove_image|export_image)
+		create|remove_image|export_image|resize_image)
 			local image_name
 			local profile_name
 
@@ -122,10 +122,10 @@ _fast-vm()
 			COMPREPLY=( $( compgen -W "all active inactive" -- "$cur" ) )
 			return 0
 			;;
-		start|stop|delete|console|ssh|info)
+		start|stop|delete|console|ssh|info|resize)
 			local vm_numbers
 			case $prev in
-				start)
+				start|resize)
 					vm_numbers=$(fast-vm list inactive short)
 				;;
 				delete|edit_note|info)
@@ -142,7 +142,7 @@ _fast-vm()
 
 	$split && return 0
 	if [ "$cword" -lt 2 ]; then
-		COMPREPLY=( $( compgen -W 'import_image import_custom_image export_image remove_image import_profile remove_profile edit_note list_images list_profiles create start stop delete console ssh list info' -- "$cur" ) )
+		COMPREPLY=( $( compgen -W 'import_image import_custom_image export_image remove_image resize_image import_profile remove_profile edit_note list_images list_profiles create start stop delete resize console ssh list info' -- "$cur" ) )
 		return 0
 	fi
 

@@ -35,6 +35,11 @@ fast-vm \(em script for defining VMs from images provided in thin LVM pool
 .IR ImageName
 
 .B fast-vm
+.BR resize_image
+.IR ImageName
+.IR NewImageSizeInGiB
+
+.B fast-vm
 .BR import_profile
 .IR ProfileName
 .IR ImageName
@@ -75,6 +80,11 @@ fast-vm \(em script for defining VMs from images provided in thin LVM pool
 .B edit_note
 .I VmNumber
 .RI [ NoteText ]
+
+.B fast-vm
+.B resize
+.I VmNumber
+.I NewSizeInGiB
 
 .B fast-vm
 .B list

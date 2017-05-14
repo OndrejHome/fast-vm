@@ -169,6 +169,9 @@ usage () {
 		remove_image)
 			echo "$0 remove_image ImageName"
 			;;
+		resize_image)
+			echo "$0 resize_image ImageName NewImageSizeInGiB"
+			;;
 		import_profile)
 			echo "$0 import_profile ProfileName ImageName PathToLibvirtXML [PathToHacksFile] [PathToDeleteHackFile]"
 			;;
@@ -202,6 +205,9 @@ usage () {
 		edit_note)
 			echo "$0 edit_note VmNumber [NoteText]"
 			;;
+		resize)
+			echo "$0 resize VmNumber NewSizeInGiB"
+			;;
 		info)
 			echo "$0 info VmNumber"
 			;;
@@ -211,7 +217,7 @@ usage () {
 		*)
 			echo "== fast-vm version 1.1 <ofamera@redhat.com> =="
 			echo "$0 <action> <options>"
-			for cmd in import_image import_custom_image export_image remove_image import_profile remove_profile list_images create delete edit_note info list start stop console ssh;
+			for cmd in import_image import_custom_image export_image remove_image resize_image import_profile remove_profile list_images create delete edit_note resize info list start stop console ssh;
 			do
 				usage $cmd noexit
 			done
@@ -570,6 +576,28 @@ case "$1" in
 
 		config_file_operation "rm -rf" "$profile_name"
 		pmsg $P_INFO "Profile $profile_name removed\n"
+		;;
+	resize_image)
+		image_name="$2"
+		new_size=$(echo "$3"|egrep '^[0-9]+$')
+
+		if [ -z "$image_name" ]; then pmsg $P_ERROR "missing image name\n"; usage resize_image; fi
+		if [ -z "$new_size" ]; then pmsg $P_ERROR "invalid image size. Use only whole decimal numbers\n"; usage resize_image; fi
+
+		if [ -b "/dev/$THINPOOL_VG/$VM_PREFIX$image_name" ]; then
+			#FIXME due to handling of logging in fast-vm-helper we might not receive error code if something went wrong
+			pmsg $P_DEBUG "resizing image $image_name to ${new_size}G\n"
+			echo "lvresize" "/dev/$THINPOOL_VG/$VM_PREFIX$image_name" "$new_size" | sudo -n $FASTVM_HELPER
+			if [ "$?" == 0 ]; then
+				pmsg $P_INFO "Only newly created VMs from this image will use new size.\n"
+				pmsg $P_INFO "Resize of image to ${new_size}G succeeded.\n"
+			else
+				pmsg $P_ERROR "Resize failed. Check logs for more details\n"
+			fi
+		else
+			pmsg $P_ERROR "image "$image_name" not found\n"
+			usage resize_image
+		fi
 		;;
 	create)
 		image_name="$2"
@@ -949,6 +977,26 @@ case "$1" in
 			fi
 			# edit also title in libvirt XMl definition so applications like virt-manager can show same notes as seen in 'fast-vm list'
 			virsh --connect qemu:///system desc $vm_name --title --new-desc "$vm_number $owner $3" --config
+		fi
+		;;
+	resize)
+		vm_number="$2"
+		if [ -z "$vm_number" ]; then pmsg $P_ERROR "VM number missing\n"; usage start; fi
+
+		check_vm_number "$vm_number" "active"
+
+		vm_name=$(virsh --connect qemu:///system list --all |grep "$VM_PREFIX"|awk '{print $2}'|egrep "\-$vm_number$")
+
+		new_size=$(echo "$3"|egrep '^[0-9]+$')
+		if [ -z "$new_size" ]; then pmsg $P_ERROR "invalid size. Use only whole decimal numbers\n"; usage resize; fi
+
+		#FIXME due to handling of logging in fast-vm-helper we might not receive error code if something went wrong
+		pmsg $P_DEBUG "resizing $vm_name disk to ${new_size}G\n"
+		echo "lvresize" "/dev/$THINPOOL_VG/$vm_name" "$new_size" | sudo -n $FASTVM_HELPER
+		if [ "$?" == 0 ]; then
+			pmsg $P_INFO "VM $vm_number resize to ${new_size}G succeeded.\n"
+		else
+			pmsg $P_ERROR "Resize failed. Check logs for more details\n"
 		fi
 		;;
 	list)

@@ -95,7 +95,7 @@ case "$action" in
 			base)
 				arg3=$(echo "$arg3"|egrep '^[0-9]+$')
 				if  [ -z "$arg3" ]; then
-					echo "[err] LV size validation failed"
+					pmsg $P_ERROR "LV size validation failed\n"
 					exit 1
 				fi
 				lvcreate -n $VM_PREFIX$arg2 -V ${arg3}G --thinpool $THINPOOL_VG/$THINPOOL_LV 2>&1|$DEBUG_LOG_CMD
@@ -116,6 +116,20 @@ case "$action" in
 		fi
 
 		lvremove -f "$arg1" 2>&1|$DEBUG_LOG_CMD
+		;;
+	lvresize)
+		arg1=$(echo "$arg1" | egrep "/dev/$THINPOOL_VG/$VM_PREFIX[a-zA-Z0-9.-]+$")
+		if [ -z "$arg1" ] || [ ! -b "$arg1" ]; then
+			pmsg $P_ERROR "LV not found, not a block device or not allowed to be resized\n"
+			exit 1
+		fi
+		arg2=$(echo "$arg2"|egrep '^[0-9]+$')
+		if  [ -z "$arg2" ]; then
+			pmsg $P_ERROR "LV size validation failed\n"
+			exit 1
+		fi
+
+		lvresize -f -L ${arg2}G "$arg1" 2>&1|$DEBUG_LOG_CMD
 		;;
 	chgrp)
 		arg1=$(echo "$arg1" | egrep "/dev/$THINPOOL_VG/$VM_PREFIX[a-zA-Z0-9.-]+$")
