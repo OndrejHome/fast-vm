@@ -741,9 +741,12 @@ case "$1" in
 		echo "lvcreate" "newvm" "$image_name" "$image_name-$vm_number" | sudo -n $FASTVM_HELPER
 		echo "chgrp" "/dev/$THINPOOL_VG/$VM_PREFIX$image_name-$vm_number" | sudo -n $FASTVM_HELPER
 
-		pmsg $P_DEBUG "adding static lease for 192.168.$SUBNET_NUMBER.$vm_number into libvirts DHCP\n"
-		VM_MAC=$(virsh --connect qemu:///system dumpxml "$VM_PREFIX$image_name-$vm_number"|xmllint --xpath "//interface[.//source[@network='$LIBVIRT_NETWORK']]/mac/@address" -|cut -d\" -f 2|head -1)
-		virsh --connect qemu:///system net-update "$LIBVIRT_NETWORK" add-last ip-dhcp-host --xml "<host mac='$VM_MAC' ip='192.168.$SUBNET_NUMBER.$vm_number'/>" --live --config 2>&1|$DEBUG_LOG_CMD
+		## add DHCP reservation only if the VM has the interface for fast-vm network
+		VM_MAC=$(virsh --connect qemu:///system dumpxml "$VM_PREFIX$image_name-$vm_number"|xmllint --xpath "//interface[.//source[@network='$LIBVIRT_NETWORK']]/mac/@address" - 2>/dev/null|cut -d\" -f 2|head -1)
+		if [ ! -z "$VM_MAC" ]; then
+			pmsg $P_DEBUG "adding static lease for 192.168.$SUBNET_NUMBER.$vm_number into libvirts DHCP\n"
+			virsh --connect qemu:///system net-update "$LIBVIRT_NETWORK" add-last ip-dhcp-host --xml "<host mac='$VM_MAC' ip='192.168.$SUBNET_NUMBER.$vm_number'/>" --live --config 2>&1|$DEBUG_LOG_CMD
+		fi
 
 		# source file with hacks and apply them
 		if [ ! -z "$hack_file" ]; then
@@ -918,18 +921,20 @@ case "$1" in
 			fi
 		fi
 
-		VM_MAC=$(virsh --connect qemu:///system dumpxml "$vm_name"|xmllint --xpath "//interface[.//source[@network='$LIBVIRT_NETWORK']]/mac/@address" -|cut -d\" -f 2|head -1)
+		VM_MAC=$(virsh --connect qemu:///system dumpxml "$vm_name"|xmllint --xpath "//interface[.//source[@network='$LIBVIRT_NETWORK']]/mac/@address" - 2>/dev/null|cut -d\" -f 2|head -1)
+		if [ ! -z "$VM_MAC" ]; then
+			pmsg $P_DEBUG "removing DHCP reservation 192.168.$SUBNET_NUMBER.$vm_number for $VM_MAC\n"
+			virsh --connect qemu:///system net-update "$LIBVIRT_NETWORK" delete ip-dhcp-host --xml "<host mac='$VM_MAC' ip='192.168.$SUBNET_NUMBER.$vm_number'/>" --live --config
+			if [ "$?" != '0' ]; then
+				pmsg $P_WARNING "failed to remove DHCP reservation 192.168.$SUBNET_NUMBER.$vm_number for $VM_MAC from libvirt, check syslog for more information\n"
+			fi
 
-		pmsg $P_DEBUG "removing DHCP reservation 192.168.$SUBNET_NUMBER.$vm_number for $VM_MAC\n"
-		virsh --connect qemu:///system net-update "$LIBVIRT_NETWORK" delete ip-dhcp-host --xml "<host mac='$VM_MAC' ip='192.168.$SUBNET_NUMBER.$vm_number'/>" --live --config
-		if [ "$?" != '0' ]; then
-			pmsg $P_WARNING "failed to remove DHCP reservation 192.168.$SUBNET_NUMBER.$vm_number for $VM_MAC from libvirt, check syslog for more information\n"
-		fi
-		PATH="$PATH:/usr/sbin" which dhcp_release >/dev/null 2>&1
-		if [ "$?" -eq '0' ]; then
-			echo "dhcp_release" "$LIBVIRT_NETWORK" "$vm_number" "$VM_MAC" | sudo -n $FASTVM_HELPER
-		else
-			pmsg $P_WARNING "dhcp_release not found, to reuse the same VM number you would need to delete DHCP leases file for $LIBVIRT_NETWORK network and restart this network in the libvirt.\nhttp://lists.thekelleys.org.uk/pipermail/dnsmasq-discuss/2007q1/001094.html\n"
+			PATH="$PATH:/usr/sbin" which dhcp_release >/dev/null 2>&1
+			if [ "$?" -eq '0' ]; then
+				echo "dhcp_release" "$LIBVIRT_NETWORK" "$vm_number" "$VM_MAC" | sudo -n $FASTVM_HELPER
+			else
+				pmsg $P_WARNING "dhcp_release not found, to reuse the same VM number you would need to delete DHCP leases file for $LIBVIRT_NETWORK network and restart this network in the libvirt.\nhttp://lists.thekelleys.org.uk/pipermail/dnsmasq-discuss/2007q1/001094.html\n"
+			fi
 		fi
 		
 		pmsg $P_DEBUG "removing VM drive\n"
