@@ -501,7 +501,7 @@ case "$1" in
 			config_file_operation "rm" "delete-hacks-${image_name}.sh"
 			pmsg $P_INFO "image $image_name removed\n"
 		else
-			pmsg $P_ERROR "image "$image_name" not found\n"
+			pmsg $P_ERROR "image $image_name not found\n"
 			usage remove_image
 		fi
 		;;
@@ -595,7 +595,7 @@ case "$1" in
 				pmsg $P_ERROR "Resize failed. Check logs for more details\n"
 			fi
 		else
-			pmsg $P_ERROR "image "$image_name" not found\n"
+			pmsg $P_ERROR "Image $image_name not found\n"
 			usage resize_image
 		fi
 		;;
