@@ -685,9 +685,10 @@ case "$1" in
 		# special case for creating only base image
 		if [ "$vm_number" = "base" ]; then
 			VM_NAME="$VM_PREFIX$image_name"
+			VM_HEX_NUMBER=$(printf "%2x" $vm_number)
 			
 			tmp_xml=$(mktemp --suffix=.xml)
-			sed -e "s/VM_NAME/$VM_PREFIX$image_name/g; s/THINPOOL_VG/$THINPOOL_VG/g; s/LIBVIRT_NETWORK/$LIBVIRT_NETWORK/g; s/VM_NUMBER/$vm_number/g;" "$image_xml_path" > $tmp_xml
+			sed -e "s/VM_NAME/$VM_PREFIX$image_name/g; s/THINPOOL_VG/$THINPOOL_VG/g; s/LIBVIRT_NETWORK/$LIBVIRT_NETWORK/g; s/VM_NUMBER/$vm_number/g; s/VM_HEX_NUMBER/$VM_HEX_NUMBER/g;" "$image_xml_path" > $tmp_xml
 			virsh --connect qemu:///system define $tmp_xml
 			if [ ! "$?" -eq '0' ]; then
 				pmsg $P_ERROR "defining base VM for $image_name failed, doesn't it exists already?\n"
@@ -725,10 +726,11 @@ case "$1" in
 
 		## create regular machine
 		VM_NAME="$VM_PREFIX$image_name-$vm_number"
+		VM_HEX_NUMBER=$(printf "%2x" $vm_number)
 
 		pmsg $P_DEBUG "defining virtual machine '$VM_PREFIX$image_name-$vm_number' in libvirt\n"
 		tmp_xml=$(mktemp --suffix=.xml)
-		sed -e "s/VM_NAME/$VM_PREFIX$image_name-$vm_number/g; s/THINPOOL_VG/$THINPOOL_VG/g; s/LIBVIRT_NETWORK/$LIBVIRT_NETWORK/g; s/VM_NUMBER/$vm_number/g;" "$image_xml_path" > $tmp_xml
+		sed -e "s/VM_NAME/$VM_PREFIX$image_name-$vm_number/g; s/THINPOOL_VG/$THINPOOL_VG/g; s/LIBVIRT_NETWORK/$LIBVIRT_NETWORK/g; s/VM_NUMBER/$vm_number/g; s/VM_HEX_NUMBER/$VM_HEX_NUMBER/g;" "$image_xml_path" > $tmp_xml
 		virsh --connect qemu:///system define $tmp_xml
 		if [ ! "$?" -eq '0' ]; then
 			pmsg $P_ERROR "Unable to define virtual machine from $tmp_xml. Check syslog for more details\n"
