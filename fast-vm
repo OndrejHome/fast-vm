@@ -358,6 +358,13 @@ case "$1" in
 			fi
 		fi
 
+		# try to autodect the size of image from filename
+		autodetected_size=$(basename "$image_path"|sed -nr 's/^([0-9]+)g__.*$/\1/gp')
+		if [ "$1" == "import_image" ] && [ ! -z "$autodetected_size" ]; then
+			unpacked_image_size=$autodetected_size
+			pmsg $P_DEBUG "Size of image was determined from the filename to be ${autodetected_size}G.\n"
+		fi
+
 		if [ -b "/dev/$THINPOOL_VG/$VM_PREFIX$image_name" ]; then
 			pmsg $P_ERROR "base image for '$image_name' version already exists. To remove image use 'remove_image' parameter\n"
 			exit 1
