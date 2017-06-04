@@ -1,4 +1,4 @@
-.TH FAST-VM 8 "fast-vm 1.1 (2017-02-04)" "fast-vm" "fast-vm" \" -*- nroff -*-
+.TH FAST-VM 8 "fast-vm 1.1 (2017-06-04)" "fast-vm" "fast-vm" \" -*- nroff -*-
 .SH NAME
 fast-vm \(em script for defining VMs from images provided in thin LVM pool
 .SH SYNOPSIS
@@ -139,7 +139,9 @@ is part of the LV name and libvirt machine name.
 .br
 .BI "PathToImage " http://url/to/image.{gz,xz}
 .sp
-Local path or http/https URL to image file in GZIP or XZ format.
+Local path or http/https URL to image file in GZIP or XZ format. From fast-vm-1.2 if the filename of image matches regular
+expression "[0-9]+g__" then the number before 'g' is used as the image size that will be imported (this can be overriden by
+.RB "using the " "import_custom_image" " action)."
 
 .TP
 .B PathToLibvirtXML
