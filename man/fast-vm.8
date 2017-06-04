@@ -273,6 +273,11 @@ When creating the custom image you will have to specify location of UEFI firmwar
 Profiles simplyfies the use of alternative libvirt XML files and hack files. Profile defines the set of alternative libvirt XML, hack files under one
 profile name that can be used as imageName when creating the new VM. If VM was created using profile this will be indicated in the list output of machines.
 
+.SH RESIZING DISKS (from fast-vm-1.2)
+Disks can be resized in both images and created VMs. Resizing the image disk will affect only newly created VMs from that disk.
+.br
+.BR "WARNING: " "Shrinking disk size (making size of disk smaller) can cause DATA LOSS. THink before doing so. You will NOT be prompted to confirm your choice."
+
 .SH EXAMPLES
 Import local image into fast-vm
 .sp
@@ -305,6 +310,14 @@ Create machine with custom definition and hack file. Start it and after it's SSH
 .BI "fast-vm import_profile " "small-6.7 6.7 /tmp/alternative\-libvirt.xml /tmp/custom\-create\-hacks.sh /tmp/custom\-delete\-hacks.sh"
 .br
 .BI "fast-vm create " "small-6.7 41"
+
+.RB "Change disk size of the VM number " "42" " to " "20" " GB."
+.sp
+.BI "fast-vm resize " "42 20"
+
+.RB "Change disk size of image " "small-6.7" " to " "40" " GB. All VMs created from this image after this change will have disk with " "40" " GB. Previously created VM are unaffected."
+.sp
+.BI "fast-vm resize_image " "small-67 40"
 
 .SH SEE ALSO
 .BR fast-vm.conf (5),
