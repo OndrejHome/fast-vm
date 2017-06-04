@@ -54,6 +54,13 @@ ask_question () {
 
 printf "$o_inf ==>> fast-vm configuration script\nYou can run this script repeatedly and interrupt it with ctrl+c.\nScript will always recheck all configuration options. fast-vm system configuration will be saved in /etc/fast-vm.conf.\n\n"
 
+## check if we can connect to libvirt and if not, inform the user that it is needed
+virsh_test=$(virsh --connect qemu:///system exit >/dev/null 2>&1)
+if [ "$?" != '0' ]; then
+	printf "$o_err libvirt daemon is not running or we cannot connect to it.\nEnsure that libvirt service is running and that you can connect to it using command 'virsh --connect qemu:///system' and then re-run this configuration script.\n"
+	exit 1
+fi
+
 success=0
 while [ "$success" -eq 0 ];
 do
