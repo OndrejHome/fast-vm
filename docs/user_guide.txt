@@ -304,6 +304,28 @@ m) End of configuration
 [ok] fast-vm configured
 </pre>
 
+<h4 id='configure_lvm_filters'>2.5.2. (optional) Configure LVM filters</h4>
+Optional but recommended is to filter out detection of LVM on the VG that
+holds the thinpool LV for fast-vm. For example if you use VG <code>f25</code>
+then following entries can be add into LVM <code>filter =</code>.
+
+<pre>
+"r|/dev/f25/.*|"
+"r|/dev/mapper/f25-.*|"
+</pre>
+
+Example of incorporating the above filter into <code>/etc/lvm/lvm.conf</code>.
+<pre>
+...
+devicec {
+   ...
+   filter = [ "r|/dev/nbd.*|", "r|/dev/f25/.*|", "r|/dev/mapper/f25-.*|", "a|.*|" ]
+   ...
+}
+...
+</pre>
+NOTE: Final filter configuration depends heavilly on your environment/system.
+
 <h3 id='ovmf_uefi_support'>2.6. UEFI boot support with OVMF</h3>
 <p>To use libvirt with UEFI boot a special firmware is required.
 <code>fast-vm</code> doesn't require any special configuration for UEFI boot
