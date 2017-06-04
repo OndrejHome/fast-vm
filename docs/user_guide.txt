@@ -530,6 +530,28 @@ import the same Image twice (meaning taking up disk space twice).</p>
 <pre># fast-vm import_profile &lt;ProfileName&gt; &lt;ImageName&gt; &lt;PathToLibvirtXML&gt; &lt;PathToHacksFile&gt; &lt;PathToDeleteHackFile&gt;</pre>
 <p>Last two parameters are optional the same way as when importing the Image.</p>
 
+<h3 id='resizing_disks_of_vms_and_images'>3.9. Resizing the disks of VMs and
+Images (from <code>fast-vm-1.2</code>)</h3>
+<p>In case you want to change the size of disks in either Image or existing VM
+you can use one of the following commands to do so:</p>
+
+Resizing the disk of <code>fast-vm</code> VM to new value
+<pre>
+# fast-vm resize <VM_number> <New_disk_size_in_GB>
+</pre>
+
+Resizing the disk of <code>fast-vm</code> imported Image.
+<pre>
+# fast-vm resize_image <Image_name> <New_Image_disk_size_in_GB>
+</pre>
+
+<p><b>WARNING: </b> <code>fast-vm</code> will resize the disk regardless of
+the position of data on it which means that you can loose data if they are not
+within new disk size.</p>
+
+<p>If the Image disk size is changed the VMs newly created from it will have
+this new size. Old VMs will be unaffected by the Image disk size change.</p>
+
 <h2 id='advanced_operation'>4. Advanced operations</h2>
 <p>This part of guide covers some advanced use cases for <code>fast-vm</code>.
 Note that this is not exhaustive list of all possibilities and in general as
@@ -603,8 +625,9 @@ connection string to let know it where the <code>fast-vm server</code> is.</p>
 <code>fast-vm</code></h3>
 <p><code>fast-vm</code> is made the way that it provides support for creating
 your own Images for use and sharing with others and aims at making this one of
-its main features. Currently there is limitation on use of 10GB disk file for
-any <code>fast-vm</code> Image(this may change in future releases).</p>
+its main features. Before <code>fast-vm-1.2</code> it was possible to create
+only Images with disk size of 10GB. From <code>fast-vm-1.2</code> you are able to
+specify custom size of Image in GB and to resize any existing Image.</p>
 
 <p>The process of creating custom Image can be summarized into following steps
 which are described more in detail in man page (<code>man fast-vm</code>)
