@@ -995,7 +995,7 @@ case "$1" in
 		;;
 	resize)
 		vm_number="$2"
-		if [ -z "$vm_number" ]; then pmsg $P_ERROR "VM number missing\n"; usage start; fi
+		if [ -z "$vm_number" ]; then pmsg $P_ERROR "VM number missing\n"; usage resize; fi
 
 		check_vm_number "$vm_number" "active"
 
