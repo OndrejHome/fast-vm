@@ -1,5 +1,5 @@
 Name:		fast-vm
-Version:	1.1
+Version:	1.2
 Release:	1%{?dist}
 Summary:	Script for defining VMs from images provided in thin LVM pool
 
@@ -64,6 +64,13 @@ drive of new machine before starting VM using the 'hack files'.
 %config(noreplace) %{_sysconfdir}/sudoers.d/%{name}-sudoers
 
 %changelog
+* Sun Jun 04 2017 Ondrej Famera <ofamera@redhat.com> 1.2-1
+- allow custom sizes of images allow image resizing
+- show disk sizes in listings of VMs and images
+- allow use of external networks not managed by fast-vm
+- improve configure-fast-vm scripts to assist more
+- various fixes
+
 * Mon Feb 13 2017 Ondrej Famera <ofamera@redhat.com> 1.1-1
 - image profiles support
 - delete hack files added

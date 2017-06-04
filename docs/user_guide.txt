@@ -1,7 +1,8 @@
 fast-vm User Guide
 
 <ul>
-<li>This is <b>draft</b> of User Guide for <code>fast-vm</code> version 1.1.</li>
+<li>This is <b>draft</b> of User Guide for <code>fast-vm</code> version 1.1.
+and 1.2.</li>
 <li>If you have find an mistake (and you bet there are some) or would like to
 request some part to be documented in this guide that you use please get in
 touch with <a href="https://ssl.famera.cz/blog/about.html">the Author</a>.</li>
