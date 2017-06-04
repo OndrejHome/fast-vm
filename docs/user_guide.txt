@@ -155,7 +155,7 @@ proper functionality</p>
 <pre># yum install libguestfs-tools-c
 # dnf install libguestfs-tools-c</pre>
 
-<h3 id='installaton_manual'>2.2. Manual installation from source code</h3>
+<h3 id='installation_manual'>2.2. Manual installation from source code</h3>
 <p>On system that doesn't use RPM you can install <code>fast-vm</code> using
 traditional Makefile that is available in the Git repository. To install use
 command below.</p>
