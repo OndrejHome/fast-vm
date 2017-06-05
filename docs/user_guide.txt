@@ -338,9 +338,15 @@ with QEMU</a> article.</p>
 <p>To use images provided by the Author with UEFI on Fedora following steps
 needs to be taken.</p>
 
-<p>1. Install package <code>edk2-ovmf</code> (Fedora 24+) containing firmware
+<p>1a. (Fedora 24+) Install package <code>edk2-ovmf</code> containing firmware
 files.</p>
 <pre># dnf install edk2-ovmf</pre>
+
+<p>1b. (CentOS/RHEL) Download the
+<code>edk2.git-ovmf-x64-xxxxx.noarch.rpm</code> from <a
+href="https://www.kraxel.org/repos/jenkins/edk2/">OVMF generated RPMs</a> and
+install it manualy using <code>yum</code>.
+</p>
 
 <p>2. Ensure that <code>/etc/libvirt/qemu.conf</code> contains following
 variable with value below.</p>
@@ -350,7 +356,7 @@ nvram = [
       ]
 </pre>
 
-<p>3. Ensure that variable from previous steps is pointing to correct firmware
+<p>3a. (Fedora 24+) Ensure that variable from previous steps is pointing to correct firmware
 files. With defaut installation on Fedora 24 the following additional commands
 are needed.</p>
 
@@ -360,7 +366,16 @@ are needed.</p>
 # ln -s /usr/share/edk2/ovmf/OVMF_VARS.fd /usr/share/OVMF/OVMF_VARS.fd
 </pre>
 
-<p>For more information check also <a href="https://ssl.famera.cz/blog/computers/fast-vm-1.0-and-uefi.html">the blog post</a> of the Author.</p>
+<p>3b. (CentOS/RHEL) Ensure that variable from previous steps is pointing to correct 
+firmware files. WHen using package from <a 
+href="https://www.kraxel.org/repos/jenkins/edk2/">OVMF generated RPMs</a>.
+</p> the following additional commands are needed.</p>
+
+<pre>
+# mkdir /usr/share/OVMF  # as this directory is usually not present on system
+# ln -s /usr/share/edk2.git/ovmf-x64/OVMF_CODE-pure-efi.fd /usr/share/OVMF/OVMF_CODE.fd
+# ln -s /usr/share/edk2.git/ovmf-x64/OVMF_VARS-pure-efi.fd /usr/share/OVMF/OVMF_VARS.fd
+</pre>
 
 <h2 id='basic_operations'>3. Basic operations in <code>fast-vm</code></h2>
 
