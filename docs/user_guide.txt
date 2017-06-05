@@ -141,10 +141,16 @@ and Fedora. Below are examples on how to install the current release on these
 distribution.</p>
 
 <p>Fedora 25</p>
-<pre># dnf install https://github.com/OndrejHome/fast-vm/releases/download/1.1/fast-vm-1.1-1.fc25.noarch.rpm</pre>
+<pre>
+# curl -o /etc/yum.repos.d/fast-vm.repo https://copr.fedorainfracloud.org/coprs/ondrejhome/fast-vm/repo/fedora-25/ondrejhome-fast-vm-fedora-25.repo
+# dnf install fast-vm
+</pre>
 
 <p>CentOS 7.3/RHEL 7.3</p>
-<pre># yum install https://github.com/OndrejHome/fast-vm/releases/download/1.1/fast-vm-1.1-1.el7.centos.noarch.rpm</pre>
+<pre>
+# curl -o /etc/yum.repos.d/fast-vm.repo https://copr.fedorainfracloud.org/coprs/ondrejhome/fast-vm/repo/epel-7/ondrejhome-fast-vm-epel-7.repo
+# yum install fast-vm
+</pre>
 
 <p>On both RHEL and CentOS is strongly recommended to install following
 additional packages which improves features provided by <code>fast-vm</code></p>
@@ -169,13 +175,29 @@ href="https://github.com/OndrejHome/fast-vm/releases">GitHub Release</a>
 before updating to see if there were any changes requiring additional steps
 after update.</p>
 
-<h3 id='unistall'>2.4. Uninstalling <code>fast-vm</code></h3>
+<p>When using repository in Fedora/CentOS/RHEL just use the update command as
+show below.</p>
+
+<pre>
+# dnf update fast-vm
+# yum update fast-vm
+</pre>
+
+<h3 id='uninstall'>2.4. Uninstalling <code>fast-vm</code></h3>
 <p>If you don't like <code>fast-vm</code> please consider leaving me a
 feedback on what you don't like or what could get improved so you can use it.</p>
 
-<p>Currently there is no automated way of unistalling but in general it is
-enough to check the <code>Makefile</code> and remove all files it creates in
-system. Additionally you can remove the directories
+<p>If you have installed <code>fast-vm</code> from RPM then just uninstall the
+package.</p>
+
+<pre>
+# dnf remove fast-vm
+# yum remove fast-vm
+</pre>
+
+<p>If you have used manual installation there is currently no automated way 
+of unistalling but in general it is enough to check the <code>Makefile</code> 
+and remove all files it creates in system. Additionally you can remove the directories
 <code>/etc/fast-vm/</code>, <code>$HOME/.fast-vm/</code>, and notes for fast-vm
 which gets by default generated int <code>/var/tmp/</code>.</p>
 
