@@ -132,7 +132,7 @@ case "$action" in
 		lvresize -f -L ${arg2}G "$arg1" 2>&1|$DEBUG_LOG_CMD
 		;;
 	lvs)
-		lvs $THINPOOL_VG -o lv_name,lv_size,data_percent,role --separator ' ' |grep $THINPOOL_LV
+		lvs $THINPOOL_VG -o lv_name,lv_size,data_percent,role --separator ' ' |egrep "($THINPOOL_LV|$VM_PREFIX)"
 		;;
 	chgrp)
 		arg1=$(echo "$arg1" | egrep "/dev/$THINPOOL_VG/$VM_PREFIX[a-zA-Z0-9.-]+$")
