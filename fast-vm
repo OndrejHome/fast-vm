@@ -692,7 +692,7 @@ case "$1" in
 		# special case for creating only base image
 		if [ "$vm_number" = "base" ]; then
 			VM_NAME="$VM_PREFIX$image_name"
-			VM_HEX_NUMBER=$(printf "%2x" $vm_number)
+			VM_HEX_NUMBER='01'
 			
 			tmp_xml=$(mktemp --suffix=.xml)
 			sed -e "s/VM_NAME/$VM_PREFIX$image_name/g; s/THINPOOL_VG/$THINPOOL_VG/g; s/LIBVIRT_NETWORK/$LIBVIRT_NETWORK/g; s/VM_NUMBER/$vm_number/g; s/VM_HEX_NUMBER/$VM_HEX_NUMBER/g; s/IMAGE_NAME/$image_name/g;" "$image_xml_path" > $tmp_xml
