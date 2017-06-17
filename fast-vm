@@ -743,6 +743,8 @@ case "$1" in
 			pmsg $P_ERROR "Unable to define virtual machine from $tmp_xml. Check syslog for more details\n"
 			exit 2
 		fi
+		# update libvirt XML with VM description
+		virsh --connect qemu:///system desc $VM_NAME --title --new-desc "$vm_number $(whoami)" --config
 
 		pmsg $P_DEBUG "creating disk '$VM_PREFIX$image_name-$vm_number'\n"
 		echo "lvcreate" "newvm" "$image_name" "$image_name-$vm_number" | sudo -n $FASTVM_HELPER
