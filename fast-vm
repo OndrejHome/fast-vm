@@ -744,7 +744,7 @@ case "$1" in
 			exit 2
 		fi
 		# update libvirt XML with VM description
-		virsh --connect qemu:///system desc $VM_NAME --title --new-desc "$vm_number $(whoami)" --config
+		virsh --connect qemu:///system desc $VM_NAME --title --new-desc "$(printf '%03d' $vm_number) $(whoami)" --config
 
 		pmsg $P_DEBUG "creating disk '$VM_PREFIX$image_name-$vm_number'\n"
 		echo "lvcreate" "newvm" "$image_name" "$image_name-$vm_number" | sudo -n $FASTVM_HELPER
@@ -992,7 +992,7 @@ case "$1" in
 				owner=$(stat --format="%U" "$FASTVM_NOTES_DIR/$vm_number")
 			fi
 			# edit also title in libvirt XMl definition so applications like virt-manager can show same notes as seen in 'fast-vm list'
-			virsh --connect qemu:///system desc $vm_name --title --new-desc "$vm_number $owner $3" --config
+			virsh --connect qemu:///system desc $vm_name --title --new-desc "$(printf '%03d' $vm_number) $owner $3" --config
 		fi
 		;;
 	resize)
