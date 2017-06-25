@@ -713,4 +713,6 @@ configuration so the access is limited to <code>fast-vm</code> things only.</p>
 users so they can modify it without root privileges</li>
 <li>dhcp_release - sending DHCP release packet to libvirt so the static DHCP
 lease can be cleared once the VM is undefined</li>
+<li>lvs - get information about disk sizes and utilization</li>
+<li>lvresize - resize of LVs for Images and VM disks</li>
 </ul>
