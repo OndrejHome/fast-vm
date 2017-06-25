@@ -716,3 +716,69 @@ lease can be cleared once the VM is undefined</li>
 <li>lvs - get information about disk sizes and utilization</li>
 <li>lvresize - resize of LVs for Images and VM disks</li>
 </ul>
+
+<h2 id='fast-vm-server_dcumentation'>6. fast-vm-server documentation</h2>
+<p>This part of documentation describes best practices on how to use
+<code>fast-vm</code> in mutli user environment and how to deploy <code>fast-vm</code>
+in automated and scalable way.</p>
+
+<h3 id='fast-vm-server_automated_fast-vm_deployment_overview'>6.1.
+<code>fast-vm-server</code>: automated <code>fast-vm</code> deployment overview</h3>
+<p><a
+href="https://galaxy.ansible.com/OndrejHome/fast-vm-server/"><code>fast-vm-server</code>
+ansible role</a> provides a solution how to deploy <code>fast-vm</code> in
+automated (unattended) way and also how to deploy it on larger amount of
+machines. This role deals only with following things:</p>
+<ul>
+<li><code>fast-vm</code> installation and configuration</li>
+<li>installation and configuration of additional features that can be used
+with <code>fast-vm</code> such as</li>
+<li><ul>
+  <li><code>fence_virtd</code> to allow use with High-Availability clusters
+  that needs to be able to reboot VMs for proper operation</li>
+  <li>installation of custom version of <code>qemu-kvm</code> and
+  <code>seabios-bin</code> that provides support for LSI and MegaRAID SAS
+  controllets that are not available in packages from CentOS/RHEL</li>
+  <li>OVMF UEFI firmware for use with UEFI fast-vm VMs</li>
+</ul></li>
+</ul>
+<p><code>fast-vm-server</code> ansible role doesn't deal with setting up user
+authentication to system nor for importing the <code>fast-vm</code> images
+into this new system. For importing images there is ongoing work to provide
+ansible role that will be dealing only with that.</p>
+
+<h3 id='fast-vm-server_installation_example'>6.2. <code>fast-vm-server</code>
+installation example</h3>
+<p>All possibilities configuration options for the <code>fast-vm-server</code>
+role can be found in the <a href="https://github.com/OndrejHome/ansible.fast-vm-server/blob/master/README.md">README</a> of the role.
+By default all features are enables and only minimum of configuration options
+needs to be changed to get from minimal system to system with functional
+<code>fast-vm</code>. The single options that would need to be customized on
+most of the systems is <b>fastvm_vg</b>VG that will contain
+<code>fast-vm</code> thin LV pool. Rest of options can be left in defaults or
+tweaked as needed.</p>
+
+<p>Example playbook with default installation containing all features and 50GB
+thinpool LV placed on VG <code>my_vg</code> will look like below. (there must
+be at least 50GB of free space on <code>my_vg</code> VG or the size can be
+changed using option <code>fastvm_lv_size</code>)</p>
+
+Example of <code>install-fast-vm-server.yml</code>:
+<pre>
+---
+- hosts: servers
+  remote_user: root
+  roles:
+    - { role: 'OndrejHome.fast-vm-server', fastvm_vg: 'my_vg' }
+</pre>
+
+Example of <code>fast-vm-server.hosts</code>:
+<pre>
+[servers]
+192.168.XX.XX
+</pre>
+
+To run the installation with above examples you can use command below:
+<pre>
+# ansible-playbook -i fast-vm-server.hosts install-fast-vm-server.yml
+</pre>
