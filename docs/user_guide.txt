@@ -717,7 +717,7 @@ lease can be cleared once the VM is undefined</li>
 <li>lvresize - resize of LVs for Images and VM disks</li>
 </ul>
 
-<h2 id='fast-vm-server_dcumentation'>6. fast-vm-server documentation</h2>
+<h2 id='fast-vm-server_documentation'>6. fast-vm-server documentation</h2>
 <p>This part of documentation describes best practices on how to use
 <code>fast-vm</code> in mutli user environment and how to deploy <code>fast-vm</code>
 in automated and scalable way.</p>
