@@ -813,6 +813,7 @@ case "$1" in
 	start)
 		vm_number="$2"
 		if [ -z "$vm_number" ]; then pmsg $P_ERROR "VM number missing\n"; usage start; fi
+		if [[ $vm_number = *[\ ]* ]]; then handle_multiple_requests $@;	fi
 
 		check_vm_number "$vm_number" "active"
 
@@ -820,31 +821,39 @@ case "$1" in
 		
 		# if there is any third argument start VM and console after
 		if [ -z "$3" ]; then
-			pmsg $P_DEBUG "starting VM $vm_name (192.168.$SUBNET_NUMBER.$vm_number)\n"
+			pmsg $P_DEBUG "starting VM $vm_name (192.168.$SUBNET_NUMBER.$vm_number)\n" $vm_number
 			virsh --connect qemu:///system start $vm_name
 			if [ "$?" != '0' ]; then
-				pmsg $P_ERROR "failed to start VM, check syslog for more information\n"
+				pmsg $P_ERROR "failed to start VM, check syslog for more information\n" $vm_number
 			fi
 		else
 			case "$3" in
 				console)
-					pmsg $P_DEBUG "starting VM $vm_name and connecting to it serial console ...\n"
+					if [ ! -z "$MULTI_OPERATION" ] && [ "$MULTI_OPERATION" == 1 ]; then
+						pmsg $P_ERROR "When running start as part of multiple operations the console option is not available.\n" $vm_number
+						exit 1
+					fi
+					pmsg $P_DEBUG "starting VM $vm_name and connecting to it serial console ...\n" $vm_number
 					virsh --connect qemu:///system start $vm_name
 					if [ "$?" != '0' ]; then
-						pmsg $P_ERROR "failed to start VM $vm_name, check syslog for more information\n"
+						pmsg $P_ERROR "failed to start VM $vm_name, check syslog for more information\n" $vm_number
 					else
 						virsh --connect qemu:///system console $vm_name
 					fi
 				;;
 				ssh)
-					pmsg $P_DEBUG "starting VM $vm_name\n"
+					if [ -z "$4" ] && [ ! -z "$MULTI_OPERATION" ] && [ "$MULTI_OPERATION" == 1 ]; then
+						pmsg $P_ERROR "When running start with ssh as part of multiple operations, script for SSH must be specified.\n" $vm_number
+						exit 1
+					fi
+					pmsg $P_DEBUG "starting VM $vm_name\n" $vm_number
 					virsh --connect qemu:///system start $vm_name
 					if [ "$?" != '0' ]; then
-						pmsg $P_ERROR "failed to start VM $vm_name, check syslog for more information\n"
+						pmsg $P_ERROR "failed to start VM $vm_name, check syslog for more information\n" $vm_number
 					else
 						wait_for_ssh "$vm_number"
 						if [ ! -z "$4" ] && [ -x "$4" ]; then
-							eval "$4 192.168.$SUBNET_NUMBER.$vm_number"
+							eval "$4 192.168.$SUBNET_NUMBER.$vm_number" | sed -e "s/^/\[$vmn\]/"
 						else
 							ssh -o GlobalKnownHostsFile=/dev/null -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no "root@192.168.$SUBNET_NUMBER.$vm_number"
 						fi
@@ -859,23 +868,24 @@ case "$1" in
 	stop)
 		vm_number="$2"
 		if [ -z "$vm_number" ]; then pmsg $P_ERROR "VM number missing\n"; usage stop; fi
+		if [[ $vm_number = *[\ ]* ]]; then handle_multiple_requests $@;	fi
 
 		check_vm_number "$vm_number" "inactive"
 
 		vm_name=$(virsh --connect qemu:///system list --all |grep "$VM_PREFIX"|awk '{print $2}'|egrep "\-$vm_number$")
 
 		if [ ! -z "$3" ] && [ "$3" = "graceful" ]; then
-			pmsg $P_DEBUG "Sending ACPI shutdown event to $vm_name\n"
+			pmsg $P_DEBUG "Sending ACPI shutdown event to $vm_name\n" $vm_number
 			virsh --connect qemu:///system shutdown $vm_name
 			if [ "$?" != '0' ]; then
-				pmsg $P_ERROR "failed to send gracefull shutdown to VM $vm_name, check syslog for more information\n"
+				pmsg $P_ERROR "failed to send gracefull shutdown to VM $vm_name, check syslog for more information\n" $vm_number
 				exit 1
 			fi
 		else
-			pmsg $P_DEBUG "Stopping VM $vm_name now\n"
+			pmsg $P_DEBUG "Stopping VM $vm_name now\n" $vm_number
 			virsh --connect qemu:///system destroy $vm_name
 			if [ "$?" != '0' ]; then
-				pmsg $P_ERROR "failed to forcefully shutdown VM $vm_name, check syslog for more information\n"
+				pmsg $P_ERROR "failed to forcefully shutdown VM $vm_name, check syslog for more information\n" $vm_number
 				exit 1
 			fi
 		fi
@@ -883,15 +893,20 @@ case "$1" in
 	ssh)
 		vm_number="$2"
 		if [ -z "$vm_number" ]; then pmsg $P_ERROR "VM number missing\n"; usage ssh; fi
+		if [[ $vm_number = *[\ ]* ]]; then handle_multiple_requests $@;	fi
+		if [ -z "$3" ] && [ ! -z "$MULTI_OPERATION" ] && [ "$MULTI_OPERATION" == 1 ]; then
+			pmsg $P_ERROR "When running ssh as part of multiple operations, script for SSH must be specified.\n" $vm_number
+			exit 1
+		fi
 
 		check_vm_number "$vm_number" "inactive"
 
 		wait_for_ssh "$vm_number"
 		if [ ! -z "$3" ]; then
 			if [ -x "$3" ]; then
-				eval "$3 192.168.$SUBNET_NUMBER.$vm_number"
+				eval "$3 192.168.$SUBNET_NUMBER.$vm_number" | sed -e "s/^/\[$vmn\]/"
 			else
-				pmsg $P_ERROR "$3 not executable\n"
+				pmsg $P_ERROR "$3 not executable\n" $vm_number
 			fi
 		else
 			ssh -o GlobalKnownHostsFile=/dev/null -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no "root@192.168.$SUBNET_NUMBER.$vm_number"
@@ -1008,9 +1023,14 @@ case "$1" in
 	edit_note)
 		vm_number="$2"
 		if [ -z "$vm_number" ]; then pmsg $P_ERROR "VM number missing\n"; usage delete; fi
+		if [[ $vm_number = *[\ ]* ]]; then handle_multiple_requests $@;	fi
 
 		if [ $(list_vm all|egrep "^$vm_number$"|wc -l) -eq 0 ]; then
 			pmsg $P_ERROR "no VM with number '$vm_number' found\n"
+			exit 1
+		fi
+		if [ -z "$3" ] && [ ! -z "$MULTI_OPERATION" ] && [ "$MULTI_OPERATION" == 1 ]; then
+			pmsg $P_ERROR "When running edit_note as part of multiple operations the note must be specified as argument.\n" $vm_number
 			exit 1
 		fi
 		vm_name=$(virsh --connect qemu:///system list --all |grep "$VM_PREFIX"|awk '{print $2}'|egrep "\-$vm_number$")
@@ -1029,6 +1049,7 @@ case "$1" in
 	resize)
 		vm_number="$2"
 		if [ -z "$vm_number" ]; then pmsg $P_ERROR "VM number missing\n"; usage resize; fi
+		if [[ $vm_number = *[\ ]* ]]; then handle_multiple_requests $@;	fi
 
 		check_vm_number "$vm_number" "active"
 
@@ -1038,12 +1059,12 @@ case "$1" in
 		if [ -z "$new_size" ]; then pmsg $P_ERROR "invalid size. Use only whole decimal numbers\n"; usage resize; fi
 
 		#FIXME due to handling of logging in fast-vm-helper we might not receive error code if something went wrong
-		pmsg $P_DEBUG "resizing $vm_name disk to ${new_size}G\n"
+		pmsg $P_DEBUG "resizing $vm_name disk to ${new_size}G\n" $vm_number
 		echo "lvresize" "/dev/$THINPOOL_VG/$vm_name" "$new_size" | sudo -n $FASTVM_HELPER
 		if [ "$?" == 0 ]; then
-			pmsg $P_INFO "VM $vm_number resize to ${new_size}G succeeded.\n"
+			pmsg $P_INFO "VM $vm_number resize to ${new_size}G succeeded.\n" $vm_number
 		else
-			pmsg $P_ERROR "Resize failed. Check logs for more details\n"
+			pmsg $P_ERROR "Resize failed. Check logs for more details\n" $vm_number
 		fi
 		;;
 	list)
@@ -1175,7 +1196,8 @@ case "$1" in
 	info)
 		vm_number="$2"
 		if [ -z "$vm_number" ]; then pmsg $P_ERROR "VM number missing\n"; usage delete; fi
-		pmsg $P_DEBUG "IP: 192.168.$SUBNET_NUMBER.$vm_number\n"
+		if [[ $vm_number = *[\ ]* ]]; then handle_multiple_requests $@;	fi
+		pmsg $P_DEBUG "IP: 192.168.$SUBNET_NUMBER.$vm_number\n" $vm_number
 		;;
 	*) 
 		pmsg $P_ERROR "unknown action\n"
