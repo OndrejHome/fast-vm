@@ -639,6 +639,7 @@ case "$1" in
 	create)
 		image_name="$2"
 		if [ -z "$image_name" ]; then pmsg $P_ERROR "missing image or profile name\n"; usage create; fi
+		vm_number="$3"
 
 		# if the image_name looks like ProfileName
 		profile_name=$image_name
@@ -692,7 +693,6 @@ case "$1" in
 		done
 		# NOTE: if profile doesn't contain hacks file the one from base image of that profile is used!
 
-		vm_number="$3"
 		# validate vm_number is a 'number'
 		$(echo "$vm_number" | grep -Eq '^[+-]?[0-9]+$')
 		if [ "$?" -eq '0' ]
