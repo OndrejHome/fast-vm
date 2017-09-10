@@ -330,6 +330,11 @@ case "$1" in
 			pmsg $P_ERROR "ImageName contains restricted characters, allowed are only letters, numbers, dot(.) and dash(-)\n"
 			exit 1
 		fi
+		image_name_stripped2=$(echo "$image_name_stripped"|sed -e 's/-[0-9]\+$//')
+		if [ "$image_name_stripped" != "$image_name_stripped2" ]; then
+			pmsg $P_ERROR "ImageName cannot end with '-XX' where XX is number.\n"
+			exit 1
+		fi
 		image_path="$3"
 		# skip path check for "empty" image file
 		if [ "$image_path" != "empty" ]; then
@@ -550,6 +555,11 @@ case "$1" in
 		profile_name_stripped=$(echo "$profile_name"|tr -d -C '[:alnum:]\-.')
 		if [ "$profile_name" != "$profile_name_stripped" ]; then
 			pmsg $P_ERROR "ProfileName contains restricted characters, allowed are only letters, numbers, dot(.) and dash(-)\n"
+			exit 1
+		fi
+		profile_name_stripped2=$(echo "$profile_name_stripped"|sed -e 's/-[0-9]\+$//')
+		if [ "$profile_name_stripped" != "$profile_name_stripped2" ]; then
+			pmsg $P_ERROR "ProfileName cannot end with '-XX' where XX is number.\n"
 			exit 1
 		fi
 		image_name="$3"
