@@ -153,6 +153,36 @@ config_file_operation () {
 	fi
 }
 
+handle_multiple_requests () {
+# this function wraps the request to do same operation on multiple VMs
+# if fast-vm is called from this handler, then there will be variable MULTI_OPERATION=1
+	fast_vm_bin=$0
+	# determine operation that we handle
+	operation="$1"
+	# get the rest of the command line for calling it later
+	shift 3
+	original_arguments="$@"
+	pmsg $P_DEBUG "Starting to handle multiple operations\n"
+	all_pids=''
+	for vm in $vm_number; do
+		pmsg $P_DEBUG "Calling operation: ./fast-vm $operation $vm $original_arguments\n"
+		MULTI_OPERATION=1 $fast_vm_bin $operation $vm $original_arguments &
+		all_pids="$all_pids $!"
+	done
+	errors=0
+	for pid in $all_pids; do
+		wait $pid
+		if  [ "$?" != '0' ]; then errors=$(($errors+1)); fi
+	done
+	if [ "$errors" -gt '0' ]; then
+		pmsg $P_ERROR "Some ($errors) operations reported errors\n"
+		exit 1
+	else
+		pmsg $P_INFO "All operations returned succesfully\n"
+		exit 0
+	fi
+}
+
 usage () {
 	part="$1"
 
