@@ -27,25 +27,26 @@ P_ERROR=3
 pmsg () {
 	priority="$1"
 	message="$2"
+	vmn=${3:-__}
 	if [ "$LOG_LEVEL" -ge "$priority" ]; then
-		printf "$USER | $message"|logger -p $priority --id -t fast-vm
+		printf "$USER |$vmn| $message"|logger -p $priority --id -t fast-vm
 	fi
 	if [ "$DISPLAY_LEVEL" -ge "$priority" ]; then
 		case "$priority" in
 			$P_DEBUG)
-				printf "[${c_cyan}inf${c_normal}] $message"
+				printf "[${c_cyan}inf${c_normal}] $message" | sed -e "s/^/\[$vmn\]/"
 				;;
 			$P_INFO)
-				printf "[${c_green}ok${c_normal}] $message"
+				printf "[${c_green}ok${c_normal}] $message" | sed -e "s/^/\[$vmn\]/"
 				;;
 			$P_WARNING)
-				printf "[${c_yellow}wrn${c_normal}] $message"
+				printf "[${c_yellow}wrn${c_normal}] $message" | sed -e "s/^/\[$vmn\]/"
 				;;
 			$P_ERROR)
-				printf "[${c_red}err${c_normal}] $message"
+				printf "[${c_red}err${c_normal}] $message" | sed -e "s/^/\[$vmn\]/"
 				;;
 			*)
-				printf "[unk] $message"
+				printf "[unk] $message" | sed -e "s/^/\[$vmn\]/"
 				;;
 		esac
 	fi
@@ -62,7 +63,7 @@ check_empty () {
 
 wait_for_ssh () {
 	vm_number="$1"
-	pmsg $P_DEBUG "checking the 192.168.$SUBNET_NUMBER.$vm_number for active SSH connection (ctrl+c to interrupt)\n"
+	pmsg $P_DEBUG "checking the 192.168.$SUBNET_NUMBER.$vm_number for active SSH connection (ctrl+c to interrupt)\n" $vm_number
 	ssh_ready=$(ssh-keyscan -T 1 "192.168.$SUBNET_NUMBER.$vm_number" 2>/dev/null|egrep '(ssh-|ecdsa-)'|wc -l)
 	while [ "$ssh_ready" -eq "0" ];
 	do
@@ -70,7 +71,7 @@ wait_for_ssh () {
 		ssh_ready=$(ssh-keyscan -T 1 "192.168.$SUBNET_NUMBER.$vm_number" 2>/dev/null|egrep '(ssh-|ecdsa-)'|wc -l)
 		sleep 1
 	done
-	pmsg $P_DEBUG "\nSSH ready\n"
+	pmsg $P_DEBUG "\nSSH ready\n" $vm_number
 }
 
 check_file () {
@@ -133,11 +134,11 @@ check_vm_number () {
 	vm_number="$1"
 	vm_state="$2"
 	if [ $(list_vm all|egrep "^$vm_number$"|wc -l) -eq 0 ]; then
-		pmsg $P_ERROR "no VM with number '$vm_number' found\n"
+		pmsg $P_ERROR "no VM with number '$vm_number' found\n" $vm_number
 		exit 1
 	fi
 	if [ $(list_vm $vm_state|egrep "^$vm_number$"|wc -l) -eq 1 ]; then
-		pmsg $P_ERROR "VM with number '$vm_number' is $vm_state\n"
+		pmsg $P_ERROR "VM with number '$vm_number' is $vm_state\n" $vm_number
 		exit 1
 	fi
 }
