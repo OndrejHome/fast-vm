@@ -127,7 +127,7 @@ list_vm () {
 			vm_option='--all'
 		;;
 	esac
-	virsh --connect qemu:///system list "$vm_option"|awk '{print $2}'|egrep "^${VM_PREFIX}.*-[0-9]+"|sed 's/.*-\([0-9]\+\)$/\1/'|sort -n
+	virsh --connect qemu:///system list "$vm_option"|awk '{print $2}'|egrep "^${VM_PREFIX}.*-[0-9]+$"|sed 's/.*-\([0-9]\+\)$/\1/'|sort -n
 }
 
 check_vm_number () {
