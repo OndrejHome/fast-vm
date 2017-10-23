@@ -1050,13 +1050,16 @@ case "$1" in
 		if [ -z "$3" ]; then
 			$EDITOR "$FASTVM_NOTES_DIR/$vm_number"
 		else
-			echo "$3" > "$FASTVM_NOTES_DIR/$vm_number"
+			# get the whole content of note (do not care in how many arguments it seems to be splitted)
+			shift 2
+			content="$@"
+			echo "$content" > "$FASTVM_NOTES_DIR/$vm_number"
 			owner="-----"
 			if [ -f "$FASTVM_NOTES_DIR/$vm_number" ]; then
 				owner=$(stat --format="%U" "$FASTVM_NOTES_DIR/$vm_number")
 			fi
 			# edit also title in libvirt XMl definition so applications like virt-manager can show same notes as seen in 'fast-vm list'
-			virsh --connect qemu:///system desc $vm_name --title --new-desc "$(printf '%03d' $vm_number) $owner $3" --config
+			virsh --connect qemu:///system desc $vm_name --title --new-desc "$(printf '%03d' $vm_number) $owner $content" --config
 		fi
 		;;
 	resize)
