@@ -189,8 +189,8 @@ update_access_time () {
 # Update the time of 'note' file for VM.
 # This can be used to track if the VM is actively used/accessed.
 	vm_number="$1"
-	if [ -f "$FASTVM_NOTES_DIR/$vm_number" ]; then touch "$FASTVM_NOTES_DIR/$vm_number"; fi
-	if [ -f "$FASTVM_NOTES_DIR/$vm_number.profile" ]; then touch "$FASTVM_NOTES_DIR/$vm_number.profile"; fi
+	if [ -f "$FASTVM_NOTES_DIR/$vm_number" ]; then touch "$FASTVM_NOTES_DIR/$vm_number" 2>/dev/null; fi
+	if [ -f "$FASTVM_NOTES_DIR/$vm_number.profile" ]; then touch "$FASTVM_NOTES_DIR/$vm_number.profile" 2>/dev/null; fi
 }
 
 calculate_day_difference () {
