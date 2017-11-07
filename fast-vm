@@ -1066,21 +1066,24 @@ case "$1" in
 			exit 1
 		fi
 		vm_name=$(virsh --connect qemu:///system list --all |grep "$VM_PREFIX"|awk '{print $2}'|egrep "\-$vm_number$")
+		content=''
+		owner=$(whoami)
 		if [ -z "$3" ]; then
 			#FIXME, add the umask 0002 in way that restores back to original umask
 			sg $FASTVM_GROUP "$EDITOR $FASTVM_NOTES_DIR/$vm_number"
+			content=$(cat $FASTVM_NOTES_DIR/$vm_number)
 		else
 			# get the whole content of note (do not care in how many arguments it seems to be splitted)
 			shift 2
 			content="$@"
 			$(umask 0002; sg $FASTVM_GROUP "echo '$content' > $FASTVM_NOTES_DIR/$vm_number")
-			owner="-----"
-			if [ -f "$FASTVM_NOTES_DIR/$vm_number" ]; then
-				owner=$(stat --format="%U" "$FASTVM_NOTES_DIR/$vm_number")
-			fi
-			# edit also title in libvirt XMl definition so applications like virt-manager can show same notes as seen in 'fast-vm list'
-			virsh --connect qemu:///system desc $vm_name --title --new-desc "$(printf '%03d' $vm_number) $owner $content" --config
 		fi
+
+		if [ -f "$FASTVM_NOTES_DIR/$vm_number" ]; then
+			owner=$(stat --format="%U" "$FASTVM_NOTES_DIR/$vm_number")
+		fi
+		# edit also title in libvirt XMl definition so applications like virt-manager can show same notes as seen in 'fast-vm list'
+		virsh --connect qemu:///system desc $vm_name --title --new-desc "$(printf '%03d' $vm_number) $owner $content" --config
 		;;
 	resize)
 		vm_number="$2"
