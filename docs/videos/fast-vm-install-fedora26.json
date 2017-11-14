@@ -1,0 +1,390 @@
+{
+  "width": 104,
+  "stdout": [
+    [
+      1.00,
+      "\r\n\u001b[38;5;1m## 1. Add fast-vm repository into system ##\u001b[m\u001b(B\r\n\r\n"
+    ],
+    [
+      0.20,
+      "[root@examples-f26 ~]# "
+    ],
+    [
+      0.246545,
+      "curl -o /etc/yum.repos.d/fast-vm.repo https://copr.fedorainfracloud.org/coprs/ondr\rrejhome/fast-vm/repo/fedora-26/ondrejhome-fast-vm-fedora-26.repo\r\n"
+    ],
+    [
+      3.026942,
+      "  % Total    % Received % Xferd  A"
+    ],
+    [
+      0.000774,
+      "verage Speed   Time    Time     Time  Current\r\n                                 Dload  Upload   Total   Spent    Left  Speed\r\n\r  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0"
+    ],
+    [
+      0.069681,
+      "\r"
+    ],
+    [
+      0.001004,
+      "  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0"
+    ],
+    [
+      0.349284,
+      "\r  0     0    0     0    0     0      0      0 --:--:--  0:00:01 --:--:--     0"
+    ],
+    [
+      0.223124,
+      "\r100   350  100   350    0"
+    ],
+    [
+      0.001232,
+      "     0    242      0  0:00:01  0:00:01 --:--:--   242\r\n"
+    ],
+    [
+      1.00,
+      "\r\n\u001b[38;5;1m## 2. Install 'fast-vm' package ##\u001b[m\u001b(B\r\n\r\n"
+    ],
+    [
+      0.520207,
+      "[root@examples-f26 ~]# "
+    ],
+    [
+      0.256746,
+      "dnf install fast-vm -q -y\r\n"
+    ],
+    [
+      1.50,
+      "\r\n\u001b[38;5;1m## To see detailed progress, remove the '-q' option. Process takes several minutes. ##\u001b[m\u001b(B\r\n\r\n"
+    ],
+    [
+      4.156332,
+      "warning: /var/cache/dnf/ondrejhome-fast-vm-332054130bc904d2/packages/fast-vm-1.2.1-1.fc26.noarch.rpm: Header V3 RSA/SHA1 Signature, key ID ec5e8190: NOKEY\r\n"
+    ],
+    [
+      0.074552,
+      "warning: /var/cache/dnf/updates-2854b3113b7a3c6c/packages/libvirt-client-3.2.1-6.fc26.x86_64.rpm: Header V3 RSA/SHA256 Signature, key ID 64dab85d: NOKEY\r\n"
+    ],
+    [
+      1.00,
+      "\r\n\u001b[38;5;1m## 3. Install 'libguestfs-tools-c' package to be able to use public fast-vm images ##\u001b[m\u001b(B\r\n\r\n"
+    ],
+    [
+      0.20655,
+      "[root@examples-f26 ~]# "
+    ],
+    [
+      0.218415,
+      "dnf install libguestfs-tools-c -q -y\r\n"
+    ],
+    [
+      4.00,
+      "\r\n\u001b[38;5;1m## 4. Configure the fast-vm ##\u001b[m\u001b(B\r\n\r\n"
+    ],
+    [
+      0.232698,
+      "[root@examples-f26 ~]# "
+    ],
+    [
+      0.278522,
+      "configure-fast-vm\r\n"
+    ],
+    [
+      3.047006,
+      "[\u001b[38;5;6minf\u001b[m\u001b(B] ==>> fast-vm configuration script\r\nYou can run this script repeatedly and interrupt it with ctrl+c."
+    ],
+    [
+      0.000496,
+      "\r\n"
+    ],
+    [
+      0.000603,
+      "Script will always recheck all configuration options. fast-vm system configuration will be saved in /etc/fast-vm.conf.\r\n"
+    ],
+    [
+      0.000365,
+      "\r\n"
+    ],
+    [
+      0.172049,
+      "[\u001b[38;5;1merr\u001b[m\u001b(B] libvirt daemon is not running or we cannot connect to it.\r\nEnsure that libvirt service is running and that you can connect to it using command 'virsh --connect qemu:///system' and then re-run this configuration script.\r\n"
+    ],
+    [
+      1.00,
+      "\r\n\u001b[38;5;1m## If 'libvirtd.service' was not running you will receive above error. Just start service a re-run fast-vm configuration ##\u001b[m\u001b(B\r\n\r\n"
+    ],
+    [
+      0.001171,
+      "[root@examples-f26 ~]# "
+    ],
+    [
+      0.207298,
+      "systemctl start libvirtd\r\n"
+    ],
+    [
+      3.00,
+      "\r\n\u001b[38;5;1m## 5. Configuration needs at minimum to know 'VG' that has some free space. Example below will use VG 'c7vg' and will dedicate '20GB' of space to fast-vm. ##\r\n## To use default valued from configuration just hit \u001b[38;5;6m [ENTER] \u001b[m\u001b(B\r\n\r\n"
+    ],
+    [
+      0.208623,
+      "[root@examples-f26 ~]# "
+    ],
+    [
+      0.255678,
+      "configure-fast-vm\r\n"
+    ],
+    [
+      9.029047,
+      "[\u001b[38;5;6minf\u001b[m\u001b(B] ==>> fast-vm configuration script\r\nYou can run this script repeatedly and interrupt it with ctrl+c.\r\n"
+    ],
+    [
+      0.000559,
+      "Script will always recheck all configuration options. fast-vm system configuration will be saved in /etc/fast-vm.conf.\r\n\r\n"
+    ],
+    [
+      0.236833,
+      "[?] VG for LVM thin pool\r\n fast-vm is using LVM thin LV to store VM images and data.\r\n Available VGs on your systme are: \r\n   VG  Attr   VSize  VFree \r\n  f26 wz--n- 29.50g 24.37g"
+    ],
+    [
+      0.000528,
+      "\r\n On which existing VG should be this thin LV? \r\n[]: "
+    ],
+    [
+      1.329995,
+      "f"
+    ],
+    [
+      0.242184,
+      "2"
+    ],
+    [
+      0.270758,
+      "6"
+    ],
+    [
+      0.746912,
+      " \u001b[38;5;6m[ENTER]\u001b[m\u001b(B\r\n\r\n"
+    ],
+    [
+      0.018574,
+      "[?] LVM thin pool name\r\n Name the thin LV on which data would be stored.\r\n NOTE: This can be both 'name of existing thinpool LV' or 'name for a new one'.\r\n If LV with this name doesn't exists, it will get created by this setup. \r\n[fastvm-pool]: "
+    ],
+    [
+      1.457729,
+      "\u001b[38;5;6m[ENTER]\u001b[m\u001b(B\r\n"
+    ],
+    [
+      0.000105,
+      "\r\n"
+    ],
+    [
+      0.046754,
+      "[?] LVM thin pool size\r\n You can use units understood by LVM like M,G,T.\r\n NOTE: This applies only when thin LV doesn't exists yet. \r\n[50G]: "
+    ],
+    [
+      1.802683,
+      "2"
+    ],
+    [
+      0.149637,
+      "0"
+    ],
+    [
+      0.401304,
+      "G"
+    ],
+    [
+      0.831217,
+      " \u001b[38;5;6m[ENTER]\u001b[m\u001b(B\r\n"
+    ],
+    [
+      0.001274,
+      "\r\n"
+    ],
+    [
+      0.008481,
+      "[?] VM name prefix in libvirt\r\n Prefix is used in VM names and VM drive names. \r\n[fastvm-]: "
+    ],
+    [
+      0.911428,
+      "\u001b[38;5;6m[ENTER]\u001b[m\u001b(B\r\n\r\n"
+    ],
+    [
+      0.005984,
+      "[?] Users that want to use fast-vm must be members of following group.\r\n WARNING: if this group is different from 'libivrt' you would have to adjust libvirt configuration.\r\n Please check the fast-vm.conf(5) if setting this to something else than 'libvirt'. \r\n[libvirt]: "
+    ],
+    [
+      0.392244,
+      "\u001b[38;5;6m[ENTER]\u001b[m\u001b(B\r\n"
+    ],
+    [
+      0.001988,
+      "\r\n"
+    ],
+    [
+      0.00829,
+      "[?] Libvirt network (bridge) name\r\n This configuration will create a libvirt \r\n network with this name providing NAT for VMs. \r\n[fastvm-nat]: "
+    ],
+    [
+      0.52789,
+      "\u001b[38;5;6m[ENTER]\u001b[m\u001b(B\r\n\r\n"
+    ],
+    [
+      0.009007,
+      "[?] Libvirt subnet number (192.168.XX.0/24) \r\n[22]: "
+    ],
+    [
+      1.015934,
+      "\u001b[38;5;6m[ENTER]\u001b[m\u001b(B\r\n\r\n"
+    ],
+    [
+      0.013206,
+      "[?] Directory in which to store VM notes \r\n[/var/tmp]: "
+    ],
+    [
+      0.827571,
+      "\u001b[38;5;6m[ENTER]\u001b[m\u001b(B\r\n"
+    ],
+    [
+      0.001177,
+      "\r\n"
+    ],
+    [
+      0.005535,
+      "[?] Only 'root' and 'owner' of VM should be able to delete VM through fast-vm?\r\n \"yes\" - only 'root' and 'owner' can delete VM\r\n \"no\" - anyone allowed to use fast-vm can delete VM (default in versions =< 0.9) \r\n[no]: "
+    ],
+    [
+      0.81118,
+      "\u001b[38;5;6m[ENTER]\u001b[m\u001b(B\r\n\r\n"
+    ],
+    [
+      0.071863,
+      "[\u001b[38;5;3mwrn\u001b[m\u001b(B] LV 'f26/fastvm-pool' not found\r\nFollowing commands would be executed to create thin pool:\r\n  lvcreate -n fastvm-pool -L 20G f26\r\n  lvconvert --type thin-pool f26/fastvm-pool\r\n[?] Create now? (y/n) "
+    ],
+    [
+      1.681841,
+      "y"
+    ],
+    [
+      1.102295,
+      " \u001b[38;5;6m[ENTER]\u001b[m\u001b(B\r\n"
+    ],
+    [
+      0.004161,
+      "[\u001b[38;5;6minf\u001b[m\u001b(B] Creating ...\r\n"
+    ],
+    [
+      0.210177,
+      "  Logical volume \"fastvm-pool\" created.\r\n"
+    ],
+    [
+      0.111358,
+      "  WARNING: Converting logical volume f26/fastvm-pool to thin pool's data volume with metadata wiping."
+    ],
+    [
+      0.000139,
+      "\r\n  "
+    ],
+    [
+      0.000335,
+      "THIS WILL DESTROY CONTENT OF LOGICAL VOLUME (filesystem etc.)\r\nDo you really want to convert f26/fastvm-pool? [y/n]: "
+    ],
+    [
+      0.722886,
+      "y"
+    ],
+    [
+      0.396107,
+      " \u001b[38;5;6m[ENTER]\u001b[m\u001b(B\r\n"
+    ],
+    [
+      0.628851,
+      "  Converted f26/fastvm-pool to thin pool."
+    ],
+    [
+      0.00026,
+      "\r\n"
+    ],
+    [
+      0.019649,
+      "[\u001b[38;5;2mok\u001b[m\u001b(B] LVM thinpool successfuly created\r\n"
+    ],
+    [
+      0.145481,
+      "[?] Network fastvm-nat is not defined in libvirt, define now? (y/n) "
+    ],
+    [
+      1.55494,
+      "y"
+    ],
+    [
+      0.272162,
+      " \u001b[38;5;6m[ENTER]\u001b[m\u001b(B\r\n"
+    ],
+    [
+      0.000375,
+      "[\u001b[38;5;6minf\u001b[m\u001b(B] Creating ...\r\n"
+    ],
+    [
+      0.107022,
+      "Network fastvm-nat defined from /tmp/tmp.2BBfyiqVn6.xml\r\n\r\n"
+    ],
+    [
+      0.088466,
+      "Network fastvm-nat marked as autostarted\r\n\r\n"
+    ],
+    [
+      0.715796,
+      "Network fastvm-nat started\r\n\r\n"
+    ],
+    [
+      0.008781,
+      "[\u001b[38;5;6minf\u001b[m\u001b(B] fast-vm libvirt network created and autostarted\r\n"
+    ],
+    [
+      0.112389,
+      "[\u001b[38;5;2mok\u001b[m\u001b(B] fast-vm configured\r\n"
+    ],
+    [
+      1.00,
+      "\r\n\u001b[38;5;1m## 6. Verify that fast-vm is installed and configured properly by trying to list the VMs. You should receive no errors as in example below ##\u001b[m\u001b(B\r\n\r\n"
+    ],
+    [
+      0.000837,
+      "[root@examples-f26 ~]# "
+    ],
+    [
+      1.241133,
+      "fast-vm list\r\n"
+    ],
+    [
+      0.387069,
+      "VM# Image name      Status       Profile_name    Size( %used ) Notes\r\n"
+    ],
+    [
+      0.094193,
+      "=== Space used:   0.00% of  20.00g"
+    ],
+    [
+      9.9e-05,
+      "\r\n"
+    ],
+    [
+      0.002834,
+      "[root@examples-f26 ~]# "
+    ],
+    [
+      0.50,
+      "\r\n\u001b[38;5;1m## Congratulations! You have installed and configured fast-vm ##\r\n## Now any user in group 'libvirt' or user root can use fast-vm. ##\u001b[m\u001b(B\r\n\r\n"
+    ]
+  ],
+  "command": null,
+  "version": 1,
+  "title": null,
+  "height": 27,
+  "duration": 59.992491,
+  "env": {
+    "SHELL": "/bin/bash",
+    "TERM": "rxvt-unicode"
+  }
+}
