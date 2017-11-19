@@ -1,4 +1,4 @@
-.TH FAST-VM 8 "fast-vm 1.2 (2017-06-04)" "fast-vm" "fast-vm" \" -*- nroff -*-
+.TH FAST-VM 8 "fast-vm 1.2 (2017-11-14)" "fast-vm" "fast-vm" \" -*- nroff -*-
 .SH NAME
 fast-vm \(em script for defining VMs from images provided in thin LVM pool
 .SH SYNOPSIS
@@ -63,27 +63,27 @@ fast-vm \(em script for defining VMs from images provided in thin LVM pool
 .B create 
 .RI < ImageName | ProfileName >
 .RB < base 
-.RI | VmNumber >
+.RI | VmNumber | "'VmNumber1 VmNumber2 ...'" >
 .RI [ PathToLibvirtXML ]
 .RI [ PathToHacksFile ]
 
 .B fast-vm
 .B info
-.I VmNumber
+.RI < VmNumber | "'VmNumber1 VmNumber2 ...'" >
 
 .B fast-vm
 .B delete
-.I VmNumber
+.RI < VmNumber | "'VmNumber1 VmNumber2 ...'" >
 .RI [ PathToDeleteHacksFile ]
 
 .B fast-vm
 .B edit_note
-.I VmNumber
+.RI < VmNumber | "'VmNumber1 VmNumber2 ...'" >
 .RI [ NoteText ]
 
 .B fast-vm
 .B resize
-.I VmNumber
+.RI < VmNumber | "'VmNumber1 VmNumber2 ...'" >
 .I NewSizeInGiB
 
 .B fast-vm
@@ -92,19 +92,22 @@ fast-vm \(em script for defining VMs from images provided in thin LVM pool
 .RB [ short ]]
 
 .B fast-vm
-.BI "start " VmNumber
+.B start
+.RI < VmNumber | "'VmNumber1 VmNumber2 ...'" >
 .RB [ console | ssh 
 .RI [ /path/to/custom/script ]]
 
 .B fast-vm
-.BI "stop " VmNumber
+.B stop
+.RI < VmNumber | "'VmNumber1 VmNumber2 ...'" >
 .RB [ graceful ]
 
 .B fast-vm
 .BI "console " VmNumber
 
 .B fast-vm
-.BI "ssh " VmNumber
+.B ssh
+.RI < VmNumber | "'VmNumber1 VmNumber2 ...'" >
 .RI [ /path/to/custom/script ]
 
 .SH DESCRIPTION
@@ -322,6 +325,13 @@ Create machine with custom definition and hack file. Start it and after it's SSH
 .RB "Change disk size of image " "small-6.7" " to " "40" " GB. All VMs created from this image after this change will have disk with " "40" " GB. Previously created VM are unaffected."
 .sp
 .BI "fast-vm resize_image " "small-67 40"
+
+.RB "Create VMs with numbers 43, 44, 45 using the " "6.7" " image with single command."
+.sp
+.BI "fast-vm create " "6.7 '43 44 45'"
+
+.SH EXIT CODES
+In case of error the fast-vm will return non-zero exit code. When multiple VMs were specified then zero exit code is returned only when operation succeeded on all VMs. If any of VMs reported non-zero exit code, then the overal exit code will also be non-zero.
 
 .SH SEE ALSO
 .BR fast-vm.conf (5),

@@ -232,31 +232,31 @@ usage () {
 			echo "$0 list_profiles [short]"
 			;;
 		create)
-			echo "$0 create <ImageName|ProfileName> <base |VmNumber> [PathToLibvirtXML] [PathToHacksFile]"
+			echo "$0 create <ImageName|ProfileName> <base|VmNumber|'VmNumber1 VmNumber2 ...'> [PathToLibvirtXML] [PathToHacksFile]"
 			;;
 		start)
-			echo "$0 start VmNumber [console|ssh [/path/to/custom/script]]"
+			echo "$0 start <VmNumber|'VmNumber1 VmNumber2 ...'> [console|ssh [/path/to/custom/script]]"
 			;;
 		stop)
-			echo "$0 stop VmNumber [graceful]"
+			echo "$0 stop <VmNumber|'VmNumber1 VmNumber2 ...'> [graceful]"
 			;;
 		console)
 			echo "$0 console VmNumber"
 			;;
 		ssh)
-			echo "$0 ssh VmNumber [/path/to/custom/script]"
+			echo "$0 ssh <VmNumber|'VmNumber1 VmNumber2 ...'> [/path/to/custom/script]"
 			;;
 		delete)
-			echo "$0 delete VmNumber [PathToDeleteHackFile]"
+			echo "$0 delete <VmNumber|'VmNumber1 VmNumber2 ...'> [PathToDeleteHackFile]"
 			;;
 		edit_note)
-			echo "$0 edit_note VmNumber [NoteText]"
+			echo "$0 edit_note <VmNumber|'VmNumber1 VmNumber2 ...'> [NoteText]"
 			;;
 		resize)
-			echo "$0 resize VmNumber NewSizeInGiB"
+			echo "$0 resize <VmNumber|'VmNumber1 VmNumber2 ...'> NewSizeInGiB"
 			;;
 		info)
-			echo "$0 info VmNumber"
+			echo "$0 info <VmNumber|'VmNumber1 VmNumber2 ...'>"
 			;;
 		list)
 			echo "$0 list [all|active|inactive [short]]"
