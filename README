@@ -4,12 +4,27 @@ fast-vm — script for defining VMs from images provided in thin LVM pool
 fast-vm provides command-line interface to create virtual machines (VMs) in libvirt,
 based on imported disks in LVM and XML templates.
 
-Templates of VM disk drives are stored in LVM thinpool LV for space efficiency. Templates
-for VMs are just libvirt XMLs with few macros from fast-vm. When creating a VM, fast-vm will
-create new writable LVM snapshot of disk drive, define libvirt VM for it and make a static
-DHCP reservation for libvirt network on which VM will be.
-Optionally fast-vm allows to do some customization of disk drive of new machine before
-starting VM using the 'hack files'.
+=== 5-minute Quick Start ===
+Check the videos below on how to:
+- install and configure fast-vm (1m) - https://asciinema.org/a/147355
+- import images and create VMs (1m) - https://asciinema.org/a/143564
+- do basic operations in fast-vm (2m) - https://asciinema.org/a/143565
+
+=== DOCUMENTATION and USER GUIDE  ===
+user and installation guide:
+  https://www.famera.cz/blog/fast-vm/user_guide.html
+
+man pages:
+  fast-vm(8)
+  fast-vm.conf(5)
+  configure-fast-vm(8)
+
+====== Supported/Tested OS =====
+Distribution    Installation method
+- RHEL 7.4	RPM
+- CentOS 7.4	RPM
+- Fedora 26	RPM
+- Gentoo	make install
 
 ====== Requirements ======
 * libvirt with qemu/kvm 
@@ -23,52 +38,20 @@ starting VM using the 'hack files'.
 * (optional) 'bash-completion' for bash completion to work
 * (optional) 'pv' to show import progress
 * (optional) 'curl' to pass http(s) link for image_import
-* (optional) OVMF EUFI image for UEFI support in images
+* (optional) OVMF UEFI image for UEFI support in images
 
-====== Installation ======
-=== From source
-## As root
-1. Ensure you have all requirements needed (FIXME: have script for checking them)
-2. Install using command 'make install'
-3. Continue with 'FAST-VM Configuration'
+=== How to contribute ===
+- check GitHub issues with tag 'help_wanted'
+- report issues/request features in GitHub issues
 
-=== From RPM
-## As root
-1. Install RPM
-  # dnf install fast-vm-*.rpm
-    or
-  # yum install fast-vm-*.rpm
-2. Start libvirt service
-  # systemctl start libvirtd
-2A. (Fedora 24 only) Start virtlogd service
-  https://bugzilla.redhat.com/show_bug.cgi?id=1290357
-  # systemctl start virtlogd
-3. Continue with 'FAST-VM Configuration'
+If unsure where to start check with author
 
-====== FAST-VM Configuration ======
-## As root user
-1. Run 'configure-fast-vm' script and answer questions to configure fast-vm.
-Script will:
-- create default configuration file from your answers
-- create LVM thin pool with name and size of your choice (if it doesn't exist)
-- create new libvirt NAT network for VMs
+=== License and Support ===
+fast-vm is distributed under GPLv3 (or newer if it exists).
+Author will try to supports only the newest release.
 
-2. Add users that will be using to configured group for fast-vm access (default group is libvirt)
-
-3. When NOT using group 'libvirt' to allow fast-vm access, then check fast-vm.conf(5) man page
-for further configuration of libvirt daemon (section FASTVM_GROUP)
-
-====== Usage and further documentation  ======
-fast-vm(8)
-fast-vm.conf(5)
-configure-fast-vm(8)
-
-====== Supported/Tested OS =====
-Distribution    Installation method
-- RHEL 7.3	RPM
-- CentOS 7.3	RPM
-- Fedora 25	RPM
-- Gentoo	make install
+=== Author ===
+Ondrej Famera <ofamera@redhat.com> or <ondrej-xa2iel8u@famera.cz>
 
 ====== Known bugs/limitation ======
 * initial setup requires root
@@ -81,7 +64,11 @@ Distribution    Installation method
 * sometimes the VM doesn't get designated IP address because the dnsmasq holds
   the lease for some older MAC address (dhcp_release should be fixing this but
   it's not 100% working solution) - use fast-vm-net-cleanup to fix this issue
-* when upgrading from version =< 0.9 run 'fast-vm-net-cleanup' to address DHCP issue
+* (from fast-vm-1.3) random failures of 'virsh list' are not handled. For example if 'virsh list' is called 
+  2 times and second time it fails, then fast-vm doesn't handle that well. Re-running command helps.
+  This was observed on my testing machine, but I failed to reproduce behaviour.
+  The logs shows following error around time when this happens
+    error : virHashForEach:597 : Hash operation not allowed during iteration
 
 ====== FAQ ======
 Q: Why is it using LVM?
@@ -100,10 +87,3 @@ machines that are based on previous version of the base image.
 Q: Why not to use BTRFS cow?
 A: BTRFS is not as widely spread as LVM and it is not clear if it would be able to provide same
 functionality as LVM. There is possibility that I will look at this in the future.
-
-=== License and Support ===
-fast-vm is distributed under GPLv3 (or newer if it exists).
-Author will try to supports only the newest release.
-
-=== Author ===
-Ondrej Famera <ofamera@redhat.com> or <ondrej-xa2iel8u@famera.cz>
