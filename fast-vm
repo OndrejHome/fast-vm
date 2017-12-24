@@ -189,8 +189,20 @@ update_access_time () {
 # Update the time of 'note' file for VM.
 # This can be used to track if the VM is actively used/accessed.
 	vm_number="$1"
-	if [ -f "$FASTVM_NOTES_DIR/$vm_number" ]; then sg $FASTVM_GROUP "touch $FASTVM_NOTES_DIR/$vm_number 2>/dev/null"; fi
-	if [ -f "$FASTVM_NOTES_DIR/$vm_number.profile" ]; then sg $FASTVM_GROUP "touch $FASTVM_NOTES_DIR/$vm_number.profile 2>/dev/null"; fi
+	if [ -f "$FASTVM_NOTES_DIR/$vm_number" ]; then
+		if [ "$safe_sg" == 0 ]; then
+			sg $FASTVM_GROUP "touch $FASTVM_NOTES_DIR/$vm_number 2>/dev/null"
+		else
+			touch $FASTVM_NOTES_DIR/$vm_number 2>/dev/null
+		fi
+	fi
+	if [ -f "$FASTVM_NOTES_DIR/$vm_number.profile" ]; then
+		if [ "$safe_sg" == 0 ]; then
+			sg $FASTVM_GROUP "touch $FASTVM_NOTES_DIR/$vm_number.profile 2>/dev/null"
+		else
+			touch $FASTVM_NOTES_DIR/$vm_number.profile 2>/dev/null
+		fi
+	fi
 }
 
 calculate_day_difference () {
@@ -299,6 +311,13 @@ fi
 if [ $(id |grep "($FASTVM_GROUP)"|wc -l) -eq 0 ] && [ $(whoami) != "root" ]; then
 	pmsg $P_ERROR "User running fast-vm must be member of group '$FASTVM_GROUP'. You can easily add user to this group using command below\n # usermod -a -G $FASTVM_GROUP $(whoami)\n"
 	exit 1
+fi
+
+## check if 'sg' can work properly
+timeout 3 sg $FASTVM_GROUP date >/dev/null
+safe_sg=$?
+if [ "$safe_sg" != 0 ]; then
+	pmsg $P_WARNING "User cannot run properly commands as '$FASTVM_GROUP' group! Ensure that user can run command 'sg $FASTVM_GROUP date' without password.\n"
 fi
 
 ## try to detect if the defined thin pool is available
@@ -775,10 +794,18 @@ case "$1" in
 			exit 0
 		else
 			# create empty VM note to identify user which created VM only for non-base VMs
-			$(umask 0002; sg $FASTVM_GROUP "touch $FASTVM_NOTES_DIR/$vm_number 2>/dev/null")
+			if [ "$safe_sg" == 0 ]; then
+				$(umask 0002; sg $FASTVM_GROUP "touch $FASTVM_NOTES_DIR/$vm_number 2>/dev/null")
+			else
+				$(umask 0000; touch $FASTVM_NOTES_DIR/$vm_number 2>/dev/null)
+			fi
 			# if machine was created using profile put information about used profile into VM note
 			if [ "$profile_name" != "$image_name" ]; then
-				$(umask 0002; sg $FASTVM_GROUP "echo '$profile_name' > $FASTVM_NOTES_DIR/$vm_number.profile")
+				if [ "$safe_sg" == 0 ]; then
+					$(umask 0002; sg $FASTVM_GROUP "echo '$profile_name' > $FASTVM_NOTES_DIR/$vm_number.profile")
+				else
+					$(umask 0000; echo '$profile_name' > $FASTVM_NOTES_DIR/$vm_number.profile)
+				fi
 			fi
 		fi
 		
@@ -1070,13 +1097,21 @@ case "$1" in
 		owner=$(whoami)
 		if [ -z "$3" ]; then
 			#FIXME, add the umask 0002 in way that restores back to original umask
-			sg $FASTVM_GROUP "$EDITOR $FASTVM_NOTES_DIR/$vm_number"
+			if [ "$safe_sg" == 0 ]; then
+				sg $FASTVM_GROUP "$EDITOR $FASTVM_NOTES_DIR/$vm_number"
+			else
+				$EDITOR $FASTVM_NOTES_DIR/$vm_number
+			fi
 			content=$(cat $FASTVM_NOTES_DIR/$vm_number)
 		else
 			# get the whole content of note (do not care in how many arguments it seems to be splitted)
 			shift 2
 			content="$@"
-			$(umask 0002; sg $FASTVM_GROUP "echo '$content' > $FASTVM_NOTES_DIR/$vm_number")
+			if [ "$safe_sg" == 0 ]; then
+				$(umask 0002; sg $FASTVM_GROUP "echo '$content' > $FASTVM_NOTES_DIR/$vm_number")
+			else
+				$(umask 0000; echo '$content' > $FASTVM_NOTES_DIR/$vm_number)
+			fi
 		fi
 
 		if [ -f "$FASTVM_NOTES_DIR/$vm_number" ]; then

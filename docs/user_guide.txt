@@ -782,3 +782,25 @@ To run the installation with above examples you can use command below:
 <pre>
 # ansible-playbook -i fast-vm-server.hosts install-fast-vm-server.yml
 </pre>
+
+<h3 id='using-fast-vm-on-systems-with-sssd'>6.3. Using <code>fast-vm</code> on systems with SSSD</h3>
+<p>It is possible to use SSSD for providing centralized users and groups on systems
+that will run the <code>fast-vm</code>. In case that user wants to use the
+<code>fast-vm</code> then it must be part of group that is allowed to use
+<code>fast-vm</code>. In case that this cannot be changed centraly then use
+the <code>sss_override</code> to make a primary group of such (centrally
+managed) user to be a group allowed to use <code>fast-vm</code>. This can be done
+using the command <code>sss_override</code>. Below example shows changing
+primary group of user 'myuser' (assuming that group allowed to access the
+<code>fast-vm</code> has GID 500):</p>
+
+<pre>
+sss_override user-add myuser -g 500
+</pre>
+
+<p>User will need to re-login and the <code>sssd</code> daemon may need to be
+restarted for this change to take effect.</p>
+
+<p>Adding user to group in local <code>/etc/group</code> file may not work
+properly since <code>fast-vm-1.3</code> that uses <code>sg</code> command for
+some operations. This is mitigated in <code>fast-vm-1.3.1</code></p>
