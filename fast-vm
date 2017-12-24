@@ -180,7 +180,7 @@ handle_multiple_requests () {
 		pmsg $P_ERROR "Some ($errors) operations reported errors\n"
 		exit 1
 	else
-		pmsg $P_INFO "All operations returned succesfully\n"
+		pmsg $P_INFO "All operations returned successfully\n"
 		exit 0
 	fi
 }
@@ -756,7 +756,7 @@ case "$1" in
 			if [ "$vm_number" = "base" ]; then
 				pmsg $P_DEBUG "creating base image VM for $image_name\n" $vm_number
 			else
-				pmsg $P_ERROR "only numbers from range 20-220 and word 'base' permited here\n" $vm_number
+				pmsg $P_ERROR "only numbers from range 20-220 and word 'base' permitted here\n" $vm_number
 				usage create
 			fi
 		fi
@@ -934,7 +934,7 @@ case "$1" in
 			pmsg $P_DEBUG "Sending ACPI shutdown event to $vm_name\n" $vm_number
 			virsh --connect qemu:///system shutdown $vm_name
 			if [ "$?" != '0' ]; then
-				pmsg $P_ERROR "failed to send gracefull shutdown to VM $vm_name, check syslog for more information\n" $vm_number
+				pmsg $P_ERROR "failed to send graceful shutdown to VM $vm_name, check syslog for more information\n" $vm_number
 				exit 1
 			fi
 		else

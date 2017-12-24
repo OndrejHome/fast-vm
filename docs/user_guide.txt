@@ -754,7 +754,7 @@ role can be found in the <a href="https://github.com/OndrejHome/ansible.fast-vm-
 By default all features are enables and only minimum of configuration options
 needs to be changed to get from minimal system to system with functional
 <code>fast-vm</code>. The single options that would need to be customized on
-most of the systems is <b>fastvm_vg</b>VG that will contain
+most of the systems is <b>fastvm_vg</b> VG that will contain
 <code>fast-vm</code> thin LV pool. Rest of options can be left in defaults or
 tweaked as needed.</p>
 
