@@ -1,5 +1,5 @@
 Name:		fast-vm
-Version:	1.3
+Version:	1.3.1
 Release:	1%{?dist}
 Summary:	Script for defining VMs from images provided in thin LVM pool
 
@@ -58,6 +58,9 @@ drive of new machine before starting VM using the 'hack files'.
 %config(noreplace) %{_sysconfdir}/sudoers.d/%{name}-sudoers
 
 %changelog
+* Sun Dec 24 2017 Ondrej Famera <ofamera@redhat.com> 1.3.1-1
+- fix 'sg' handling on systems with sssd
+
 * Sun Nov 19 2017 Ondrej Famera <ofamera@redhat.com> 1.3-1
 - operations over multiple VMs
 - output change - relevant parts are prefixed with VM number
