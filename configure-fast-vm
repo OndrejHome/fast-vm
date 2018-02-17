@@ -66,7 +66,7 @@ while [ "$success" -eq 0 ];
 do
 
 	available_vgs=$(vgs -o vg_name,vg_attr,vg_size,vg_free)
-	ask_question "VG for LVM thin pool\n fast-vm is using LVM thin LV to store VM images and data.\n Available VGs on your systme are: \n $available_vgs\n On which existing VG should be this thin LV?" "$THINPOOL_VG" "THINPOOL_VG"
+	ask_question "VG for LVM thin pool\n fast-vm is using LVM thin LV to store VM images and data.\n Available VGs on your system are: \n $available_vgs\n On which existing VG should be this thin LV?" "$THINPOOL_VG" "THINPOOL_VG"
 	ask_question "LVM thin pool name\n Name the thin LV on which data would be stored.\n NOTE: This can be both 'name of existing thinpool LV' or 'name for a new one'.\n If LV with this name doesn't exists, it will get created by this setup." "$THINPOOL_LV" "THINPOOL_LV"
 
 	lvdisplay $THINPOOL_VG/$THINPOOL_LV >/dev/null 2>&1
