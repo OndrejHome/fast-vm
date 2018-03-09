@@ -156,7 +156,7 @@ distribution.</p>
 additional packages which improves features provided by <code>fast-vm</code></p>
 <pre># yum install curl pv dnsmasq-utils</pre>
 
-<p>If you plan using publically available images from Author then the followin
+<p>If you plan using publically available images from Author then the following
 package is required for correct application of creation scripts and their
 proper functionality</p>
 <pre># yum install libguestfs-tools-c
