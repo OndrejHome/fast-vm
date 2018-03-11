@@ -161,7 +161,7 @@ handle_multiple_requests () {
 	# determine operation that we handle
 	operation="$1"
 	# VM number is in other position in 'create' operation, change the operation so we don't loose the image_name
-	if [ "$operation" == 'create' ]; then operation="$operation $2"; fi
+	if [ "$operation" = 'create' ]; then operation="$operation $2"; fi
 	# get the rest of the command line for calling it later
 	original_arguments=$(echo "$@"|sed -e "s/$operation $vm_number//")
 	pmsg $P_DEBUG "Starting to handle multiple operations\n"
@@ -190,14 +190,14 @@ update_access_time () {
 # This can be used to track if the VM is actively used/accessed.
 	vm_number="$1"
 	if [ -f "$FASTVM_NOTES_DIR/$vm_number" ]; then
-		if [ "$safe_sg" == 0 ]; then
+		if [ "$safe_sg" = 0 ]; then
 			sg $FASTVM_GROUP "touch $FASTVM_NOTES_DIR/$vm_number 2>/dev/null"
 		else
 			touch $FASTVM_NOTES_DIR/$vm_number 2>/dev/null
 		fi
 	fi
 	if [ -f "$FASTVM_NOTES_DIR/$vm_number.profile" ]; then
-		if [ "$safe_sg" == 0 ]; then
+		if [ "$safe_sg" = 0 ]; then
 			sg $FASTVM_GROUP "touch $FASTVM_NOTES_DIR/$vm_number.profile 2>/dev/null"
 		else
 			touch $FASTVM_NOTES_DIR/$vm_number.profile 2>/dev/null
@@ -352,7 +352,7 @@ pv_ok="$?"
 case "$1" in
 	import_image|import_custom_image)
 		unpacked_image_size="10"
-		if [ "$1" == "import_custom_image" ]; then
+		if [ "$1" = "import_custom_image" ]; then
 			unpacked_image_size=$(echo "$2"|egrep '^[0-9]+$')
 			if [ -z "$unpacked_image_size" ]; then pmsg $P_ERROR "invalid image size. Use only whole decimal numbers\n"; usage import_custom_image; fi
 			shift
@@ -431,7 +431,7 @@ case "$1" in
 
 		# try to autodect the size of image from filename
 		autodetected_size=$(basename "$image_path"|sed -nr 's/^([0-9]+)g__.*$/\1/gp')
-		if [ "$1" == "import_image" ] && [ ! -z "$autodetected_size" ]; then
+		if [ "$1" = "import_image" ] && [ ! -z "$autodetected_size" ]; then
 			unpacked_image_size=$autodetected_size
 			pmsg $P_DEBUG "Size of image was determined from the filename to be ${autodetected_size}G.\n"
 		fi
@@ -671,7 +671,7 @@ case "$1" in
 			#FIXME due to handling of logging in fast-vm-helper we might not receive error code if something went wrong
 			pmsg $P_DEBUG "resizing image $image_name to ${new_size}G\n"
 			echo "lvresize" "/dev/$THINPOOL_VG/$VM_PREFIX$image_name" "$new_size" | sudo -n $FASTVM_HELPER
-			if [ "$?" == 0 ]; then
+			if [ "$?" = 0 ]; then
 				pmsg $P_INFO "Only newly created VMs from this image will use new size.\n"
 				pmsg $P_INFO "Resize of image to ${new_size}G succeeded.\n"
 			else
@@ -686,7 +686,7 @@ case "$1" in
 		image_name="$2"
 		if [ -z "$image_name" ]; then pmsg $P_ERROR "missing image or profile name\n"; usage create; fi
 		vm_number="$3"
-		if [[ $vm_number = *[\ ]* ]]; then handle_multiple_requests $@; fi
+		if $(echo "$vm_number"|grep -q ' '); then handle_multiple_requests $@; fi
 
 		# if the image_name looks like ProfileName
 		profile_name=$image_name
@@ -794,14 +794,14 @@ case "$1" in
 			exit 0
 		else
 			# create empty VM note to identify user which created VM only for non-base VMs
-			if [ "$safe_sg" == 0 ]; then
+			if [ "$safe_sg" = 0 ]; then
 				$(umask 0002; sg $FASTVM_GROUP "touch $FASTVM_NOTES_DIR/$vm_number 2>/dev/null")
 			else
 				$(umask 0000; touch $FASTVM_NOTES_DIR/$vm_number 2>/dev/null)
 			fi
 			# if machine was created using profile put information about used profile into VM note
 			if [ "$profile_name" != "$image_name" ]; then
-				if [ "$safe_sg" == 0 ]; then
+				if [ "$safe_sg" = 0 ]; then
 					$(umask 0002; sg $FASTVM_GROUP "echo '$profile_name' > $FASTVM_NOTES_DIR/$vm_number.profile")
 				else
 					$(umask 0000; echo '$profile_name' > $FASTVM_NOTES_DIR/$vm_number.profile)
@@ -867,7 +867,7 @@ case "$1" in
 	start)
 		vm_number="$2"
 		if [ -z "$vm_number" ]; then pmsg $P_ERROR "VM number missing\n"; usage start; fi
-		if [[ $vm_number = *[\ ]* ]]; then handle_multiple_requests $@;	fi
+		if $(echo "$vm_number"|grep -q ' '); then handle_multiple_requests $@; fi
 
 		check_vm_number "$vm_number" "active"
 		update_access_time "$vm_number"
@@ -884,7 +884,7 @@ case "$1" in
 		else
 			case "$3" in
 				console)
-					if [ ! -z "$MULTI_OPERATION" ] && [ "$MULTI_OPERATION" == 1 ]; then
+					if [ ! -z "$MULTI_OPERATION" ] && [ "$MULTI_OPERATION" = 1 ]; then
 						pmsg $P_ERROR "When running start as part of multiple operations the console option is not available.\n" $vm_number
 						exit 1
 					fi
@@ -897,7 +897,7 @@ case "$1" in
 					fi
 				;;
 				ssh)
-					if [ -z "$4" ] && [ ! -z "$MULTI_OPERATION" ] && [ "$MULTI_OPERATION" == 1 ]; then
+					if [ -z "$4" ] && [ ! -z "$MULTI_OPERATION" ] && [ "$MULTI_OPERATION" = 1 ]; then
 						pmsg $P_ERROR "When running start with ssh as part of multiple operations, script for SSH must be specified.\n" $vm_number
 						exit 1
 					fi
@@ -923,7 +923,7 @@ case "$1" in
 	stop)
 		vm_number="$2"
 		if [ -z "$vm_number" ]; then pmsg $P_ERROR "VM number missing\n"; usage stop; fi
-		if [[ $vm_number = *[\ ]* ]]; then handle_multiple_requests $@;	fi
+		if $(echo "$vm_number"|grep -q ' '); then handle_multiple_requests $@; fi
 
 		check_vm_number "$vm_number" "inactive"
 		update_access_time "$vm_number"
@@ -949,8 +949,8 @@ case "$1" in
 	ssh)
 		vm_number="$2"
 		if [ -z "$vm_number" ]; then pmsg $P_ERROR "VM number missing\n"; usage ssh; fi
-		if [[ $vm_number = *[\ ]* ]]; then handle_multiple_requests $@;	fi
-		if [ -z "$3" ] && [ ! -z "$MULTI_OPERATION" ] && [ "$MULTI_OPERATION" == 1 ]; then
+		if $(echo "$vm_number"|grep -q ' '); then handle_multiple_requests $@; fi
+		if [ -z "$3" ] && [ ! -z "$MULTI_OPERATION" ] && [ "$MULTI_OPERATION" = 1 ]; then
 			pmsg $P_ERROR "When running ssh as part of multiple operations, script for SSH must be specified.\n" $vm_number
 			exit 1
 		fi
@@ -983,7 +983,7 @@ case "$1" in
 	delete)
 		vm_number="$2"
 		if [ -z "$vm_number" ]; then pmsg $P_ERROR "VM number missing\n"; usage delete; fi
-		if [[ $vm_number = *[\ ]* ]]; then handle_multiple_requests $@;	fi
+		if $(echo "$vm_number"|grep -q ' '); then handle_multiple_requests $@; fi
 
 		if [ $(list_vm all|egrep "^$vm_number$"|wc -l) -eq 0 ]; then
 			pmsg $P_ERROR "no VM with number '$vm_number' found\n" $vm_number
@@ -1012,7 +1012,7 @@ case "$1" in
 			fi
 		done
 
-		if [ "$FASTVM_OWNER_ONLY_DELETE" == "yes" ]; then
+		if [ "$FASTVM_OWNER_ONLY_DELETE" = "yes" ]; then
 			owner=$(stat --format="%U" "$FASTVM_NOTES_DIR/$vm_number" 2>/dev/null)
 			if [ $(whoami) != "root" ] && [ $(whoami) != "$owner" ]; then
 				if [ -z "$owner" ]; then
@@ -1082,13 +1082,13 @@ case "$1" in
 	edit_note)
 		vm_number="$2"
 		if [ -z "$vm_number" ]; then pmsg $P_ERROR "VM number missing\n"; usage delete; fi
-		if [[ $vm_number = *[\ ]* ]]; then handle_multiple_requests $@;	fi
+		if $(echo "$vm_number"|grep -q ' '); then handle_multiple_requests $@; fi
 
 		if [ $(list_vm all|egrep "^$vm_number$"|wc -l) -eq 0 ]; then
 			pmsg $P_ERROR "no VM with number '$vm_number' found\n"
 			exit 1
 		fi
-		if [ -z "$3" ] && [ ! -z "$MULTI_OPERATION" ] && [ "$MULTI_OPERATION" == 1 ]; then
+		if [ -z "$3" ] && [ ! -z "$MULTI_OPERATION" ] && [ "$MULTI_OPERATION" = 1 ]; then
 			pmsg $P_ERROR "When running edit_note as part of multiple operations the note must be specified as argument.\n" $vm_number
 			exit 1
 		fi
@@ -1097,7 +1097,7 @@ case "$1" in
 		owner=$(whoami)
 		if [ -z "$3" ]; then
 			#FIXME, add the umask 0002 in way that restores back to original umask
-			if [ "$safe_sg" == 0 ]; then
+			if [ "$safe_sg" = 0 ]; then
 				sg $FASTVM_GROUP "$EDITOR $FASTVM_NOTES_DIR/$vm_number"
 			else
 				$EDITOR $FASTVM_NOTES_DIR/$vm_number
@@ -1107,7 +1107,7 @@ case "$1" in
 			# get the whole content of note (do not care in how many arguments it seems to be splitted)
 			shift 2
 			content="$@"
-			if [ "$safe_sg" == 0 ]; then
+			if [ "$safe_sg" = 0 ]; then
 				$(umask 0002; sg $FASTVM_GROUP "echo '$content' > $FASTVM_NOTES_DIR/$vm_number")
 			else
 				$(umask 0000; echo '$content' > $FASTVM_NOTES_DIR/$vm_number)
@@ -1123,7 +1123,7 @@ case "$1" in
 	resize)
 		vm_number="$2"
 		if [ -z "$vm_number" ]; then pmsg $P_ERROR "VM number missing\n"; usage resize; fi
-		if [[ $vm_number = *[\ ]* ]]; then handle_multiple_requests $@;	fi
+		if $(echo "$vm_number"|grep -q ' '); then handle_multiple_requests $@; fi
 
 		check_vm_number "$vm_number" "active"
 		update_access_time "$vm_number"
@@ -1136,7 +1136,7 @@ case "$1" in
 		#FIXME due to handling of logging in fast-vm-helper we might not receive error code if something went wrong
 		pmsg $P_DEBUG "resizing $vm_name disk to ${new_size}G\n" $vm_number
 		echo "lvresize" "/dev/$THINPOOL_VG/$vm_name" "$new_size" | sudo -n $FASTVM_HELPER
-		if [ "$?" == 0 ]; then
+		if [ "$?" = 0 ]; then
 			pmsg $P_INFO "VM $vm_number resize to ${new_size}G succeeded.\n" $vm_number
 		else
 			pmsg $P_ERROR "Resize failed. Check logs for more details\n" $vm_number
@@ -1218,7 +1218,7 @@ case "$1" in
 					user_hacks_exists="create"
 				fi
 				if [ -f "$FASTVM_USER_CONF_DIR/delete-hacks-${image_name}.sh" ]; then
-					user_hacks_exists+=",delete"
+					user_hacks_exists="${user_hacks_exists},delete"
 				fi
 				# check the existence of the XML file
 				if [ -f "$FASTVM_SYSTEM_CONF_DIR/config-${image_name}.xml" ]; then
@@ -1274,7 +1274,7 @@ case "$1" in
 	info)
 		vm_number="$2"
 		if [ -z "$vm_number" ]; then pmsg $P_ERROR "VM number missing\n"; usage delete; fi
-		if [[ $vm_number = *[\ ]* ]]; then handle_multiple_requests $@;	fi
+		if $(echo "$vm_number"|grep -q ' '); then handle_multiple_requests $@; fi
 		update_access_time "$vm_number"
 		pmsg $P_DEBUG "IP: 192.168.$SUBNET_NUMBER.$vm_number\n" $vm_number
 		;;
