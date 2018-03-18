@@ -119,7 +119,7 @@ Templates for VM are just libvirt XMLs with few macros from fast-vm.
 When creating a VM, fast-vm will create new writable LVM snapshot of disk drive, 
 define libvirt VM for it and make a static DHCP reservation for libvirt network 
 on which VM will be.
-Optionally fast-vm allows to do some customization of disk drive of new machine
+Optionally fast-vm allows one to do some customization of disk drive of new machine
 before starting VM using the 'hack files'.
 
 .RB "To start using fast-vm you need to configure it first using command " configure-fast-vm 
@@ -143,7 +143,7 @@ is part of the LV name and libvirt machine name.
 .BI "PathToImage " http://url/to/image.{gz,xz}
 .sp
 Local path or http/https URL to image file in GZIP or XZ format. From fast-vm-1.2 if the filename of image matches regular
-expression "[0-9]+g__" then the number before 'g' is used as the image size that will be imported (this can be overriden by
+expression "[0-9]+g__" then the number before 'g' is used as the image size that will be imported (this can be overridden by
 .RB "using the " "import_custom_image" " action)."
 
 .TP
@@ -176,7 +176,7 @@ before the VM is undefined from the libvirt.
 
 .TP
 .B VmNumber
-Number identifying the VM. Currently limited to range 20-220 to allow to be used as last octet of the IP address and leave some space static addresses.
+Number identifying the VM. Currently limited to range 20-220 to allow one to use them as last octet of the IP address and leave some space for static addresses.
 
 .TP
 .I /path/to/custom/script
@@ -222,7 +222,7 @@ files from there. You can change template later to suit more your needs. Here ar
 .fi
 
 .TP
-.B 2. Name your custom image and import "empty image" witht the libvirt XML
+.B 2. Name your custom image and import "empty image" with the libvirt XML
 The custom image in example will be named 'cool_image' and libvirt XML file wil have name cool_image.xml
 
 .B fast-vm import_image cool_image empty cool_image.xml
@@ -234,7 +234,7 @@ First create the base VM which will use the empty drive that you have imported.
 .B fast-vm create cool_image base
 
 Now you will have a VM with empty disk drive and you can install any system you want to become your custom image.
-To make image as small as possible try to first remove unnecesary things from the VM such as cache files, logs. If the OS supports it,
+To make image as small as possible try to first remove unnecessary things from the VM such as cache files, logs. If the OS supports it,
 try to send TRIM (ATA devices) or UNMAP (SCSI devices) so the storage can mark free space as free. You can try command
 .BR fstrim .
 
@@ -274,7 +274,7 @@ in the newly created VMs. It's strongly discouraged to create VMs based on impor
 .SH UEFI SUPPORT (from fast-vm-1.0)
 To use virtual machines with UEFI you will need a UEFI firmware for qemu which is most probably distributed separately from qemu.
 When creating the custom image you will have to specify location of UEFI firmware and provide the location of UEFI variable files in
-.RI " " "/etc/libvirt/qemu.conf" " file so the libvirt can automaticaly take care of UEFI vars creation and deletion."
+.RI " " "/etc/libvirt/qemu.conf" " file so the libvirt can automatically take care of UEFI vars creation and deletion."
 
 .SH IMAGE PROFILES (from fast-vm-1.1)
 Profiles simplyfies the use of alternative libvirt XML files and hack files. Profile defines the set of alternative libvirt XML, hack files under one

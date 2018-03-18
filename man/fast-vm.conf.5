@@ -37,7 +37,7 @@ The XX in the 192.168.XX.0/24 libvirt network created by setup.
 System group which will be allowed access to fast-vm. Users in this group can use fast-vm
 and fast-vm will allow access disks to this group (prior to version 0.9 this was a 'libvirt' group).
 If you setup this to other group than 'libvirt' you would most probably need to allow RW access for
-this groupto libvirt RW socket. typicaly this can be done by changing following two options in
+this groupto libvirt RW socket. typically this can be done by changing following two options in
 .BR /etc/libvirt/libvirtd.conf ". Changes below disable polkit authentication."
 .sp
 .BI "unix_sock_group = " "<new_group>"
@@ -54,7 +54,7 @@ Defines the minimum priority of messages that will be showed when running fast-v
 
 .TP
 .B FASTVM_NOTES_DIR
-Directory in which to store notes for VMs taht are shown in 'Notes' column when listing VMs. Defaults to
+Directory in which to store notes for VMs that are shown in 'Notes' column when listing VMs. Defaults to
 .BR /var/tmp
 
 .TP
