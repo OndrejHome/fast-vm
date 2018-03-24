@@ -135,9 +135,9 @@ out with <a href="https://ssl.famera.cz/blog/about.html">the Author</a>.</p>
 <li>Bugs/RFEs can be reported at <a href="https://github.com/OndrejHome/fast-vm/issues">GitHub issues</a></li>
 </ul>
 
-<h3 id='installation_rpm'>2.1. Installation from RPM</h3>
-<p>This type of installation is supported on latest releases of CentOS/RHEL
-and Fedora. Below are examples on how to install the current release on these
+<h3 id='installation_from_package'>2.1. Installation from package (RPM, DEB)</h3>
+<p>This type of installation is supported on latest releases of
+CentOS/RHEL/Fedora and Debian. Below are examples on how to install the current release on these
 distribution.</p>
 
 <p>Fedora 25</p>
@@ -150,6 +150,13 @@ distribution.</p>
 <pre>
 # curl -o /etc/yum.repos.d/fast-vm.repo https://copr.fedorainfracloud.org/coprs/ondrejhome/fast-vm/repo/epel-7/ondrejhome-fast-vm-epel-7.repo
 # yum install fast-vm
+</pre>
+
+<p>Debian 9.4</p>
+<pre>
+# apt-get install gdebi-core
+# wget https://github.com/OndrejHome/fast-vm/releases/download/1.3.1/fast-vm_1.3.1_all-debian9.deb
+# gdebi fast-vm_1.3.1_all-debian9.deb
 </pre>
 
 <p>On both RHEL and CentOS is strongly recommended to install following
@@ -169,8 +176,11 @@ activated before you can access the packages.</p>
 <p>If you plan using publically available images from Author then the following
 package is required for correct application of creation scripts and their
 proper functionality</p>
-<pre># yum install libguestfs-tools-c
-# dnf install libguestfs-tools-c</pre>
+<pre>
+# yum install libguestfs-tools-c
+# dnf install libguestfs-tools-c
+# apt-get install libguestfs-tools
+</pre>
 
 <h3 id='installation_manual'>2.2. Manual installation from source code</h3>
 <p>On system that doesn't use RPM you can install <code>fast-vm</code> using
@@ -192,6 +202,8 @@ show below.</p>
 # dnf update fast-vm
 # yum update fast-vm
 </pre>
+
+<p>There is currently no update support for fast-vm on Debian systems.</p>
 
 <h3 id='uninstall'>2.4. Uninstalling <code>fast-vm</code></h3>
 <p>If you don't like <code>fast-vm</code> please consider leaving me a
