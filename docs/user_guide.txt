@@ -140,13 +140,13 @@ out with <a href="https://ssl.famera.cz/blog/about.html">the Author</a>.</p>
 CentOS/RHEL/Fedora and Debian. Below are examples on how to install the current release on these
 distribution.</p>
 
-<p>Fedora 25</p>
+<p>Fedora 27</p>
 <pre>
-# curl -o /etc/yum.repos.d/fast-vm.repo https://copr.fedorainfracloud.org/coprs/ondrejhome/fast-vm/repo/fedora-25/ondrejhome-fast-vm-fedora-25.repo
+# curl -o /etc/yum.repos.d/fast-vm.repo https://copr.fedorainfracloud.org/coprs/ondrejhome/fast-vm/repo/fedora-27/ondrejhome-fast-vm-fedora-27.repo
 # dnf install fast-vm
 </pre>
 
-<p>CentOS 7.3/RHEL 7.3</p>
+<p>CentOS 7.4/RHEL 7.4</p>
 <pre>
 # curl -o /etc/yum.repos.d/fast-vm.repo https://copr.fedorainfracloud.org/coprs/ondrejhome/fast-vm/repo/epel-7/ondrejhome-fast-vm-epel-7.repo
 # yum install fast-vm
@@ -577,7 +577,7 @@ console and some minimal customization such as hostname and networking setup)</p
 
 <p>Example of importing image of CentOS 7.3 with script used during VM
 creation from Authors site.</p>
-<pre># fast-vm import_image c7.3 https://ssl.famera.cz/large_data/fast-vm-images/centos-7.3.img.xz https://raw.githubusercontent.com/OndrejHome/fast-vm-public-images/master/centos/xml/centos-6.3-7.3.xml https://raw.githubusercontent.com/OndrejHome/fast-vm-public-images/master/centos/hacks/centos-7-hacks.sh</pre>
+<pre># fast-vm import_image centos-7.4 http://ftp.linux.cz/pub/linux/people/ondrej_famera/fastvm-images/generated/6g__centos-7.4.img.xz https://raw.githubusercontent.com/OndrejHome/fast-vm-public-images/master/centos/xml/centos-6.3-7.4.xml https://raw.githubusercontent.com/OndrejHome/fast-vm-public-images/master/centos/hacks/6g_centos-7-hacks.sh</pre>
 
 <h3 id='importing_and_using_profiles'>3.8. Importing and using Profiles</h3>
 <p><b>Profiles</b> in <code>fast-vm</code> are used to provide templates with same
