@@ -153,7 +153,17 @@ distribution.</p>
 </pre>
 
 <p>On both RHEL and CentOS is strongly recommended to install following
-additional packages which improves features provided by <code>fast-vm</code></p>
+additional packages which improves features provided by <code>fast-vm</code>.</p>
+
+<p>On RHEL system the packages are available in
+<code>rhel-7-server-optional-rpms</code> repository that may need to be
+activated before you can access the packages.</p>
+<pre>
+# subscription-manager repos --enable=rhel-7-server-optional-rpms
+# yum install dnsmasq-utils
+</pre>
+
+<p>On CentOS you can directly install packages</p>
 <pre># yum install curl pv dnsmasq-utils</pre>
 
 <p>If you plan using publically available images from Author then the following
