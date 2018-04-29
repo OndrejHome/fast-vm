@@ -137,7 +137,7 @@ check_vm_number () {
 		pmsg $P_ERROR "no VM with number '$vm_number' found\n" $vm_number
 		exit 1
 	fi
-	if [ $(list_vm $vm_state|egrep "^$vm_number$"|wc -l) -eq 1 ]; then
+	if [ ! -z "$vm_state" -a $(list_vm $vm_state|egrep "^$vm_number$"|wc -l) -eq 1 ]; then
 		pmsg $P_ERROR "VM with number '$vm_number' is $vm_state\n" $vm_number
 		exit 1
 	fi
@@ -1315,6 +1315,7 @@ case "$1" in
 		vm_number="$2"
 		if [ -z "$vm_number" ]; then pmsg $P_ERROR "VM number missing\n"; usage delete; fi
 		if $(echo "$vm_number"|grep -q ' '); then handle_multiple_requests $@; fi
+		check_vm_number "$vm_number"
 		update_access_time "$vm_number"
 		pmsg $P_DEBUG "IP: 192.168.$SUBNET_NUMBER.$vm_number\n" $vm_number
 		;;
