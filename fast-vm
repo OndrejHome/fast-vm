@@ -837,7 +837,7 @@ case "$1" in
 		# update libvirt XML with VM description
 		virsh --connect qemu:///system desc $VM_NAME --title --new-desc "$(printf '%03d' $vm_number) $(whoami)" --config
 		# create metadata for the new VM
-		virsh --connect qemu:///system desc $vm_name -- "1,$(whoami),$(date '+%s'),$metadata_profile," 2>&1|$DEBUG_LOG_CMD
+		virsh --connect qemu:///system desc $VM_NAME -- "1,$(whoami),$(date '+%s'),$metadata_profile," 2>&1|$DEBUG_LOG_CMD
 
 		pmsg $P_DEBUG "creating disk '$VM_PREFIX$image_name-$vm_number'\n" $vm_number
 		echo "lvcreate" "newvm" "$image_name" "$image_name-$vm_number" | sudo -n $FASTVM_HELPER
