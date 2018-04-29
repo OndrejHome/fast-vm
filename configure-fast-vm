@@ -83,8 +83,6 @@ do
 	ask_question "Libvirt network (bridge) name\n This configuration will create a libvirt \n network with this name providing NAT for VMs." "$LIBVIRT_NETWORK" "LIBVIRT_NETWORK"
 	ask_question "Libvirt subnet number (192.168.XX.0/24)" "$SUBNET_NUMBER" "SUBNET_NUMBER"
 
-	ask_question "Directory in which to store VM notes" "$FASTVM_NOTES_DIR" "FASTVM_NOTES_DIR"
-
 	ask_question "Only 'root' and 'owner' of VM should be able to delete VM through fast-vm?\n \"yes\" - only 'root' and 'owner' can delete VM\n \"no\" - anyone allowed to use fast-vm can delete VM (default in versions =< 0.9)" "$FASTVM_OWNER_ONLY_DELETE" "FASTVM_OWNER_ONLY_DELETE"
 
 	## reload the configuration file and check the system for changes
@@ -170,6 +168,40 @@ do
 		printf "$o_err Libvirt network subnet is different from one provided in fast-vm configuration. Fix fast-vm configuration or libvirt network configuration\n"
 		exit 1
 	fi
+
+	if [ ! -z "$FASTVM_NOTES_DIR" ] && [ "$(whoami)" == "root" ]; then
+		# only root can run conversion to avoid accidental change by regular users
+		printf "[?] Do you want to convert VM notes into fast-vm 1.4 format? \n[yes]: "
+		read answer
+		if [ "$answer" == "yes" ] || [ -z "$answer" ]; then
+			printf "$o_inf Converting notes into VM metadata for fast-vm 1.4\n"
+			for vm in `seq 20 220`; do
+				if [ -f "$FASTVM_NOTES_DIR/$vm" ]; then
+					printf "$o_inf Found note for VM $vm\n"
+					owner=$(stat --format="%U" "$FASTVM_NOTES_DIR/$vm")
+					content=$(cat "$FASTVM_NOTES_DIR/$vm")
+					profile='---'
+					if [ -f "$FASTVM_NOTES_DIR/$vm.profile" ]; then
+						profile=$(cat $FASTVM_NOTES_DIR/$vm.profile)
+					fi
+					last_activity=$(date -r "$FASTVM_NOTES_DIR/$vm" +%s)
+					vm_name=$(virsh --connect qemu:///system list --all |grep "$VM_PREFIX"|awk '{print $2}'|egrep "\-$vm$")
+					if [ ! -z "$vm_name" ]; then
+						virsh --connect qemu:///system desc $vm_name -- "1,$owner,$last_activity,$profile,$content"
+						rm "$FASTVM_NOTES_DIR/$vm"
+						if [ -f "$FASTVM_NOTES_DIR/$vm.profile" ]; then rm "$FASTVM_NOTES_DIR/$vm.profile"; fi
+					else
+						printf "$o_inf but no VM with number $vm exists, delete the file?\n"
+						rm -i "$FASTVM_NOTES_DIR/$vm"
+					fi
+				fi
+
+			done
+		else
+			printf "$o_inf Skipping, you need to answer 'yes' to run conversion\n"
+		fi
+	fi
+
 	printf "$o_ok fast-vm configured\n"
 	success=1
 done
