@@ -189,20 +189,7 @@ update_access_time () {
 # Update the time of 'note' file for VM.
 # This can be used to track if the VM is actively used/accessed.
 	vm_number="$1"
-	if [ -f "$FASTVM_NOTES_DIR/$vm_number" ]; then
-		if [ "$safe_sg" = 0 ]; then
-			sg $FASTVM_GROUP "touch $FASTVM_NOTES_DIR/$vm_number 2>/dev/null"
-		else
-			touch $FASTVM_NOTES_DIR/$vm_number 2>/dev/null
-		fi
-	fi
-	if [ -f "$FASTVM_NOTES_DIR/$vm_number.profile" ]; then
-		if [ "$safe_sg" = 0 ]; then
-			sg $FASTVM_GROUP "touch $FASTVM_NOTES_DIR/$vm_number.profile 2>/dev/null"
-		else
-			touch $FASTVM_NOTES_DIR/$vm_number.profile 2>/dev/null
-		fi
-	fi
+	update_vm_metadata "$vm_number"
 }
 
 calculate_day_difference () {
@@ -351,13 +338,6 @@ fi
 if [ $(id |grep "($FASTVM_GROUP)"|wc -l) -eq 0 ] && [ $(whoami) != "root" ]; then
 	pmsg $P_ERROR "User running fast-vm must be member of group '$FASTVM_GROUP'. You can easily add user to this group using command below\n # usermod -a -G $FASTVM_GROUP $(whoami)\n"
 	exit 1
-fi
-
-## check if 'sg' can work properly
-timeout 3 sg $FASTVM_GROUP date >/dev/null
-safe_sg=$?
-if [ "$safe_sg" != 0 ]; then
-	pmsg $P_WARNING "User cannot run properly commands as '$FASTVM_GROUP' group! Ensure that user can run command 'sg $FASTVM_GROUP date' without password.\n"
 fi
 
 ## try to detect if the defined thin pool is available
@@ -832,21 +812,6 @@ case "$1" in
 
 			pmsg $P_DEBUG "base image VM created, to start this VM use 'virsh --connect qemu:///system start $VM_PREFIX$image_name'.\n This VM is used for customizing the base image of '$image_name' VMs.\n All changes you make to this VM would be available in newly created VMs of that version, this will not affect already existing VMs of same version\n" $vm_number
 			exit 0
-		else
-			# create empty VM note to identify user which created VM only for non-base VMs
-			if [ "$safe_sg" = 0 ]; then
-				$(umask 0002; sg $FASTVM_GROUP "touch $FASTVM_NOTES_DIR/$vm_number 2>/dev/null")
-			else
-				$(umask 0000; touch $FASTVM_NOTES_DIR/$vm_number 2>/dev/null)
-			fi
-			# if machine was created using profile put information about used profile into VM note
-			if [ "$profile_name" != "$image_name" ]; then
-				if [ "$safe_sg" = 0 ]; then
-					$(umask 0002; sg $FASTVM_GROUP "echo '$profile_name' > $FASTVM_NOTES_DIR/$vm_number.profile")
-				else
-					$(umask 0000; echo '$profile_name' > $FASTVM_NOTES_DIR/$vm_number.profile)
-				fi
-			fi
 		fi
 		
 		## check if the machine doesn't exists already
@@ -868,8 +833,12 @@ case "$1" in
 			pmsg $P_ERROR "Unable to define virtual machine from $tmp_xml. Check syslog for more details\n" $vm_number
 			exit 2
 		fi
+		metadata_profile='---'
+		if [ "$profile_name" != "$image_name" ]; then metadata_profile=$profile_name; fi
 		# update libvirt XML with VM description
 		virsh --connect qemu:///system desc $VM_NAME --title --new-desc "$(printf '%03d' $vm_number) $(whoami)" --config
+		# create metadata for the new VM
+		virsh --connect qemu:///system desc $vm_name -- "1,$(whoami),$(date '+%s'),$metadata_profile," 2>&1|$DEBUG_LOG_CMD
 
 		pmsg $P_DEBUG "creating disk '$VM_PREFIX$image_name-$vm_number'\n" $vm_number
 		echo "lvcreate" "newvm" "$image_name" "$image_name-$vm_number" | sudo -n $FASTVM_HELPER
@@ -1030,13 +999,15 @@ case "$1" in
 			exit 1
 		fi
 
-		if [ -f "$FASTVM_NOTES_DIR/$vm_number.profile" ]; then
-			profile_name=$(cat $FASTVM_NOTES_DIR/$vm_number.profile)
+		vm_name=$(virsh --connect qemu:///system list --all |grep "$VM_PREFIX"|awk '{print $2}'|egrep "\-$vm_number$")
+
+		get_vm_metadata $vm_name
+		if [ "$metadata_profile" != '---' ]; then
+			profile_name=$metadata_profile
 		fi
 
 		# determine image name of VM
 		image_name=$(virsh --connect qemu:///system list --all|awk '{print $2,$3,$4}'|egrep "^${VM_PREFIX}.*-[0-9]+ "|sed "s/${VM_PREFIX}\(.\+\)-\([0-9]\+\) \(.\+\)$/\2 \1 \3/"|awk "\$1==$vm_number {printf \"%s\",\$2}")
-
 		delete_hack_file=""
 		for path in "$3" "$FASTVM_USER_CONF_DIR/${profile_name}/delete-hacks.sh" "$FASTVM_SYSTEM_CONF_DIR/${profile_name}/delete-hacks.sh" "$FASTVM_USER_CONF_DIR/delete-hacks-${image_name}.sh" "$FASTVM_SYSTEM_CONF_DIR/delete-hacks-${image_name}.sh"
 		do
@@ -1053,18 +1024,16 @@ case "$1" in
 		done
 
 		if [ "$FASTVM_OWNER_ONLY_DELETE" = "yes" ]; then
-			owner=$(stat --format="%U" "$FASTVM_NOTES_DIR/$vm_number" 2>/dev/null)
-			if [ $(whoami) != "root" ] && [ $(whoami) != "$owner" ]; then
-				if [ -z "$owner" ]; then
+			if [ $(whoami) != "root" ] && [ $(whoami) != "$metadata_user" ]; then
+				if [ -z "$metadata_user" ]; then
 					pmsg $P_ERROR "only 'root' is allowed to delete this VM\n" $vm_number
 				else
-					pmsg $P_ERROR "only 'root' and '$owner' are allowed to delete this VM\n" $vm_number
+					pmsg $P_ERROR "only 'root' and '$metadata_user' are allowed to delete this VM\n" $vm_number
 				fi
 				exit 1
 			fi
 		fi
 
-		vm_name=$(virsh --connect qemu:///system list --all |grep "$VM_PREFIX"|awk '{print $2}'|egrep "\-$vm_number$")
 
 		if [ $(list_vm active|egrep "^$vm_number$"|wc -l) -eq 1 ]; then
 			pmsg $P_WARNING "VM $vm_name is active, forcefully stopping it\n" $vm_number
@@ -1094,9 +1063,6 @@ case "$1" in
 		pmsg $P_DEBUG "removing VM drive\n" $vm_number
 		echo "lvremove" "/dev/$THINPOOL_VG/$vm_name" | sudo -n $FASTVM_HELPER
 
-		pmsg $P_DEBUG "removing VM notes\n" $vm_number
-		if [ -f "$FASTVM_NOTES_DIR/$vm_number" ]; then rm "$FASTVM_NOTES_DIR/$vm_number"; fi
-
 		## apply delete hack file
 		if [ ! -z "$delete_hack_file" ]; then
 			delete_hack_file=$(echo "$delete_hack_file"|sed 's/^\([^\/]\)/\.\/\1/g')
@@ -1107,8 +1073,6 @@ case "$1" in
 			fi
 			pmsg $P_DEBUG "applying delete hacks finished\n" $vm_number
 		fi
-		# remove profile identifier once delete-hacks.sh were applied in case this machine was based on profile
-		if [ -f "$FASTVM_NOTES_DIR/$vm_number.profile" ]; then rm "$FASTVM_NOTES_DIR/$vm_number.profile"; fi
 
 		pmsg $P_DEBUG "undefining VM $vm_name from libvirt\n" $vm_number
 		virsh --connect qemu:///system undefine $vm_name --nvram --managed-save
@@ -1135,30 +1099,25 @@ case "$1" in
 		vm_name=$(virsh --connect qemu:///system list --all |grep "$VM_PREFIX"|awk '{print $2}'|egrep "\-$vm_number$")
 		content=''
 		owner=$(whoami)
+		get_vm_metadata "$vm_name"
 		if [ -z "$3" ]; then
-			#FIXME, add the umask 0002 in way that restores back to original umask
-			if [ "$safe_sg" = 0 ]; then
-				sg $FASTVM_GROUP "$EDITOR $FASTVM_NOTES_DIR/$vm_number"
-			else
-				$EDITOR $FASTVM_NOTES_DIR/$vm_number
+			tmp_file=$(mktemp)
+			if [ ! -z "$metadata_description" ]; then
+				echo "$metadata_description" > $tmp_file
 			fi
-			content=$(cat $FASTVM_NOTES_DIR/$vm_number)
+			$EDITOR $tmp_file
+			content=$(cat $tmp_file)
+			rm $tmp_file
 		else
 			# get the whole content of note (do not care in how many arguments it seems to be splitted)
 			shift 2
 			content="$@"
-			if [ "$safe_sg" = 0 ]; then
-				$(umask 0002; sg $FASTVM_GROUP "echo '$content' > $FASTVM_NOTES_DIR/$vm_number")
-			else
-				$(umask 0000; echo '$content' > $FASTVM_NOTES_DIR/$vm_number)
-			fi
 		fi
 
-		if [ -f "$FASTVM_NOTES_DIR/$vm_number" ]; then
-			owner=$(stat --format="%U" "$FASTVM_NOTES_DIR/$vm_number")
-		fi
 		# edit also title in libvirt XMl definition so applications like virt-manager can show same notes as seen in 'fast-vm list'
+		owner=$metadata_user
 		virsh --connect qemu:///system desc $vm_name --title --new-desc "$(printf '%03d' $vm_number) $owner $content" --config
+		update_vm_metadata $vm_number '*no_change*' "$content"
 		;;
 	resize)
 		vm_number="$2"
@@ -1193,28 +1152,20 @@ case "$1" in
 		else
 			lvs_out=$(echo 'lvs'|LANG=C sudo -n $FASTVM_HELPER)
 			printf "%3s %-15s %-12s %-15s %-13s  %-8s  %s\n" "VM#" "Image name" "Status" "Profile_name" "Size( %used )" "Activity" "Notes"
-			data=$(virsh --connect qemu:///system list --all|awk '{print $2,$3,$4}'|egrep "^${VM_PREFIX}.*-[0-9]+ "|sed "s/${VM_PREFIX}\(.\+\)-\([0-9]\+\) \(.\+\)$/\2 \1 \3/"|awk '{printf "%3s %-15s %s %s\n",$1,$2,$3,$4}')
+			raw_data=$(virsh --connect qemu:///system list --all|awk '{print $2,$3,$4}'|egrep "^${VM_PREFIX}.*-[0-9]+ ")
+			data=$(echo "$raw_data"|sed "s/${VM_PREFIX}\(.\+\)-\([0-9]\+\) \(.\+\)$/\2 \1 \3/"|awk '{printf "%3s %-15s %s %s\n",$1,$2,$3,$4}')
 			for vm in $vm_list;
 			do
 				out=$(echo "$data"|egrep "(^ $vm|^$vm) ")
-				profile_name='---'
-				if [ -f "$FASTVM_NOTES_DIR/$vm" ]; then
-					owner=$(stat --format="%U" "$FASTVM_NOTES_DIR/$vm")
-					note=$(head -1 "$FASTVM_NOTES_DIR/$vm")
-					note=$(echo "$owner: $note"|cut -c 1-$(($TERMINAL_WIDTH-38)))
-					if [ -f "$FASTVM_NOTES_DIR/$vm.profile" ]; then
-						profile_name=$(cat $FASTVM_NOTES_DIR/$vm.profile)
-					fi
-					## calculate time since last activity on this VM
-					last_activity=$(calculate_day_difference $(date -r "$FASTVM_NOTES_DIR/$vm" +%s) $(date +%s))
-					last_activity="$last_activity ago"
-					## parse the size of VM
-					size=$(echo "$lvs_out"|grep snapshot|egrep " ${VM_PREFIX}.*-[0-9]+ "|grep "\-$vm "|sed 's/\.00g//'|awk '{printf "%3sg(%6s%%)",$2,$3}')
-					## print the resulting line
-					printf "%-32s %-15s %-13s  %8s  %-s\n" "$out" "$profile_name" "$size" "$last_activity" "$note"
-				else
-					printf "%-32s -----\n" "$out"
-				fi
+				vm_name=$(echo "$raw_data"|awk '{print $1}'|grep "\-$vm")
+				get_vm_metadata $vm_name
+				note=$(echo "$metadata_user: $metadata_description"|cut -c 1-$(($TERMINAL_WIDTH-38)))
+				last_activity=$(calculate_day_difference "$metadata_last_action" $(date +%s))
+				last_activity="$last_activity ago"
+				## parse the size of VM
+				size=$(echo "$lvs_out"|grep snapshot|egrep " ${VM_PREFIX}.*-[0-9]+ "|grep "\-$vm "|sed 's/\.00g//'|awk '{printf "%3sg(%6s%%)",$2,$3}')
+				## print the resulting line
+				printf "%-32s %-15s %-13s  %8s  %-s\n" "$out" "$metadata_profile" "$size" "$last_activity" "$note"
 			done
 			echo "$lvs_out"|egrep " $THINPOOL_LV "|awk '{printf "=== Space used: %6s%% of %7s\n",$3,$2}'
 
