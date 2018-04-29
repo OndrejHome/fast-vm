@@ -3,7 +3,6 @@ DEBUG_LOG_CMD="logger -p debug -t fast-vm-dbg"
 FASTVM_HELPER=/usr/libexec/fast-vm-helper.sh
 FASTVM_USER_CONF_DIR="$HOME/.fast-vm"
 FASTVM_SYSTEM_CONF_DIR="/etc/fast-vm"
-FASTVM_NOTES_DIR="/var/tmp"
 CURL_OPTS=""
 LOG_LEVEL=7
 DISPLAY_LEVEL=7

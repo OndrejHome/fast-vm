@@ -53,9 +53,9 @@ Defines the minimum priority of messages that will be logged to syslog. Default 
 Defines the minimum priority of messages that will be showed when running fast-vm. Default is 7 (debug = all messages)
 
 .TP
-.B FASTVM_NOTES_DIR
+.B FASTVM_NOTES_DIR (DEPRECATED)
 Directory in which to store notes for VMs that are shown in 'Notes' column when listing VMs. Defaults to
-.BR /var/tmp
+.BR /var/tmp ". Once the notes are migrated from this directory using " configure-fast-vm " script as 'root' user then it is possible to remove this variable"
 
 .TP
 .B FASTVM_OWNER_ONLY_DELETE
