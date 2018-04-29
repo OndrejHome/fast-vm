@@ -238,7 +238,7 @@ update_vm_metadata () {
 	profile_name="$2"
 	description_text="$3"
 	get_vm_metadata $vm_name
-	if [ ! -z "$profile_name" -a "$profle_name" != '*no_change*' ]; then
+	if [ ! -z "$profile_name" -a "$profile_name" != '*no_change*' ]; then
 		metadata_profile=$profile_name
 	fi
 	if [ ! -z "$description_text" ]; then
@@ -246,7 +246,7 @@ update_vm_metadata () {
 	fi
 	if [ "$metadata_user" == '--unknown--' ]; then
 		metadata_user='root'
-		pmsg $P_WARNING "VM without valid metadata! CHanging ownership to 'root'\n" $vm_number
+		pmsg $P_WARNING "VM without valid metadata! Creating empty metadata and changing ownership of VM to 'root'\n" $vm_number
 	fi
 	# actually update the VM description
 	virsh --connect qemu:///system desc $vm_name -- "1,$metadata_user,$(date '+%s'),$metadata_profile,$metadata_description" 2>&1|$DEBUG_LOG_CMD
