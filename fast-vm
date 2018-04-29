@@ -212,6 +212,46 @@ calculate_day_difference () {
 	echo "$((($end-$start)/86400))d"
 }
 
+## VM metadata handling functions, metadata are stored in description field of VM in libvirt
+
+# version 1 Metadata format
+#   1    ,     2       ,         3                ,      4            ,    5
+# version,vm_owner_name,last_action_unix_timestamp,profile_name_or_---,freeform_description
+
+get_vm_metadata () {
+	vm_name="$1"
+	desc_data=$(virsh --connect qemu:///system desc $vm_name)
+	if [ "$desc_data" == "No description for domain: $vm_name" ]; then
+		desc_data="1,--unknown--,$(date '+%s'),---,--metadata-missing--"
+	fi
+	# parse the metadata into variables that can be used later including the raw format of them
+	metadata_user=$(echo "$desc_data"|cut -d, -f 2)
+	metadata_last_action=$(echo "$desc_data"|cut -d, -f 3)
+	metadata_profile=$(echo "$desc_data"|cut -d, -f 4)
+	metadata_description=$(echo "$desc_data"|cut -d, -f 5-)
+	metadata_raw="$desc_data"
+}
+
+update_vm_metadata () {
+	vm_number="$1"
+	vm_name=$(virsh --connect qemu:///system list --all |grep "$VM_PREFIX"|awk '{print $2}'|egrep "\-$vm_number$")
+	profile_name="$2"
+	description_text="$3"
+	get_vm_metadata $vm_name
+	if [ ! -z "$profile_name" -a "$profle_name" != '*no_change*' ]; then
+		metadata_profile=$profile_name
+	fi
+	if [ ! -z "$description_text" ]; then
+		metadata_description=$description_text
+	fi
+	if [ "$metadata_user" == '--unknown--' ]; then
+		metadata_user='root'
+		pmsg $P_WARNING "VM without valid metadata! CHanging ownership to 'root'\n" $vm_number
+	fi
+	# actually update the VM description
+	virsh --connect qemu:///system desc $vm_name -- "1,$metadata_user,$(date '+%s'),$metadata_profile,$metadata_description" 2>&1|$DEBUG_LOG_CMD
+}
+
 usage () {
 	part="$1"
 
