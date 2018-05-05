@@ -106,9 +106,18 @@ fast-vm \(em script for defining VMs from images provided in thin LVM pool
 .BI "console " VmNumber
 
 .B fast-vm
+.B keydist
+.RI < VmNumber | "'VmNumber1 VmNumber2 ...'" >
+
+.B fast-vm
 .B ssh
 .RI < VmNumber | "'VmNumber1 VmNumber2 ...'" >
 .RI [ /path/to/custom/script ]
+
+.B fast-vm
+.B scp
+.RI < VmNumber | "'VmNumber1 VmNumber2 ...'" >
+.RI < "vm:/remote/sourcefile /local/destfile" | "/local/sourcefile vm:/remote/destfile" >
 
 .SH DESCRIPTION
 fast-vm is provides command-line interface to create virtual machines (VMs) in 
@@ -181,6 +190,24 @@ Number identifying the VM. Currently limited to range 20-220 to allow to be used
 .TP
 .I /path/to/custom/script
 Local path to script which will be executed as soon as the VM is started and reachable by SSH via its IP address assigned by DHCP.
+
+.TP
+.I vm:/remote/sourcefile|/local/sourcefile
+Path to the source file to be copied via SCP.
+Can be local to the fast-vm host or remote, on a guest VM.
+Use the literal hostname 
+.I vm
+to denote that the file should be copied from the specified vm.
+fast-vm will replace 'vm:' with the correct guest hostname.
+
+.TP
+.I /local/destfile|vm:/remote/destfile
+Path to the destination file to be written to, via SCP.
+Can be local to the fast-vm host or remote, on a guest VM.
+Use the literal hostname
+.I vm
+to denote that the file should be copied to the specified vm.
+fast-vm will replace 'vm:' with the correct guest hostname.
 
 .SH TEMPLATE MACROS
 In the libvirt XML and hack files you variables from 
@@ -329,6 +356,14 @@ Create machine with custom definition and hack file. Start it and after it's SSH
 .RB "Create VMs with numbers 43, 44, 45 using the " "6.7" " image with single command."
 .sp
 .BI "fast-vm create " "6.7 '43 44 45'"
+
+.RB "Automatically create an ssh key if it doesn't already exist and distribute it to VMs 41 and 42"
+.sp
+.BI "fast-vm keydist " "'41 42'"
+
+.RB "scp a script to VMs 41 and 42. By default this goes in root's home directory, or specify a path instead"
+.sp
+.BI "fast-vm scp " "'41 42' script.sh vm:"
 
 .SH EXIT CODES
 In case of error the fast-vm will return non-zero exit code. When multiple VMs were specified then zero exit code is returned only when operation succeeded on all VMs. If any of VMs reported non-zero exit code, then the overal exit code will also be non-zero.
