@@ -212,7 +212,7 @@ calculate_day_difference () {
 get_vm_metadata () {
 	vm_name="$1"
 	desc_data=$(virsh --connect qemu:///system desc $vm_name)
-	if [ "$desc_data" == "No description for domain: $vm_name" ]; then
+	if [ "$desc_data" = "No description for domain: $vm_name" ]; then
 		desc_data="1,--unknown--,$(date '+%s'),---,--metadata-missing--"
 	fi
 	# parse the metadata into variables that can be used later including the raw format of them
@@ -235,7 +235,7 @@ update_vm_metadata () {
 	if [ ! -z "$description_text" ]; then
 		metadata_description=$description_text
 	fi
-	if [ "$metadata_user" == '--unknown--' ]; then
+	if [ "$metadata_user" = '--unknown--' ]; then
 		metadata_user='root'
 		pmsg $P_WARNING "VM without valid metadata! Creating empty metadata and changing ownership of VM to 'root'\n" $vm_number
 	fi
@@ -991,7 +991,7 @@ case "$1" in
 	scp)
 		vm_number="$2"
 		if [ -z "$vm_number" ]; then pmsg $P_ERROR "VM number missing\n"; usage scp; fi
-		if [[ $vm_number = *[\ ]* ]]; then handle_multiple_requests $@;	fi
+		if $(echo "$vm_number"|grep -q ' '); then handle_multiple_requests $@;	fi
 		check_vm_number "$vm_number" "inactive"
 		update_access_time "$vm_number"
 
@@ -1008,7 +1008,7 @@ case "$1" in
 	keydist)
 		vm_number="$2"
 		if [ -z "$vm_number" ]; then pmsg $P_ERROR "VM number missing\n"; usage keydist; fi
-		if [[ $vm_number = *[\ ]* ]]; then handle_multiple_requests $@;	fi
+		if $(echo "$vm_number"|grep -q ' '); then handle_multiple_requests $@;	fi
 
 		check_vm_number "$vm_number" "inactive"
 		update_access_time "$vm_number"
