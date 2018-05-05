@@ -161,13 +161,18 @@ handle_multiple_requests () {
 	operation="$1"
 	# VM number is in other position in 'create' operation, change the operation so we don't loose the image_name
 	if [ "$operation" = 'create' ]; then operation="$operation $2"; fi
+	if [ "$operation" = 'scp' ] || [ "$operation" = "keydist" ]; then SERIALIZE=1; fi
 	# get the rest of the command line for calling it later
 	original_arguments=$(echo "$@"|sed -e "s/$operation $vm_number//")
 	pmsg $P_DEBUG "Starting to handle multiple operations\n"
 	all_pids=''
 	for vm in $vm_number; do
 		pmsg $P_DEBUG "Calling operation: ./fast-vm $operation $vm $original_arguments\n"
-		MULTI_OPERATION=1 $fast_vm_bin $operation $vm $original_arguments &
+		if [ -z "$SERIALIZE" ]; then
+			MULTI_OPERATION=1 $fast_vm_bin $operation $vm $original_arguments &
+		else
+			MULTI_OPERATION=1 $fast_vm_bin $operation $vm $original_arguments
+		fi
 		all_pids="$all_pids $!"
 	done
 	errors=0
@@ -284,6 +289,12 @@ usage () {
 		ssh)
 			echo "$0 ssh <VmNumber|'VmNumber1 VmNumber2 ...'> [/path/to/custom/script]"
 			;;
+		scp)
+			echo "$0 scp <VmNumber|'VmNumber1 VmNumber2 ...'> vm:/remote/sourcefile|/local/sourcefile /local/destfile|vm:/remote/destfile"
+			;;
+		keydist)
+			echo "$0 keydist <VmNumber|'VmNumber1 VmNumber2 ...'>"
+			;;
 		delete)
 			echo "$0 delete <VmNumber|'VmNumber1 VmNumber2 ...'> [PathToDeleteHackFile]"
 			;;
@@ -302,7 +313,7 @@ usage () {
 		*)
 			echo "== fast-vm version 1.3 <ofamera@redhat.com> =="
 			echo "$0 <action> <options>"
-			for cmd in import_image import_custom_image export_image remove_image resize_image import_profile remove_profile list_images create delete edit_note resize info list start stop console ssh;
+			for cmd in import_image import_custom_image export_image remove_image resize_image import_profile remove_profile list_images create delete edit_note resize info list start stop console keydist ssh scp;
 			do
 				usage $cmd noexit
 			done
@@ -918,7 +929,7 @@ case "$1" in
 						if [ ! -z "$4" ] && [ -x "$4" ]; then
 							eval "$4 192.168.$SUBNET_NUMBER.$vm_number" | sed -e "s/^/\[$vmn\]/"
 						else
-							ssh -o GlobalKnownHostsFile=/dev/null -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no "root@192.168.$SUBNET_NUMBER.$vm_number"
+							ssh -i "$FASTVM_USER_CONF_DIR/id_fastvm.pub" -o GlobalKnownHostsFile=/dev/null -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no "root@192.168.$SUBNET_NUMBER.$vm_number"
 						fi
 					fi
 				;;
@@ -974,8 +985,43 @@ case "$1" in
 				pmsg $P_ERROR "$3 not executable\n" $vm_number
 			fi
 		else
-			ssh -o GlobalKnownHostsFile=/dev/null -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no "root@192.168.$SUBNET_NUMBER.$vm_number"
+			ssh -i $FASTVM_USER_CONF_DIR/id_fastvm -o GlobalKnownHostsFile=/dev/null -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no "root@192.168.$SUBNET_NUMBER.$vm_number"
 		fi
+		;;
+	scp)
+		vm_number="$2"
+		if [ -z "$vm_number" ]; then pmsg $P_ERROR "VM number missing\n"; usage scp; fi
+		if [[ $vm_number = *[\ ]* ]]; then handle_multiple_requests $@;	fi
+		check_vm_number "$vm_number" "inactive"
+		update_access_time "$vm_number"
+
+		if [ -z "$4" ]; then
+			pmsg $P_ERROR "scp requires a sourcepath and destination path to copy\n" $vm_number
+			exit 1
+		fi
+
+		wait_for_ssh "$vm_number"
+		sourcepath=$(echo "$3" | sed "s/\(.*\)\bvm:\(.*\)/\1root@192.168.$SUBNET_NUMBER.$vm_number:\2/")
+		destpath=$(echo "$4" | sed "s/\(.*\)\bvm:\(.*\)/\1root@192.168.$SUBNET_NUMBER.$vm_number:\2/")
+		scp -i $FASTVM_USER_CONF_DIR/id_fastvm -o GlobalKnownHostsFile=/dev/null -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no "$sourcepath" "$destpath"
+		;;
+	keydist)
+		vm_number="$2"
+		if [ -z "$vm_number" ]; then pmsg $P_ERROR "VM number missing\n"; usage keydist; fi
+		if [[ $vm_number = *[\ ]* ]]; then handle_multiple_requests $@;	fi
+
+		check_vm_number "$vm_number" "inactive"
+		update_access_time "$vm_number"
+
+		if [ ! -f "$FASTVM_USER_CONF_DIR/id_fastvm" ]; then
+			pmsg $P_WARNING "Generating new ssh key with empty passphrase for fast-vm use at $FASTVM_USER_CONF_DIR/id_fastvm\n" $vm_number
+			ssh-keygen -P '' -f $FASTVM_USER_CONF_DIR/id_fastvm
+		fi
+
+		wait_for_ssh "$vm_number"
+		ssh-copy-id -i "$FASTVM_USER_CONF_DIR/id_fastvm" \
+			-o GlobalKnownHostsFile=/dev/null -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no \
+			"root@192.168.$SUBNET_NUMBER.$vm_number" | egrep '(password|Now try logging into the machine)' | sed "s@with:.*@with: $0 ssh $vm_number@"
 		;;
 	console)
 		vm_number="$2"
