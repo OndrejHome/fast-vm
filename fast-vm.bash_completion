@@ -93,6 +93,21 @@ _fast-vm()
 		_filedir '@(sh)'
 		return 0
 	fi
+	if [ "$cword" -eq 3 ] && [ ${COMP_WORDS[1]} == "scp" ]; then
+		# offer any file or keyword 'vm:'
+		COMPREPLY=( $( compgen -W "vm:" -f -- "$cur" ) )
+		return 0
+	fi
+	if [ "$cword" -eq 4 ] && [ ${COMP_WORDS[1]} == "scp" ]; then
+		# source path did /not/ contain "vm:", so prompt only that
+		COMPREPLY=( $( compgen -W "vm:" ) )
+		return 0
+	fi
+	if [ "$cword" -eq 5 ] && [ ${COMP_WORDS[1]} == "scp" ]; then
+		# source path /did/ contain "vm:", so exclude it from destination
+		COMPREPLY=( $( compgen -f -- "$cur" ) )
+		return 0
+	fi
 
 	case $prev in
 		import_image|import_custom_image|import_profile)
@@ -122,7 +137,7 @@ _fast-vm()
 			COMPREPLY=( $( compgen -W "all active inactive" -- "$cur" ) )
 			return 0
 			;;
-		start|stop|delete|console|ssh|info|resize)
+		start|stop|delete|console|keydist|scp|ssh|info|resize)
 			local vm_numbers
 			case $prev in
 				start|resize)
@@ -131,7 +146,7 @@ _fast-vm()
 				delete|edit_note|info)
 					vm_numbers=$(fast-vm list all short)
 				;;
-				console|ssh|stop)
+				console|keydist|scp|ssh|stop)
 					vm_numbers=$(fast-vm list active short)
 				;;
 			esac
@@ -142,7 +157,7 @@ _fast-vm()
 
 	$split && return 0
 	if [ "$cword" -lt 2 ]; then
-		COMPREPLY=( $( compgen -W 'import_image import_custom_image export_image remove_image resize_image import_profile remove_profile edit_note list_images list_profiles create start stop delete resize console ssh list info' -- "$cur" ) )
+		COMPREPLY=( $( compgen -W 'import_image import_custom_image export_image remove_image resize_image import_profile remove_profile edit_note keydist list_images list_profiles create start stop delete resize console scp ssh list info' -- "$cur" ) )
 		return 0
 	fi
 
