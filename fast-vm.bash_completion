@@ -137,7 +137,7 @@ _fast-vm()
 			COMPREPLY=( $( compgen -W "all active inactive" -- "$cur" ) )
 			return 0
 			;;
-		start|stop|delete|console|keydist|scp|ssh|info|resize)
+		start|stop|delete|console|keydist|scp|ssh|info|resize|edit_note)
 			local vm_numbers
 			case $prev in
 				start|resize)
