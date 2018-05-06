@@ -929,7 +929,7 @@ case "$1" in
 						if [ ! -z "$4" ] && [ -x "$4" ]; then
 							eval "$4 192.168.$SUBNET_NUMBER.$vm_number" | sed -e "s/^/\[$vmn\]/"
 						else
-							ssh -i "$FASTVM_USER_CONF_DIR/id_fastvm.pub" -o GlobalKnownHostsFile=/dev/null -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no "root@192.168.$SUBNET_NUMBER.$vm_number"
+							ssh -i "$FASTVM_USER_CONF_DIR/id_fastvm" -o GlobalKnownHostsFile=/dev/null -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no "root@192.168.$SUBNET_NUMBER.$vm_number"
 						fi
 					fi
 				;;
