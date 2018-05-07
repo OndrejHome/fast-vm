@@ -10,6 +10,7 @@ Source0:	https://github.com/OndrejHome/%{name}/archive/%{version}.tar.gz
 BuildArch:	noarch
 BuildRequires:	coreutils
 BuildRequires:	bash-completion
+BuildRequires:	make
 Requires:	coreutils
 Requires:	gawk
 Requires:	libvirt-client

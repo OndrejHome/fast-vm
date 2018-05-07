@@ -12,7 +12,7 @@ resulting files
 - rpmbuild/RPMS/noarch/fast-vm-1.3.1-1.el7.centos.noarch.rpm
 
 === fast-vm RPM for Fedora
-# dnf install rpmdevtools bash-completion
+# dnf install rpmdevtools bash-completion make
 # rpmdev-setuptree
 # curl https://codeload.github.com/OndrejHome/fast-vm/tar.gz/1.3.1 > rpmbuild/SOURCES/1.3.1.tar.gz
 # curl https://raw.githubusercontent.com/OndrejHome/fast-vm/master/rpm/fast-vm.spec > rpmbuild/SPECS/fast-vm.spec
