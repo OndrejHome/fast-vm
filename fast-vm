@@ -311,7 +311,7 @@ usage () {
 			echo "$0 list [all|active|inactive [short]]"
 			;;
 		*)
-			echo "== fast-vm version 1.3 <ofamera@redhat.com> =="
+			echo "== fast-vm version 1.4 <ofamera@redhat.com> =="
 			echo "$0 <action> <options>"
 			for cmd in import_image import_custom_image export_image remove_image resize_image import_profile remove_profile list_images create delete edit_note resize info list start stop console keydist ssh scp;
 			do

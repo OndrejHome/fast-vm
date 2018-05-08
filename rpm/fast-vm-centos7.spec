@@ -1,5 +1,5 @@
 Name:		fast-vm
-Version:	1.3.1
+Version:	1.4
 Release:	1%{?dist}
 Summary:	Script for defining VMs from images provided in thin LVM pool
 
@@ -58,6 +58,14 @@ drive of new machine before starting VM using the 'hack files'.
 %config(noreplace) %{_sysconfdir}/sudoers.d/%{name}-sudoers
 
 %changelog
+* Tue May 08 2018 Ondrej Famera <ofamera@redhat.com> 1.4-1
+- added 'scp' and 'keydist' actions (itsbill)
+- move VM metadata into libvirt VMs (deprecated FASTVM_NOTES_DIR)
+- fix output from 'fast-vm list' when using non-English locale
+- various small fixes in code and documentation (tedwon,nrwahl12)
+- removed the use of 'sg'
+- IMPORTANT: run 'configure-fast-vm' as 'root' to convert VM metadata
+
 * Sun Dec 24 2017 Ondrej Famera <ofamera@redhat.com> 1.3.1-1
 - fix 'sg' handling on systems with sssd
 

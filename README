@@ -21,10 +21,11 @@ man pages:
 
 ====== Supported/Tested OS =====
 Distribution    Installation method
-- RHEL 7.4	RPM
+- RHEL 7.5	RPM
 - CentOS 7.4	RPM
-- Fedora 26	RPM
-- Gentoo	make install
+- Fedora 28	RPM
+- Debian 9.4	DEB
+- Gentoo	ebuild
 
 ====== Requirements ======
 * libvirt with qemu/kvm 
@@ -69,6 +70,8 @@ Ondrej Famera <ofamera@redhat.com> or <ondrej-xa2iel8u@famera.cz>
   This was observed on my testing machine, but I failed to reproduce behaviour.
   The logs shows following error around time when this happens
     error : virHashForEach:597 : Hash operation not allowed during iteration
+* (upgrading to 'fast-vm-1.4) because of the VM metadata location change you need to run
+  the 'configure-fast-vm' as root after upgrade to migrate the metadata to new location
 
 ====== FAQ ======
 Q: Why is it using LVM?
