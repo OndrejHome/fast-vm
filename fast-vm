@@ -1313,7 +1313,9 @@ case "$1" in
 		if $(echo "$vm_number"|grep -q ' '); then handle_multiple_requests $@; fi
 		check_vm_number "$vm_number"
 		update_access_time "$vm_number"
+		vm_name=$(virsh --connect qemu:///system list --all |grep "$VM_PREFIX"|awk '{print $2}'|egrep "\-$vm_number$")
 		pmsg $P_DEBUG "IP: 192.168.$SUBNET_NUMBER.$vm_number\n" $vm_number
+		pmsg $P_DEBUG "vm_name: $vm_name\n" $vm_number
 		;;
 	*) 
 		pmsg $P_ERROR "unknown action\n"
