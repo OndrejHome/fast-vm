@@ -1,7 +1,7 @@
 Source: fast-vm
 Section: misc
 Priority: optional
-Maintainer: Ondrej Famera <ondrej@famera.cz>
+Maintainer: Ondrej Famera <ondrej-xa2iel8u@famera.cz>
 Build-Depends: debhelper (>= 9)
 Standards-Version: 3.9.8
 Homepage: https://github.com/OndrejHome/fast-vm/
