@@ -87,7 +87,7 @@ resulting files
 ## change release field to match RHEL minor version and add the extra identifier
 ## in rpmbuild/SPECS/seabios.spec
 - Release:        3%{?dist}.1
-+ Release:        3.el7_4.1
++ Release:        3.el7_4.1+megasas+lsi
 
 # rpmbuild -ba rpmbuild/SPECS/seabios.spec
 (build takes ~ 1 minute)
