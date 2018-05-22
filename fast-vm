@@ -6,6 +6,7 @@ FASTVM_SYSTEM_CONF_DIR="/etc/fast-vm"
 CURL_OPTS=""
 LOG_LEVEL=7
 DISPLAY_LEVEL=7
+FVM=`basename $0`
 
 ## terminal colors
 c_red=$(tput setaf 1)
@@ -248,71 +249,71 @@ usage () {
 
 	case $part in
 		import_image)
-			echo "$0 import_image ImageName <empty |PathToImage> PathToLibvirtXML [PathToHacksFile] [PathToDeleteHackFile]"
+			echo "$FVM import_image ImageName <empty |PathToImage> PathToLibvirtXML [PathToHacksFile] [PathToDeleteHackFile]"
 			;;
 		import_custom_image)
-			echo "$0 import_custom_image ImageSizeInGiB ImageName <empty |PathToImage> PathToLibvirtXML [PathToHacksFile] [PathToDeleteHackFile]"
+			echo "$FVM import_custom_image ImageSizeInGiB ImageName <empty |PathToImage> PathToLibvirtXML [PathToHacksFile] [PathToDeleteHackFile]"
 			;;
 		export_image)
-			echo "$0 export_image ImageName <xz|gz>"
+			echo "$FVM export_image ImageName <xz|gz>"
 			;;
 		remove_image)
-			echo "$0 remove_image ImageName"
+			echo "$FVM remove_image ImageName"
 			;;
 		resize_image)
-			echo "$0 resize_image ImageName NewImageSizeInGiB"
+			echo "$FVM resize_image ImageName NewImageSizeInGiB"
 			;;
 		import_profile)
-			echo "$0 import_profile ProfileName ImageName PathToLibvirtXML [PathToHacksFile] [PathToDeleteHackFile]"
+			echo "$FVM import_profile ProfileName ImageName PathToLibvirtXML [PathToHacksFile] [PathToDeleteHackFile]"
 			;;
 		remove_profile)
-			echo "$0 remove_profile ProfileName"
+			echo "$FVM remove_profile ProfileName"
 			;;
 		list_images)
-			echo "$0 list_images [short]"
+			echo "$FVM list_images [short]"
 			;;
 		list_profiles)
-			echo "$0 list_profiles [short]"
+			echo "$FVM list_profiles [short]"
 			;;
 		create)
-			echo "$0 create <ImageName|ProfileName> <base|VmNumber|'VmNumber1 VmNumber2 ...'> [PathToLibvirtXML] [PathToHacksFile]"
+			echo "$FVM create <ImageName|ProfileName> <base|VmNumber|'VmNumber1 VmNumber2 ...'> [PathToLibvirtXML] [PathToHacksFile]"
 			;;
 		start)
-			echo "$0 start <VmNumber|'VmNumber1 VmNumber2 ...'> [console|ssh [/path/to/custom/script]]"
+			echo "$FVM start <VmNumber|'VmNumber1 VmNumber2 ...'> [console|ssh [/path/to/custom/script]]"
 			;;
 		stop)
-			echo "$0 stop <VmNumber|'VmNumber1 VmNumber2 ...'> [graceful]"
+			echo "$FVM stop <VmNumber|'VmNumber1 VmNumber2 ...'> [graceful]"
 			;;
 		console)
-			echo "$0 console VmNumber"
+			echo "$FVM console VmNumber"
 			;;
 		ssh)
-			echo "$0 ssh <VmNumber|'VmNumber1 VmNumber2 ...'> [/path/to/custom/script]"
+			echo "$FVM ssh <VmNumber|'VmNumber1 VmNumber2 ...'> [/path/to/custom/script]"
 			;;
 		scp)
-			echo "$0 scp <VmNumber|'VmNumber1 VmNumber2 ...'> vm:/remote/sourcefile|/local/sourcefile /local/destfile|vm:/remote/destfile"
+			echo "$FVM scp <VmNumber|'VmNumber1 VmNumber2 ...'> vm:/remote/sourcefile|/local/sourcefile /local/destfile|vm:/remote/destfile"
 			;;
 		keydist)
-			echo "$0 keydist <VmNumber|'VmNumber1 VmNumber2 ...'>"
+			echo "$FVM keydist <VmNumber|'VmNumber1 VmNumber2 ...'>"
 			;;
 		delete)
-			echo "$0 delete <VmNumber|'VmNumber1 VmNumber2 ...'> [PathToDeleteHackFile]"
+			echo "$FVM delete <VmNumber|'VmNumber1 VmNumber2 ...'> [PathToDeleteHackFile]"
 			;;
 		edit_note)
-			echo "$0 edit_note <VmNumber|'VmNumber1 VmNumber2 ...'> [NoteText]"
+			echo "$FVM edit_note <VmNumber|'VmNumber1 VmNumber2 ...'> [NoteText]"
 			;;
 		resize)
-			echo "$0 resize <VmNumber|'VmNumber1 VmNumber2 ...'> NewSizeInGiB"
+			echo "$FVM resize <VmNumber|'VmNumber1 VmNumber2 ...'> NewSizeInGiB"
 			;;
 		info)
-			echo "$0 info <VmNumber|'VmNumber1 VmNumber2 ...'>"
+			echo "$FVM info <VmNumber|'VmNumber1 VmNumber2 ...'>"
 			;;
 		list)
-			echo "$0 list [all|active|inactive [short]]"
+			echo "$FVM list [all|active|inactive [short]]"
 			;;
 		*)
 			echo "== fast-vm version 1.4 <ofamera@redhat.com> =="
-			echo "$0 <action> <options>"
+			echo "$FVM <action> <options>"
 			for cmd in import_image import_custom_image export_image remove_image resize_image import_profile remove_profile list_images create delete edit_note resize info list start stop console keydist ssh scp;
 			do
 				usage $cmd noexit
@@ -1021,7 +1022,7 @@ case "$1" in
 		wait_for_ssh "$vm_number"
 		ssh-copy-id -i "$FASTVM_USER_CONF_DIR/id_fastvm" \
 			-o GlobalKnownHostsFile=/dev/null -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no \
-			"root@192.168.$SUBNET_NUMBER.$vm_number" | egrep '(password|Now try logging into the machine)' | sed "s@with:.*@with: $0 ssh $vm_number@"
+			"root@192.168.$SUBNET_NUMBER.$vm_number" | egrep '(password|Now try logging into the machine)' | sed "s@with:.*@with: $FVM ssh $vm_number@"
 		;;
 	console)
 		vm_number="$2"
