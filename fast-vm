@@ -1002,9 +1002,9 @@ case "$1" in
 		fi
 
 		wait_for_ssh "$vm_number"
-		sourcepath=$(echo "$3" | sed "s/\(.*\)\bvm:\(.*\)/\1root@192.168.$SUBNET_NUMBER.$vm_number:\2/")
-		destpath=$(echo "$4" | sed "s/\(.*\)\bvm:\(.*\)/\1root@192.168.$SUBNET_NUMBER.$vm_number:\2/")
-		scp -i $FASTVM_USER_CONF_DIR/id_fastvm -o GlobalKnownHostsFile=/dev/null -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no "$sourcepath" "$destpath"
+		shift 2
+		arguments=$(echo "$@"|sed "s/\bvm:/root@192.168.$SUBNET_NUMBER.$vm_number:/g")
+		scp -i $FASTVM_USER_CONF_DIR/id_fastvm -o GlobalKnownHostsFile=/dev/null -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no $arguments
 		;;
 	keydist)
 		vm_number="$2"
