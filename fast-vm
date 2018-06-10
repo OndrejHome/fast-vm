@@ -212,7 +212,7 @@ calculate_day_difference () {
 
 get_vm_metadata () {
 	vm_name="$1"
-	desc_data=$(virsh --connect qemu:///system desc $vm_name)
+	desc_data=$(virsh --connect qemu:///system desc --config $vm_name)
 	if [ "$desc_data" = "No description for domain: $vm_name" ]; then
 		desc_data="1,--unknown--,$(date '+%s'),---,--metadata-missing--"
 	fi
@@ -241,7 +241,7 @@ update_vm_metadata () {
 		pmsg $P_WARNING "VM without valid metadata! Creating empty metadata and changing ownership of VM to 'root'\n" $vm_number
 	fi
 	# actually update the VM description
-	virsh --connect qemu:///system desc $vm_name -- "1,$metadata_user,$(date '+%s'),$metadata_profile,$metadata_description" 2>&1|$DEBUG_LOG_CMD
+	virsh --connect qemu:///system desc --config $vm_name -- "1,$metadata_user,$(date '+%s'),$metadata_profile,$metadata_description" 2>&1|$DEBUG_LOG_CMD
 }
 
 usage () {
@@ -847,9 +847,9 @@ case "$1" in
 		metadata_profile='---'
 		if [ "$profile_name" != "$image_name" ]; then metadata_profile=$profile_name; fi
 		# update libvirt XML with VM description
-		virsh --connect qemu:///system desc $VM_NAME --title --new-desc "$(printf '%03d' $vm_number) $(whoami)" --config
+		virsh --connect qemu:///system desc --config $VM_NAME --title --new-desc "$(printf '%03d' $vm_number) $(whoami)"
 		# create metadata for the new VM
-		virsh --connect qemu:///system desc $VM_NAME -- "1,$(whoami),$(date '+%s'),$metadata_profile," 2>&1|$DEBUG_LOG_CMD
+		virsh --connect qemu:///system desc --config $VM_NAME -- "1,$(whoami),$(date '+%s'),$metadata_profile," 2>&1|$DEBUG_LOG_CMD
 
 		pmsg $P_DEBUG "creating disk '$VM_PREFIX$image_name-$vm_number'\n" $vm_number
 		echo "lvcreate" "newvm" "$image_name" "$image_name-$vm_number" | sudo -n $FASTVM_HELPER
@@ -1162,7 +1162,7 @@ case "$1" in
 
 		# edit also title in libvirt XMl definition so applications like virt-manager can show same notes as seen in 'fast-vm list'
 		owner=$metadata_user
-		virsh --connect qemu:///system desc $vm_name --title --new-desc "$(printf '%03d' $vm_number) $owner $content" --config
+		virsh --connect qemu:///system desc --config $vm_name --title --new-desc "$(printf '%03d' $vm_number) $owner $content"
 		update_vm_metadata $vm_number '*no_change*' "$content"
 		;;
 	resize)
