@@ -1004,7 +1004,7 @@ case "$1" in
 		wait_for_ssh "$vm_number"
 		shift 2
 		arguments=$(echo "$@"|sed "s/\bvm:/root@192.168.$SUBNET_NUMBER.$vm_number:/g")
-		scp -i $FASTVM_USER_CONF_DIR/id_fastvm -o GlobalKnownHostsFile=/dev/null -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no $arguments
+		scp -i $FASTVM_USER_CONF_DIR/id_fastvm -o GlobalKnownHostsFile=/dev/null -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -r $arguments
 		;;
 	keydist)
 		vm_number="$2"
