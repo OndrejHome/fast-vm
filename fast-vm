@@ -291,7 +291,7 @@ usage () {
 			echo "$FVM ssh <VmNumber|'VmNumber1 VmNumber2 ...'> [/path/to/custom/script]"
 			;;
 		scp)
-			echo "$FVM scp <VmNumber|'VmNumber1 VmNumber2 ...'> vm:/remote/sourcefile|/local/sourcefile /local/destfile|vm:/remote/destfile"
+			echo "$FVM scp <VmNumber|'VmNumber1 VmNumber2 ...'> < vm:/remote/sourcefile|/local/sourcefile /local/destfile|vm:/remote/destfile ...>"
 			;;
 		keydist)
 			echo "$FVM keydist <VmNumber|'VmNumber1 VmNumber2 ...'>"
