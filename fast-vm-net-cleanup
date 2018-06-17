@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 FASTVM_HELPER=/usr/libexec/fast-vm-helper.sh
 if [ ! -f '/etc/fast-vm.conf' ]; then
         echo "[err] global configuration file /etc/fast-vm.conf not found"
@@ -8,7 +8,7 @@ fi
 . /etc/fast-vm.conf
 
 echo "[inf] fixing fast-vm network $LIBVIRT_NETWORK"
-while read mac ip; do
+virsh --connect qemu:///system net-dumpxml $LIBVIRT_NETWORK|grep 'host mac'|awk '{print $2,$3}' | while read mac ip; do
 	mac=$(echo $mac|cut -d\' -f2)
 	ip=$(echo $ip|cut -d\' -f2)
 	vm_number=$(echo $ip|cut -d. -f4)
@@ -21,10 +21,10 @@ while read mac ip; do
 
 	fi
 
-done < <(virsh --connect qemu:///system net-dumpxml $LIBVIRT_NETWORK|grep 'host mac'|awk '{print $2,$3}')
+done
 
 echo "[inf] check for dummy DHCP reservation"
-if [ $(virsh --connect qemu:///system net-dumpxml $LIBVIRT_NETWORK|grep '52:54:00:99:ff:99'|wc -l) == "0" ]; then
+if [ $(virsh --connect qemu:///system net-dumpxml $LIBVIRT_NETWORK|grep '52:54:00:99:ff:99'|wc -l) = "0" ]; then
 	echo "[inf] adding missing dummy DHCP reservation"
 	virsh --connect qemu:///system net-update "$LIBVIRT_NETWORK" add-last ip-dhcp-host --xml "<host mac='52:54:00:99:ff:99' ip='192.168.${SUBNET_NUMBER}.2'/>" --live --config
 fi
