@@ -9,7 +9,7 @@ Homepage: https://github.com/OndrejHome/fast-vm/
 Package: fast-vm
 Architecture: all
 Depends: ${misc:Depends}, libvirt-daemon, libvirt-clients, libvirt-daemon-system, dnsmasq-utils, curl, sudo, thin-provisioning-tools, gawk
-Recommends: bash-completion, ovmf, pv
+Recommends: bash-completion, ovmf, pv, libguestfs-tools
 Description: Script for defining VMs from images provided in thin LVM pool
  fast-vm provides command-line interface to create virtual machines (VMs) in
  libvirt, based on imported disks in LVM and XML templates.

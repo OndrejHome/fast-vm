@@ -11,6 +11,7 @@ BuildArch:	noarch
 BuildRequires:	coreutils
 BuildRequires:	bash-completion
 Requires:	coreutils
+Requires:	dnsmasq-utils
 Requires:	gawk
 Requires:	libvirt-client
 Requires:	libvirt-daemon
@@ -25,6 +26,7 @@ Requires:	qemu-kvm
 Requires:	libvirt-daemon-driver-storage
 Requires:	libvirt-daemon-driver-lxc
 Requires:	libvirt-daemon-driver-qemu
+Requires:	libguestfs-tools-c
 
 %description
 %{name} provides command-line interface to create virtual machines (VMs) in

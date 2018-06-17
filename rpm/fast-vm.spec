@@ -12,6 +12,7 @@ BuildRequires:	coreutils
 BuildRequires:	bash-completion
 BuildRequires:	make
 Requires:	coreutils
+Requires:	dnsmasq-utils
 Requires:	gawk
 Requires:	libvirt-client
 Requires:	libvirt-daemon
@@ -28,10 +29,10 @@ Requires:	libvirt-daemon-driver-lxc
 Requires:	libvirt-daemon-driver-qemu
 Recommends:	bash-completion
 Recommends:	curl
-Recommends:	dnsmasq-utils
 Recommends:	gzip
 Recommends:	pv
 Recommends:	xz
+Recommends:	libguestfs-tools-c
 
 %description
 %{name} provides command-line interface to create virtual machines (VMs) in
