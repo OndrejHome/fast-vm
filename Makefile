@@ -23,5 +23,6 @@ install:
 	install -pm 644 man/fast-vm.8 ${DESTDIR}/${datadir}/man/man8/
 	install -pm 644 man/fast-vm-list.8 ${DESTDIR}/${datadir}/man/man8/
 	install -pm 644 man/configure-fast-vm.8 ${DESTDIR}/${datadir}/man/man8/
+	install -pm 644 man/fast-vm-net-cleanup.8 ${DESTDIR}/${datadir}/man/man8/
 	mkdir -p ${DESTDIR}/${datadir}/man/man5
 	install -pm 644 man/fast-vm.conf.5 ${DESTDIR}/${datadir}/man/man5/
