@@ -93,19 +93,9 @@ _fast-vm()
 		_filedir '@(sh)'
 		return 0
 	fi
-	if [ "$cword" -eq 3 ] && [ ${COMP_WORDS[1]} == "scp" ]; then
+	if [ "$cword" -gt 2 ] && [ ${COMP_WORDS[1]} == "scp" ]; then
 		# offer any file or keyword 'vm:'
 		COMPREPLY=( $( compgen -W "vm:" -f -- "$cur" ) )
-		return 0
-	fi
-	if [ "$cword" -eq 4 ] && [ ${COMP_WORDS[1]} == "scp" ]; then
-		# source path did /not/ contain "vm:", so prompt only that
-		COMPREPLY=( $( compgen -W "vm:" ) )
-		return 0
-	fi
-	if [ "$cword" -eq 5 ] && [ ${COMP_WORDS[1]} == "scp" ]; then
-		# source path /did/ contain "vm:", so exclude it from destination
-		COMPREPLY=( $( compgen -f -- "$cur" ) )
 		return 0
 	fi
 
