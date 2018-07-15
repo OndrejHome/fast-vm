@@ -1,11 +1,10 @@
 fast-vm User Guide
 
 <ul>
-<li>This is <b>draft</b> of User Guide for <code>fast-vm</code> version 1.1.
-- 1.4.</li>
+<li>This is User Guide for <code>fast-vm</code> version 1.5.</li>
 <li>If you have find an mistake (and you bet there are some) or would like to
 request some part to be documented in this guide that you use please get in
-touch with <a href="https://ssl.famera.cz/blog/about.html">the Author</a>.</li>
+touch with <a href="https://www.famera.cz/blog/about.html">the Author</a>.</li>
 <li>While <code>fast-vm</code> allows most of operations to be run as normal
 user this guide uses the <code>#</code> symbol to indicate commands that can
 be run and doesn't necessarily require super user. This is for convenience
@@ -46,7 +45,7 @@ loopback device if you are out of space, check ADVANCED USAGE part)</li>
 <ol>
 <li>create new writable LVM snapshot of disk drive</li>
 <li>define libvirt VM for it (taking the libvirt XML, replacing macros and
-defining the VM using 'virsh define')</li>
+defining the VM using <code>virsh define</code>)</li>
 <li>make a static DHCP reservation for libvirt network on which VM will be.
 (so you can have predictable IPv4 address of the VM)</li>
 <li>(optionally) after VM was defined in libvirt and all other tasks were done
@@ -59,7 +58,7 @@ to achieve additional level of customization)</li>
 <ol>
 <li>stop the VM forcefully if it is running</li>
 <li>remove static DHCP reservation from libvirt and send dhcp_release request
-when <code>dnsmasq-tools</code> are present(this is highly recommended).</li>
+when <code>dnsmasq-tools</code> are present.</li>
 <li>remove the writable snaphot of machine</li>
 <li>(optionally) before undefining the VM from libvirt the so called 'delete
 hack file' can be run to do cleanup which can be a counter part to 'hack file'
@@ -68,14 +67,14 @@ from VM creation time</li>
 </ol>
 
 <h3 id='what_is_fast-vm_server'>1.3. What is <code>fast-vm server</code>?</h3>
-<p>In version 1.0 <code>fast-vm</code> was provided with feature that helps to
+<p>From version 1.0, <code>fast-vm</code> provides feature that helps to
 identify which user on system created the VM. This allows for basic prevention
-of accidental removal of VM by other users and enables the use in multi-user
+of accidental removal of VMs by other users and enables the use in multi-user
 environment.</p>
 <p><code>fast-vm server</code> in this document refers to any machine running
 <code>fast-vm</code> accessible by normal users that are in group allowed to
 use <code>fast-vm</code>. While the <code>fast-vm</code> can be used by individual 
-it is often also used to provide access for multiple user so 
+it is often also used to provide access to multiple user so 
 they can collaborativelly access the VMs.</p>
 
 <p><b>SECURITY NOTE:</b> Typical installation of <code>fast-vm</code> suggest giving users full
@@ -126,7 +125,7 @@ like name (check <code>fast-vm edit_note</code> command).</p>
 install <code>fast-vm</code></h2>
 <p>Currently there are several methods for installation that are described
 below. If you are interested into making package for your distribution check
-out with <a href="https://ssl.famera.cz/blog/about.html">the Author</a>.</p>
+out with <a href="https://www.famera.cz/blog/about.html">the Author</a>.</p>
 
 <p>Useful links for <code>fast-vm</code> project:</p>
 <ul>
@@ -140,45 +139,42 @@ out with <a href="https://ssl.famera.cz/blog/about.html">the Author</a>.</p>
 CentOS/RHEL/Fedora and Debian. Below are examples on how to install the current release on these
 distribution.</p>
 
-<p>Fedora 27</p>
+<p>From <code>fast-vm</code> version 1.5 the CentOS/RHEL/Fedora also provides
+RPM package <code>fast-vm-minimal</code> with less dependencies. From that
+time by default the <code>fast-vm</code> package will pull in also the dependencies 
+needed for some VM images and other useful packages to simplify the
+installation.</p>
+
+<p><b>Fedora 28</b></p>
 <pre>
-# curl -o /etc/yum.repos.d/fast-vm.repo https://copr.fedorainfracloud.org/coprs/ondrejhome/fast-vm/repo/fedora-27/ondrejhome-fast-vm-fedora-27.repo
+# curl -o /etc/yum.repos.d/fast-vm.repo https://copr.fedorainfracloud.org/coprs/ondrejhome/fast-vm/repo/fedora-28/ondrejhome-fast-vm-fedora-28.repo
 # dnf install fast-vm
 </pre>
 
-<p>CentOS 7.4/RHEL 7.4</p>
+<p><b>CentOS 7.5</b></p>
 <pre>
 # curl -o /etc/yum.repos.d/fast-vm.repo https://copr.fedorainfracloud.org/coprs/ondrejhome/fast-vm/repo/epel-7/ondrejhome-fast-vm-epel-7.repo
 # yum install fast-vm
 </pre>
 
-<p>Debian 9.4</p>
-<pre>
-# apt-get install gdebi-core
-# wget https://github.com/OndrejHome/fast-vm/releases/download/1.3.1/fast-vm_1.3.1_all-debian9.deb
-# gdebi fast-vm_1.3.1_all-debian9.deb
-</pre>
-
-<p>On both RHEL and CentOS is strongly recommended to install following
-additional packages which improves features provided by <code>fast-vm</code>.</p>
-
-<p>On RHEL system the packages are available in
-<code>rhel-7-server-optional-rpms</code> repository that may need to be
-activated before you can access the packages.</p>
+<p><b>RHEL 7.5</b></p>
+<p>On RHEL system some of dependencies are present only in
+<code>rhel-7-server-optional-rpms</code> repository that needs to be activated
+before <code>fast-vm</code> installation.</p>
 <pre>
 # subscription-manager repos --enable=rhel-7-server-optional-rpms
-# yum install dnsmasq-utils
+# curl -o /etc/yum.repos.d/fast-vm.repo https://copr.fedorainfracloud.org/coprs/ondrejhome/fast-vm/repo/epel-7/ondrejhome-fast-vm-epel-7.repo
+# yum install fast-vm
 </pre>
 
-<p>On CentOS you can directly install packages</p>
-<pre># yum install curl pv dnsmasq-utils</pre>
-
-<p>If you plan using publically available images from Author then the following
-package is required for correct application of creation scripts and their
-proper functionality</p>
+<p><b>Debian 9.5</b></p>
+<p>If you plan using publically available images from Author then also
+<code>libguestfs-tools</code> package is required for correct application 
+of creation scripts and their proper functionality</p>
 <pre>
-# yum install libguestfs-tools-c
-# dnf install libguestfs-tools-c
+# apt-get install gdebi-core
+# wget https://github.com/OndrejHome/fast-vm/releases/download/1.5/fast-vm_1.5_all-debian9.deb
+# gdebi fast-vm_1.5_all-debian9.deb
 # apt-get install libguestfs-tools
 </pre>
 
@@ -213,15 +209,17 @@ feedback on what you don't like or what could get improved so you can use it.</p
 package.</p>
 
 <pre>
-# dnf remove fast-vm
-# yum remove fast-vm
+# dnf remove fast-vm fast-vm-minimal
+# yum remove fast-vm fast-vm-minimal
+# apt-get remove fast-vm
 </pre>
 
 <p>If you have used manual installation there is currently no automated way 
 of unistalling but in general it is enough to check the <code>Makefile</code> 
 and remove all files it creates in system. Additionally you can remove the directories
-<code>/etc/fast-vm/</code>, <code>$HOME/.fast-vm/</code>, and notes for fast-vm
-which gets by default generated int <code>/var/tmp/</code>.</p>
+<code>/etc/fast-vm/</code>, <code>$HOME/.fast-vm/</code>. Since version 1.4
+the notes for fast-vm are not stored anymore in separate files and they are
+part of the description of VM in libvirt.</p>
 
 <h3 id='configuring_fast-vm'>2.5. Configuring <code>fast-vm</code></h3>
 <p>After initial installation or update of <code>fast-vm</code> it is highly
@@ -252,7 +250,7 @@ b) Enter on which VG the fast-vm will have thinpool LV as storage.
 [?] VG for LVM thin pool
  fast-vm is using LVM thin LV to store VM images and data.
  On which existing VG should be this thin LV?
-[]: f25
+[]: f28
 </pre>
 
 c) Provide name of thinpool LV. If thinpool LV doesn't exist script will create for you later.
@@ -301,13 +299,7 @@ h) Choose the subnet number that will be used by fast-vm to allocate IP addresse
 [22]: 23
 </pre>
 
-i) Choose directory in which fast-vm will store stateful data about VMs such as notes.
-<pre>
-[?] Directory in which to store VM notes
-[/var/tmp]:
-</pre>
-
-j) Decide if fast-vm should prevent delete of machines created by other users.
+i) Decide if fast-vm should prevent delete of machines created by other users.
 <pre>
 [?] Only 'root' and 'owner' of VM should be able to delete VM through fast-vm?
  "yes" - only 'root' and 'owner' can delete VM
@@ -315,23 +307,23 @@ j) Decide if fast-vm should prevent delete of machines created by other users.
 [no]:
 </pre>
 
-k) (only if thinpool LV didn't existed) Configurator will ask if you wanna create the thinpool LV.
+j) (only if thinpool LV didn't existed) Configurator will ask if you wanna create the thinpool LV.
 <pre>
-[wrn] LV 'f25/fastvm-pool' not found
+[wrn] LV 'f28/fastvm-pool' not found
 Following commands would be executed to create thin pool:
-  lvcreate -n fastvm-pool -L 20G f25
-  lvconvert --type thin-pool f25/fastvm-pool
+  lvcreate -n fastvm-pool -L 20G f28
+  lvconvert --type thin-pool f28/fastvm-pool
 [?] Create now? (y/n) y
 [inf] Creating ...
   Logical volume "fastvm-pool" created.
-  WARNING: Converting logical volume f25/fastvm-pool to thin pool's data volume with metadata wiping.
+  WARNING: Converting logical volume f28/fastvm-pool to thin pool's data volume with metadata wiping.
   THIS WILL DESTROY CONTENT OF LOGICAL VOLUME (filesystem etc.)
-Do you really want to convert f25/fastvm-pool? [y/n]: y
-  Converted f25/fastvm-pool to thin pool.
+Do you really want to convert f28/fastvm-pool? [y/n]: y
+  Converted f28/fastvm-pool to thin pool.
 [ok] LVM thinpool successfuly created
 </pre>
 
-l) (only if libvirt network didn't existed) Configurator will ask if to create libvirt network for fast-vm.
+k) (only if libvirt network didn't existed) Configurator will ask if to create libvirt network for fast-vm.
 <pre>
 [?] Network fastvm-nat is not defined in libvirt, define now? (y/n) y
 [inf] Creating ...
@@ -344,7 +336,7 @@ Network fastvm-nat started
 [inf] fast-vm libvirt network created and autostarted
 </pre>
 
-m) End of configuration
+l) End of configuration
 <pre>
 [ok] fast-vm configured
 </pre>
@@ -355,16 +347,16 @@ holds the thinpool LV for fast-vm. For example if you use VG <code>f25</code>
 then following entries can be add into LVM <code>filter =</code>.
 
 <pre>
-"r|/dev/f25/.*|"
-"r|/dev/mapper/f25-.*|"
+"r|/dev/f28/.*|"
+"r|/dev/mapper/f28-.*|"
 </pre>
 
 Example of incorporating the above filter into <code>/etc/lvm/lvm.conf</code>.
 <pre>
 ...
-devicec {
+devices {
    ...
-   filter = [ "r|/dev/nbd.*|", "r|/dev/f25/.*|", "r|/dev/mapper/f25-.*|", "a|.*|" ]
+   filter = [ "r|/dev/nbd.*|", "r|/dev/f28/.*|", "r|/dev/mapper/f28-.*|", "a|.*|" ]
    ...
 }
 ...
@@ -538,15 +530,17 @@ command below.</p>
 <p>This command will show list or VMs ordered by VM_number
 along with <b>Image name</b> from which the VMs were created, current VM
 <b>status</b> (running/stopped), <b>Profile name</b> using which was VM
-created if any and VM <b>Notes</b> containing the name of owner who created
+created if any,<b>Size</b> of VM primary disk and spaced used by it on LVM
+storage, last time that there was <b>Activity</b> with this VM using the
+<code>fast-vm</code> commands and VM <b>Notes</b> containing the name of owner who created
 the VM and any additional notes for given VM.</p>
 
 <p>Example <code>fast-vm list</code> output</p>
 <pre>
-VM# Image name      Status       Profile_name    Notes
- 21 c7.3            shut off     ---             ondrej: CentOS 7.3 minimal 
- 22 c7.3            shut off     centos-g-7.3    ondrej: CentOS 7.3 with graphical console
- 23 c6.8            running      ---             root: some other running machine
+VM# Image name      Status       Profile_name    Size( %used )  Activity  Notes
+ 21 c7.3            shut off     ---               6g( 24.78%)    3d ago  ondrej: CentOS 7.3 minimal 
+ 22 c7.3            shut off     centos-g-7.3      6g( 27.22%)   12d ago  ondrej: CentOS 7.3 with graphical console
+ 23 c6.8            running      ---               6g( 18.63%)    0d ago  root: some other running machine
 </pre>
 
 <h3 id='editing_vm_notes'>3.6. Creating and editing VM notes</h3>
@@ -564,7 +558,7 @@ templates upon which we create new VMs. It is possible to create you own Image
 or you can import some premade ones. Below is link for some images pre-made by
 Author.</p>
 
-<p><a href="https://ssl.famera.cz/blog/fast-vm/about.html">Public
+<p><a href="https://www.famera.cz/blog/fast-vm/about.html">Public
 <code>fast-vm</code> images created by the Author</a></p>
 
 <p>To import simple image into <code>fast-vm</code> you can use command below.</p>
@@ -575,9 +569,11 @@ scripts that should be run when the VM is created and deleted. (Images provided
 by Author uses only  scripts during VM creation to provide access to serial
 console and some minimal customization such as hostname and networking setup)</p>
 
-<p>Example of importing image of CentOS 7.3 with script used during VM
+<p>Example of importing image of CentOS 7.5 with script used during VM
 creation from Authors site.</p>
-<pre># fast-vm import_image centos-7.4 http://ftp.linux.cz/pub/linux/people/ondrej_famera/fastvm-images/generated/6g__centos-7.4.img.xz https://raw.githubusercontent.com/OndrejHome/fast-vm-public-images/master/centos/xml/centos-6.3-7.4.xml https://raw.githubusercontent.com/OndrejHome/fast-vm-public-images/master/centos/hacks/6g_centos-7-hacks.sh</pre>
+<pre># fast-vm import_image centos-7.5
+http://ftp.linux.cz/pub/linux/people/ondrej_famera/fastvm-images/generated/6g__centos-7.5.img.xz
+https://raw.githubusercontent.com/OndrejHome/fast-vm-public-images/master/centos/xml/centos-6.3-current.xml https://raw.githubusercontent.com/OndrejHome/fast-vm-public-images/master/centos/hacks/6g_centos-7-hacks.sh</pre>
 
 <h3 id='importing_and_using_profiles'>3.8. Importing and using Profiles</h3>
 <p><b>Profiles</b> in <code>fast-vm</code> are used to provide templates with same
@@ -666,6 +662,10 @@ populated the names correctly which can be fixed by assigning them notes from
 <code>fast-vm</code></li>
 <li>VM visible names are not propagated to <code>fast-vm server</code> and are
 always overwritten by <code>fast-vm edit_note</code> command.</li>
+<li>From version 1.4 <code>fast-vm</code> stores metadata in the
+<b>description</b> field provided by libvirt in the VM. If this data are
+inconsistent the <code>fast-vm</code> will replace them and make VM owner to
+be 'root'.</li>
 </ul>
 
 <h3 id='using_virsh'>4.2. Using <code>virsh</code> to access and manage
