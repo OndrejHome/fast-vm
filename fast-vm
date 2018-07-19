@@ -1203,7 +1203,7 @@ case "$1" in
 			for vm in $vm_list;
 			do
 				out=$(echo "$data"|egrep "(^ $vm|^$vm) ")
-				vm_name=$(echo "$raw_data"|awk '{print $1}'|grep "\-$vm")
+				vm_name=$(echo "$raw_data"|awk '{print $1}'|egrep "\-$vm$")
 				get_vm_metadata $vm_name
 				note=$(echo "$metadata_user: $metadata_description"|cut -c 1-$(($TERMINAL_WIDTH-38)))
 				last_activity=$(calculate_day_difference "$metadata_last_action" $(date +%s))
