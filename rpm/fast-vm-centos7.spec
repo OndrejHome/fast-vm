@@ -1,5 +1,5 @@
 Name:		fast-vm
-Version:	1.4
+Version:	1.5
 Release:	1%{?dist}
 Summary:	Script for defining VMs from images provided in thin LVM pool - with extra dependencies
 
@@ -81,6 +81,13 @@ drive of new machine before starting VM using the 'hack files'.
 %config(noreplace) %{_sysconfdir}/sudoers.d/%{name}-sudoers
 
 %changelog
+* Thu Jul 19 2018 Ondrej Famera <ofamera@redhat.com> 1.5-1
+- recursive scp command
+- scp with multiple files (@itsbill)
+- improved reliability of new metadata storage
+- various documentation fixes
+- splitted fast-vm into 2 RPM packages for CentOS/RHEL/Fedora
+
 * Tue May 08 2018 Ondrej Famera <ofamera@redhat.com> 1.4-1
 - added 'scp' and 'keydist' actions (itsbill)
 - move VM metadata into libvirt VMs (deprecated FASTVM_NOTES_DIR)

@@ -1,3 +1,11 @@
+fast-vm (1.5) unstable; urgency=medium
+
+  * recursive scp command
+  * scp with multiple files (@itsbill)
+  * improved reliability of new metadata storage
+
+ -- Ondrej Famera <ondrej-xa2iel8u@famera.cz>  Thu, 19 Jul 2018 07:15:00 +0100
+
 fast-vm (1.4) unstable; urgency=medium
 
   * Initial release for Debian 9

@@ -22,9 +22,9 @@ man pages:
 ====== Supported/Tested OS =====
 Distribution    Installation method
 - RHEL 7.5	RPM
-- CentOS 7.4	RPM
+- CentOS 7.5	RPM
 - Fedora 28	RPM
-- Debian 9.4	DEB
+- Debian 9.5	DEB
 - Gentoo	ebuild
 
 ====== Requirements ======
