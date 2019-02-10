@@ -826,3 +826,91 @@ restarted for this change to take effect.</p>
 <p>Adding user to group in local <code>/etc/group</code> file may not work
 properly since <code>fast-vm-1.3</code> that uses <code>sg</code> command for
 some operations. This is mitigated in <code>fast-vm-1.3.1</code></p>
+
+<h3 id='exposing-fast-vm-systems-to-external-network-via-bridge'>6.4. Exposing
+<code>fast-vm</code> systems to external network via bridge</h3>
+<p>In some situations it may be desirable for <code>fast-vm</code> machines to
+be accessible directly from same network as the hypervisor running them is
+reachable. This can be achieved by configuring the hypervisor OS (in this
+example CentOS/RHEL 7) to connect to network via software bridge to which the
+<code>fast-vm</code> can be also attached. Assuming that
+(<code>fast-vm</code>) hypervisor connects now to network via DHCP using using
+interface <code>eth0</code> the commands below will create the new software
+bridge that will contain only interface <code>eth0</code> and will use DHCP to
+get address. Before attempting commands below make sure that you can access
+machine via other means if the network configuration fails for any reason. The
+resulting configuration will be using <code>system-bridge</code> software
+bridge for obtaining IP address and will delete profile with eth0
+configuration.
+
+<pre>
+# nmcli con add type bridge ifname system-bridge con-name system-bridge bridge.stp no
+Connection 'system-bridge' (11111111-2222-3333-4444-555555555555) successfully added.
+</pre>
+
+<pre>
+# nmcli con add type bridge-slave ifname eth0 master system-bridge
+Connection 'bridge-slave-eth0' (66666666-7777-8888-9999-000000000000) successfully added.
+</pre>
+
+<pre>
+# nmcli con up system-bridge
+Connection successfully activated (master waiting for slaves) (D-Bus active path: /org/freedesktop/NetworkManager/ActiveConnection/XXX)
+</pre>
+
+<pre>
+# nmcli con del eth0
+Connection 'eth0' (aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee) successfully deleted.
+</pre>
+
+<p>State of network configuration before and after applying above commands</p>
+<pre>
+## BEFORE
+# ip a
+2: eth0: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc pfifo_fast master system-bridge state UP group default qlen 1000
+    link/ether 52:54:00:xx:xx:xx brd ff:ff:ff:ff:ff:ff
+    inet 192.168.22.xxx/24 brd 192.168.22.255 scope global noprefixroute dynamic eth0
+# nmcli con show
+NAME  UUID                                  TYPE      DEVICE
+eth0  aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee  ethernet  eth0
+</pre>
+<pre>
+## AFTER
+# ip a
+2: eth0: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc pfifo_fast master system-bridge state UP group default qlen 1000
+    link/ether 52:54:00:xx:xx:xx brd ff:ff:ff:ff:ff:ff
+3: system-bridge: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc noqueue state UP group default qlen 1000
+    link/ether 52:54:00:xx:xx:xx brd ff:ff:ff:ff:ff:ff
+    inet 192.168.22.xxx/24 brd 192.168.22.255 scope global noprefixroute dynamic system-bridge
+# nmcli con show
+NAME                  UUID                                  TYPE      DEVICE
+system-bridge         11111111-2222-3333-4444-555555555555  bridge    system-bridge
+bridge-slave-eth0     66666666-7777-8888-9999-000000000000  ethernet  eth0
+</pre>
+
+<p>Once the <code>system-bridge</code> software bridge is setup and
+operational you can use interface in the XML definition of the
+<code>fast-cm</code> as shown below.
+
+<pre>
+&lt;domain type='kvm'&gt;
+  ...
+  &lt;devices&gt;
+  ...
+    &lt;interface type='bridge'&gt;
+      &lt;mac address='52:54:00:be:ef:VM_HEX_NUMBER'/&gt;
+      &lt;source bridge='system-bridge'/&gt;
+      &lt;model type='virtio'/&gt;
+    &lt;/interface&gt;
+  ...
+  &lt;/devices&gt;
+&lt;/domain&gt;
+</pre>
+
+If you are using the XML files from <a
+href='https://github.com/OndrejHome/fast-vm-public-images/'>fast-vm-public-images
+GitHub repository<a> then check out <a href='https://github.com/OndrejHome/fast-vm-public-images/blob/master/centos/README'>CentOS README</a> and <a
+href='https://github.com/OndrejHome/fast-vm-public-images/blob/master/rhel/README'>RHEL README</a> for more
+information on how to used pre-made profiles with 2 network card
+configuration that has one of the network cards connected to
+<code>system-bridge</code> software bridge.
