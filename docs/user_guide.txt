@@ -175,6 +175,12 @@ before <code>fast-vm</code> installation.</p>
 # yum install fast-vm
 </pre>
 
+<p><b>RHEL 8.0 Beta</b></p>
+<pre>
+# curl -o /etc/yum.repos.d/fast-vm.repo https://copr.fedorainfracloud.org/coprs/ondrejhome/fast-vm/repo/rhelbeta-8/ondrejhome-fast-vm-rhelbeta-8.repo
+# dnf install fast-vm
+</pre>
+
 <p><b>Debian 9.5</b></p>
 <p>If you plan using publically available images from Author then also
 <code>libguestfs-tools</code> package is required for correct application 
