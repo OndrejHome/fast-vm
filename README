@@ -26,6 +26,7 @@ Distribution    Installation method
 - Fedora 28	RPM
 - Debian 9.5	DEB
 - Gentoo	ebuild
+- RHEL 8.0 Beta RPM (experimental)
 
 ====== Requirements ======
 * libvirt with qemu/kvm 
