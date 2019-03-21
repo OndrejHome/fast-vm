@@ -1,4 +1,12 @@
-fast-vm User Guide
+---
+permalink: /fast-vm/user_guide.html
+title: fast-vm User Guide
+layout: post
+date: 2019-03-03 15:00:11+0900
+categories: [ fast-vm ]
+---
+
+<h2>fast-vm User Guide</h2>
 
 <ul>
 <li>This is User Guide for <code>fast-vm</code> version 1.5.</li>
