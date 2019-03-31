@@ -10,8 +10,11 @@ categories: [ fast-vm ]
 
 <ul>
 <li>This is User Guide for <code>fast-vm</code> version 1.5.</li>
-<li>If you have find an mistake (and you bet there are some) or would like to
-request some part to be documented in this guide that you use please get in
+<li>Did you find a mistake/inaccuracy/missing information and you think you
+know how to fix it or expand it? Then <a href="https://github.com/OndrejHome/fast-vm/edit/master/docs/user_guide.txt">edit
+this page on Github</a> and once reviewed by author it will appear here.</li>
+<li>Found a mistake but don't know how to fix it or you would like to
+request some part to be documented in this guide? Please get in
 touch with <a href="https://www.famera.cz/blog/about.html">the Author</a>.</li>
 <li>While <code>fast-vm</code> allows most of operations to be run as normal
 user this guide uses the <code>#</code> symbol to indicate commands that can
