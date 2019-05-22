@@ -156,19 +156,19 @@ time by default the <code>fast-vm</code> package will pull in also the dependenc
 needed for some VM images and other useful packages to simplify the
 installation.</p>
 
-<p><b>Fedora 28</b></p>
+<p><b>Fedora 30</b></p>
 <pre>
-# curl -o /etc/yum.repos.d/fast-vm.repo https://copr.fedorainfracloud.org/coprs/ondrejhome/fast-vm/repo/fedora-28/ondrejhome-fast-vm-fedora-28.repo
+# curl -o /etc/yum.repos.d/fast-vm.repo https://copr.fedorainfracloud.org/coprs/ondrejhome/fast-vm/repo/fedora-30/ondrejhome-fast-vm-fedora-30.repo
 # dnf install fast-vm
 </pre>
 
-<p><b>CentOS 7.5</b></p>
+<p><b>CentOS 7.6</b></p>
 <pre>
 # curl -o /etc/yum.repos.d/fast-vm.repo https://copr.fedorainfracloud.org/coprs/ondrejhome/fast-vm/repo/epel-7/ondrejhome-fast-vm-epel-7.repo
 # yum install fast-vm
 </pre>
 
-<p><b>RHEL 7.5</b></p>
+<p><b>RHEL 7.6</b></p>
 <p>On RHEL system some of dependencies are present only in
 <code>rhel-7-server-optional-rpms</code> repository that needs to be activated
 before <code>fast-vm</code> installation.</p>
@@ -184,7 +184,7 @@ before <code>fast-vm</code> installation.</p>
 # dnf install fast-vm
 </pre>
 
-<p><b>Debian 9.5</b></p>
+<p><b>Debian 9.9</b></p>
 <p>If you plan using publically available images from Author then also
 <code>libguestfs-tools</code> package is required for correct application 
 of creation scripts and their proper functionality</p>
@@ -267,7 +267,7 @@ b) Enter on which VG the fast-vm will have thinpool LV as storage.
 [?] VG for LVM thin pool
  fast-vm is using LVM thin LV to store VM images and data.
  On which existing VG should be this thin LV?
-[]: f28
+[]: f30
 </pre>
 
 c) Provide name of thinpool LV. If thinpool LV doesn't exist script will create for you later.
@@ -326,17 +326,17 @@ i) Decide if fast-vm should prevent delete of machines created by other users.
 
 j) (only if thinpool LV didn't existed) Configurator will ask if you wanna create the thinpool LV.
 <pre>
-[wrn] LV 'f28/fastvm-pool' not found
+[wrn] LV 'f30/fastvm-pool' not found
 Following commands would be executed to create thin pool:
-  lvcreate -n fastvm-pool -L 20G f28
-  lvconvert --type thin-pool f28/fastvm-pool
+  lvcreate -n fastvm-pool -L 20G f30
+  lvconvert --type thin-pool f30/fastvm-pool
 [?] Create now? (y/n) y
 [inf] Creating ...
   Logical volume "fastvm-pool" created.
-  WARNING: Converting logical volume f28/fastvm-pool to thin pool's data volume with metadata wiping.
+  WARNING: Converting logical volume f30/fastvm-pool to thin pool's data volume with metadata wiping.
   THIS WILL DESTROY CONTENT OF LOGICAL VOLUME (filesystem etc.)
-Do you really want to convert f28/fastvm-pool? [y/n]: y
-  Converted f28/fastvm-pool to thin pool.
+Do you really want to convert f30/fastvm-pool? [y/n]: y
+  Converted f30/fastvm-pool to thin pool.
 [ok] LVM thinpool successfuly created
 </pre>
 
@@ -360,12 +360,12 @@ l) End of configuration
 
 <h4 id='configure_lvm_filters'>2.5.2. (optional) Configure LVM filters</h4>
 Optional but recommended is to filter out detection of LVM on the VG that
-holds the thinpool LV for fast-vm. For example if you use VG <code>f25</code>
+holds the thinpool LV for fast-vm. For example if you use VG <code>f30</code>
 then following entries can be add into LVM <code>filter =</code>.
 
 <pre>
-"r|/dev/f28/.*|"
-"r|/dev/mapper/f28-.*|"
+"r|/dev/f30/.*|"
+"r|/dev/mapper/f30-.*|"
 </pre>
 
 Example of incorporating the above filter into <code>/etc/lvm/lvm.conf</code>.
@@ -373,7 +373,7 @@ Example of incorporating the above filter into <code>/etc/lvm/lvm.conf</code>.
 ...
 devices {
    ...
-   filter = [ "r|/dev/nbd.*|", "r|/dev/f28/.*|", "r|/dev/mapper/f28-.*|", "a|.*|" ]
+   filter = [ "r|/dev/f30/.*|", "r|/dev/mapper/f30-.*|", "a|.*|" ]
    ...
 }
 ...
@@ -402,26 +402,25 @@ install it manualy using <code>yum</code>.
 </p>
 
 <p>2. Ensure that <code>/etc/libvirt/qemu.conf</code> contains following
-variable with value below.</p>
+variable with value below. On Fedora 30, CentOS 7.6 this is already present
+in default comment and does not need changing.</p>
 <pre>
 nvram = [
    "/usr/share/OVMF/OVMF_CODE.fd:/usr/share/OVMF/OVMF_VARS.fd"
       ]
 </pre>
 
-<p>3a. (Fedora 24+) Ensure that variable from previous steps is pointing to correct firmware
-files. With defaut installation on Fedora 24 the following additional commands
-are needed.</p>
+<p>3a. (Fedora 30) Ensure that variable from previous steps is pointing to correct firmware
+files. With default installation on Fedora no additional commands are needed.</p>
 
 <pre>
-# mkdir /usr/share/OVMF  # as this directory is usually not present on system
-# ln -s /usr/share/edk2/ovmf/OVMF_CODE.fd /usr/share/OVMF/OVMF_CODE.fd
-# ln -s /usr/share/edk2/ovmf/OVMF_VARS.fd /usr/share/OVMF/OVMF_VARS.fd
+# ls -l /usr/share/OVMF/OVMF_{CODE,VARS}.fd
+lrwxrwxrwx. 1 root root /usr/share/OVMF/OVMF_CODE.fd -&gt; ../edk2/ovmf/OVMF_CODE.fd
+lrwxrwxrwx. 1 root root /usr/share/OVMF/OVMF_VARS.fd -&gt; ../edk2/ovmf/OVMF_VARS.fd
 </pre>
 
 <p>3b. (CentOS/RHEL) Ensure that variable from previous steps is pointing to correct 
-firmware files. WHen using package from <a 
-href="https://www.kraxel.org/repos/jenkins/edk2/">OVMF generated RPMs</a>.
+firmware files. When using package from <a href="https://www.kraxel.org/repos/jenkins/edk2/">OVMF generated RPMs</a>.
 </p> the following additional commands are needed.</p>
 
 <pre>
@@ -555,9 +554,9 @@ the VM and any additional notes for given VM.</p>
 <p>Example <code>fast-vm list</code> output</p>
 <pre>
 VM# Image name      Status       Profile_name    Size( %used )  Activity  Notes
- 21 c7.3            shut off     ---               6g( 24.78%)    3d ago  ondrej: CentOS 7.3 minimal 
- 22 c7.3            shut off     centos-g-7.3      6g( 27.22%)   12d ago  ondrej: CentOS 7.3 with graphical console
- 23 c6.8            running      ---               6g( 18.63%)    0d ago  root: some other running machine
+ 21 centos-7.6      shut off     ---               6g( 24.78%)    3d ago  ondrej: CentOS 7.6 minimal
+ 22 centos-7.6      shut off     centos-g-7.6      6g( 27.22%)   12d ago  ondrej: CentOS 7.6 with graphical console
+ 23 fedora30        running      ---               6g( 18.63%)    0d ago  root: some other running machine with Fedora 30
 </pre>
 
 <h3 id='editing_vm_notes'>3.6. Creating and editing VM notes</h3>
@@ -586,11 +585,9 @@ scripts that should be run when the VM is created and deleted. (Images provided
 by Author uses only  scripts during VM creation to provide access to serial
 console and some minimal customization such as hostname and networking setup)</p>
 
-<p>Example of importing image of CentOS 7.5 with script used during VM
+<p>Example of importing image of CentOS 7.6 with script used during VM
 creation from Authors site.</p>
-<pre># fast-vm import_image centos-7.5
-http://ftp.linux.cz/pub/linux/people/ondrej_famera/fastvm-images/generated/6g__centos-7.5.img.xz
-https://raw.githubusercontent.com/OndrejHome/fast-vm-public-images/master/centos/xml/centos-6.3-current.xml https://raw.githubusercontent.com/OndrejHome/fast-vm-public-images/master/centos/hacks/6g_centos-7-hacks.sh</pre>
+<pre># fast-vm import_image centos-7.6 http://ftp.linux.cz/pub/linux/people/ondrej_famera/fastvm-images/generated/6g__centos-7.6.img.xz https://raw.githubusercontent.com/OndrejHome/fast-vm-public-images/master/centos/xml/centos-6.3-current.xml https://raw.githubusercontent.com/OndrejHome/fast-vm-public-images/master/centos/hacks/6g_centos-7-hacks.sh</pre>
 
 <h3 id='importing_and_using_profiles'>3.8. Importing and using Profiles</h3>
 <p><b>Profiles</b> in <code>fast-vm</code> are used to provide templates with same
@@ -907,7 +904,7 @@ bridge-slave-eth0     66666666-7777-8888-9999-000000000000  ethernet  eth0
 
 <p>Once the <code>system-bridge</code> software bridge is setup and
 operational you can use interface in the XML definition of the
-<code>fast-cm</code> as shown below.
+<code>fast-vm</code> as shown below.
 
 <pre>
 &lt;domain type='kvm'&gt;
