@@ -2,7 +2,7 @@
 permalink: /fast-vm/user_guide.html
 title: fast-vm User Guide
 layout: post
-date: 2019-03-03 15:00:11+0900
+date: 2019-05-22 16:41:11+0200
 categories: [ fast-vm ]
 ---
 
@@ -401,6 +401,9 @@ href="https://www.kraxel.org/repos/jenkins/edk2/">OVMF generated RPMs</a> and
 install it manualy using <code>yum</code>.
 </p>
 
+<p>1c. (Debian) Install package <code>ovmf</code> containing firmware files.</p>
+<pre># apt-get install ovmf</pre>
+
 <p>2. Ensure that <code>/etc/libvirt/qemu.conf</code> contains following
 variable with value below. On Fedora 30, CentOS 7.6 this is already present
 in default comment and does not need changing.</p>
@@ -428,6 +431,17 @@ firmware files. When using package from <a href="https://www.kraxel.org/repos/je
 # ln -s /usr/share/edk2.git/ovmf-x64/OVMF_CODE-pure-efi.fd /usr/share/OVMF/OVMF_CODE.fd
 # ln -s /usr/share/edk2.git/ovmf-x64/OVMF_VARS-pure-efi.fd /usr/share/OVMF/OVMF_VARS.fd
 </pre>
+
+<p>3c. (Debian) Ensure that variable from previous steps is pointing to correct firmware
+files. With default installation on Debian no additional commands are needed.</p>
+
+<pre>
+# ls -l /usr/share/OVMF/
+-rw-r--r-- 1 root root 1966080 Mar 18 21:12 OVMF_CODE.fd
+-rw-r--r-- 1 root root  131072 Mar 18 21:12 OVMF_VARS.fd
+</pre>
+
+<br/>
 
 <h2 id='basic_operations'>3. Basic operations in <code>fast-vm</code></h2>
 
