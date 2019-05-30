@@ -119,6 +119,10 @@ fast-vm \(em script for defining VMs from images provided in thin LVM pool
 .RI < VmNumber | "'VmNumber1 VmNumber2 ...'" >
 .RI < "vm:/remote/sourcefile ... /local/destfile" | "/local/sourcefile ... vm:/remote/destfile" >
 
+.B fast-vm
+.B compact
+.RI < VmNumber | "'VmNumber1 VmNumber2 ...'" >
+
 .SH DESCRIPTION
 fast-vm is provides command-line interface to create virtual machines (VMs) in 
 libvirt based on imported disks in LVM and XML templates.
@@ -364,6 +368,10 @@ Create machine with custom definition and hack file. Start it and after it's SSH
 .RB "scp a script to VMs 41 and 42. By default this goes in root's home directory, or specify a path instead"
 .sp
 .BI "fast-vm scp " "'41 42' script.sh vm:"
+
+.RB "Compact the disks of inactive VMs 41 and 42 ( using " "virt-sparsify" " ) to reclaim unused free space from VMs."
+.sp
+.BI "fast-vm compact " "'41 42'"
 
 .SH EXIT CODES
 In case of error the fast-vm will return non-zero exit code. When multiple VMs were specified then zero exit code is returned only when operation succeeded on all VMs. If any of VMs reported non-zero exit code, then the overal exit code will also be non-zero.

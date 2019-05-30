@@ -311,10 +311,13 @@ usage () {
 		list)
 			echo "$FVM list [all|active|inactive [short]]"
 			;;
+		compact)
+			echo "$FVM compact <VmNumber|'VmNumber1 VmNumber2 ...'>"
+			;;
 		*)
 			echo "== fast-vm version 1.5 <ofamera@redhat.com> =="
 			echo "$FVM <action> <options>"
-			for cmd in import_image import_custom_image export_image remove_image resize_image import_profile remove_profile list_images create delete edit_note resize info list start stop console keydist ssh scp;
+			for cmd in import_image import_custom_image export_image remove_image resize_image import_profile remove_profile list_images create delete edit_note resize info list start stop console keydist ssh scp compact;
 			do
 				usage $cmd noexit
 			done
@@ -1317,6 +1320,23 @@ case "$1" in
 		vm_name=$(virsh --connect qemu:///system list --all |grep "$VM_PREFIX"|awk '{print $2}'|egrep "\-$vm_number$")
 		pmsg $P_DEBUG "IP: 192.168.$SUBNET_NUMBER.$vm_number\n" $vm_number
 		pmsg $P_DEBUG "vm_name: $vm_name\n" $vm_number
+		;;
+	compact)
+		vm_number="$2"
+		if [ -z "$vm_number" ]; then pmsg $P_ERROR "VM number missing\n"; usage compact; fi
+		if $(echo "$vm_number"|grep -q ' '); then handle_multiple_requests $@; fi
+
+		check_vm_number "$vm_number" "active"
+
+		vm_name=$(virsh --connect qemu:///system list --all |grep "$VM_PREFIX"|awk '{print $2}'|egrep "\-$vm_number$")
+
+		# change group of LV so we can clean it up
+		echo "/dev/$THINPOOL_VG/$vm_name"
+		echo "chgrp" "/dev/$THINPOOL_VG/$vm_name" | sudo -n $FASTVM_HELPER
+
+		pmsg $P_INFO "Compacting disk of VM $vm_number ....\n" $vm_number
+		pmsg $P_DEBUG "Running 'virt-sparsify -q --in-place /dev/$THINPOOL_VG/$vm_name'.\n" $vm_number
+		virt-sparsify -q --in-place "/dev/$THINPOOL_VG/$vm_name" 2>&1|$DEBUG_LOG_CMD
 		;;
 	*) 
 		pmsg $P_ERROR "unknown action\n"
