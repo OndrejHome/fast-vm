@@ -10,7 +10,7 @@ DESCRIPTION="Script for defining VMs from images provided in thin LVM pool"
 HOMEPAGE="https://www.famera.cz/blog/fast-vm/about.html"
 SRC_URI="https://github.com/OndrejHome/fast-vm/archive/1.5.tar.gz"
 
-LICENSE="GPLv3"
+LICENSE="GPL-3+"
 SLOT="0"
 KEYWORDS="~amd64 ~x86"
 IUSE="+hack-file-dependencies +bash-completion"
