@@ -2,7 +2,7 @@
 permalink: /fast-vm/user_guide.html
 title: fast-vm User Guide
 layout: post
-date: 2019-05-22 16:41:11+0200
+date: 2019-06-06 21:00:00+0900
 categories: [ fast-vm ]
 ---
 
@@ -178,10 +178,10 @@ before <code>fast-vm</code> installation.</p>
 # yum install fast-vm
 </pre>
 
-<p><b>RHEL 8.0 Beta</b></p>
+<p><b>RHEL 8.0</b></p>
+Installation bellow is valid until there is proper support for RHEL 8 repositories in COPR.
 <pre>
-# curl -o /etc/yum.repos.d/fast-vm.repo https://copr.fedorainfracloud.org/coprs/ondrejhome/fast-vm/repo/rhelbeta-8/ondrejhome-fast-vm-rhelbeta-8.repo
-# dnf install fast-vm
+# dnf install https://copr-be.cloud.fedoraproject.org/results/ondrejhome/fast-vm/rhelbeta-8-x86_64/00871628-fast-vm/fast-vm-minimal-1.5-2.el8.noarch.rpm https://copr-be.cloud.fedoraproject.org/results/ondrejhome/fast-vm/rhelbeta-8-x86_64/00871628-fast-vm/fast-vm-1.5-2.el8.noarch.rpm
 </pre>
 
 <p><b>Debian 9.9</b></p>
@@ -395,13 +395,21 @@ needs to be taken.</p>
 files.</p>
 <pre># dnf install edk2-ovmf</pre>
 
-<p>1b. (CentOS/RHEL) Download the
+<p>1b. (CentOS/RHEL 7) Download the
 <code>edk2.git-ovmf-x64-xxxxx.noarch.rpm</code> from <a
 href="https://www.kraxel.org/repos/jenkins/edk2/">OVMF generated RPMs</a> and
 install it manualy using <code>yum</code>.
 </p>
 
-<p>1c. (Debian) Install package <code>ovmf</code> containing firmware files.</p>
+<p>1c. (RHEL 8) While RHEL8 has package <code>edk2-ovmf</code> containing firmware files.
+This package at the moment provide only secure-boot version of firmware requiring different
+VM machine type (q35). To support images before q35 machines download the
+<code>edk2.git-ovmf-x64-xxxxx.noarch.rpm</code> from
+<a href="https://www.kraxel.org/repos/jenkins/edk2/">OVMF generated RPMs</a> and
+install it manualy using <code>yum</code>. Check <a href="https://github.com/OndrejHome/fast-vm/issues/48">GitHub Issue 48</a>
+for more details.</p>
+
+<p>1d. (Debian) Install package <code>ovmf</code> containing firmware files.</p>
 <pre># apt-get install ovmf</pre>
 
 <p>2. Ensure that <code>/etc/libvirt/qemu.conf</code> contains following
@@ -422,7 +430,7 @@ lrwxrwxrwx. 1 root root /usr/share/OVMF/OVMF_CODE.fd -&gt; ../edk2/ovmf/OVMF_COD
 lrwxrwxrwx. 1 root root /usr/share/OVMF/OVMF_VARS.fd -&gt; ../edk2/ovmf/OVMF_VARS.fd
 </pre>
 
-<p>3b. (CentOS/RHEL) Ensure that variable from previous steps is pointing to correct 
+<p>3b. (CentOS/RHEL 7) Ensure that variable from previous steps is pointing to correct
 firmware files. When using package from <a href="https://www.kraxel.org/repos/jenkins/edk2/">OVMF generated RPMs</a>.
 </p> the following additional commands are needed.</p>
 
@@ -432,7 +440,18 @@ firmware files. When using package from <a href="https://www.kraxel.org/repos/je
 # ln -s /usr/share/edk2.git/ovmf-x64/OVMF_VARS-pure-efi.fd /usr/share/OVMF/OVMF_VARS.fd
 </pre>
 
-<p>3c. (Debian) Ensure that variable from previous steps is pointing to correct firmware
+<p>3c. (RHEL 8) Adjust links in <code>/usr/share/OVMF/</code> with commands below. Note that
+steps will need to be repeated when the <code>edk2-ovmf</code> package is updated or reinstalled.</p>
+<pre>
+# rm /usr/share/OVMF/OVMF_VARS.fd
+# ln -s /usr/share/edk2.git/ovmf-x64/OVMF_CODE-pure-efi.fd /usr/share/OVMF/OVMF_CODE.fd
+# ln -s /usr/share/edk2.git/ovmf-x64/OVMF_VARS-pure-efi.fd /usr/share/OVMF/OVMF_VARS.fd
+# ls -l /usr/share/OVMF/OVMF_{CODE,VARS}.fd
+lrwxrwxrwx. 1 root root /usr/share/OVMF/OVMF_CODE.fd -&gt; /usr/share/edk2.git/ovmf-x64/OVMF_CODE-pure-efi.fd
+lrwxrwxrwx. 1 root root /usr/share/OVMF/OVMF_VARS.fd -&gt; /usr/share/edk2.git/ovmf-x64/OVMF_VARS-pure-efi.fd
+</pre>
+
+<p>3d. (Debian) Ensure that variable from previous steps is pointing to correct firmware
 files. With default installation on Debian no additional commands are needed.</p>
 
 <pre>
