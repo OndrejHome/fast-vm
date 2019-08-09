@@ -1245,8 +1245,8 @@ case "$1" in
 		if [ ! -z "$short_output" ] && [ "$short_output" = "short" ]; then
 			echo "$image_name_list"
 		else
-			printf '%-27s |%-21s |%-21s |\n' 'IMAGE' 'SYSTEM' 'USER'
-			printf '%-20s   %4s |%-8s %-13s|%-8s %-13s|\n' 'Image name' 'Size' 'XML' 'Hack file for' 'XML' 'Hack file for'
+			printf '%-36s |%-21s |%-21s |\n' 'IMAGE' 'SYSTEM' 'USER'
+			printf '%-20s   %13s |%-8s %-13s|%-8s %-13s|\n' 'Image name' 'Size( %used )' 'XML' 'Hack file for' 'XML' 'Hack file for'
 			lvs_out=$(echo 'lvs'|sudo -n $FASTVM_HELPER)
 			for image_name in $image_name_list; do
 				# check the existence of the XML file
@@ -1277,8 +1277,8 @@ case "$1" in
 				if [ -f "$FASTVM_SYSTEM_CONF_DIR/delete-hacks-${image_name}.sh" ]; then
 					system_hacks_exists=",delete"
 				fi
-				size=$(echo "$lvs_out"|egrep " $VM_PREFIX$image_name "|sed 's/\.00g//'|awk '{printf "%3sg",$2}')
-				printf "%-20s   %4s |%-8s %-13s|%-8s %-13s|\n" "$image_name" "$size" "$system_xml_exists" "$system_hacks_exists" "$user_xml_exists" "$user_hacks_exists"
+				size=$(echo "$lvs_out"|egrep " ${VM_PREFIX}$image_name "|sed 's/\.00g//'|awk '{printf "%3sg(%6s%%)",$2,$3}')
+				printf "%-20s   %13s |%-8s %-13s|%-8s %-13s|\n" "$image_name" "$size" "$system_xml_exists" "$system_hacks_exists" "$user_xml_exists" "$user_hacks_exists"
 			done
 			printf "\nNOTE: if image is missing XML it wouldn't be possible to create a VM from it!\n Image with missing hack file(s) can work if it's not needed.\n"
 			printf "\n USER XML and hack file(s) takes precendense before SYSTEM ones.\n"
