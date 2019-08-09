@@ -1334,7 +1334,6 @@ case "$1" in
 		vm_name=$(virsh --connect qemu:///system list --all |grep "$VM_PREFIX"|awk '{print $2}'|egrep "\-$vm_number$")
 
 		# change group of LV so we can clean it up
-		echo "/dev/$THINPOOL_VG/$vm_name"
 		echo "chgrp" "/dev/$THINPOOL_VG/$vm_name" | sudo -n $FASTVM_HELPER
 
 		pmsg $P_INFO "Compacting disk of VM $vm_number ....\n" $vm_number
