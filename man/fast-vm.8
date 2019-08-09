@@ -123,6 +123,10 @@ fast-vm \(em script for defining VMs from images provided in thin LVM pool
 .B compact
 .RI < VmNumber | "'VmNumber1 VmNumber2 ...'" >
 
+.B fast-vm
+.B compact_image
+.IR "ImageName"
+
 .SH DESCRIPTION
 fast-vm is provides command-line interface to create virtual machines (VMs) in 
 libvirt based on imported disks in LVM and XML templates.
@@ -268,6 +272,11 @@ Now you will have a VM with empty disk drive and you can install any system you 
 To make image as small as possible try to first remove unnecessary things from the VM such as cache files, logs. If the OS supports it,
 try to send TRIM (ATA devices) or UNMAP (SCSI devices) so the storage can mark free space as free. You can try command
 .BR fstrim .
+
+You can further cleanup image using the command
+.BI "fast-vm compact_image " "ImageName"
+to perform cleanup of image and trim using
+.BR "virt-sparsify" " command."
 
 .TP
 .B 4. Export image in compressed form

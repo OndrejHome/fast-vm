@@ -314,10 +314,13 @@ usage () {
 		compact)
 			echo "$FVM compact <VmNumber|'VmNumber1 VmNumber2 ...'>"
 			;;
+		compact_image)
+			echo "$FVM compact_image ImageName"
+			;;
 		*)
 			echo "== fast-vm version 1.5 <ofamera@redhat.com> =="
 			echo "$FVM <action> <options>"
-			for cmd in import_image import_custom_image export_image remove_image resize_image import_profile remove_profile list_images create delete edit_note resize info list start stop console keydist ssh scp compact;
+			for cmd in import_image import_custom_image export_image remove_image resize_image import_profile remove_profile list_images create delete edit_note resize info list start stop console keydist ssh scp compact compact_image;
 			do
 				usage $cmd noexit
 			done
@@ -1337,6 +1340,24 @@ case "$1" in
 		pmsg $P_INFO "Compacting disk of VM $vm_number ....\n" $vm_number
 		pmsg $P_DEBUG "Running 'virt-sparsify -q --in-place /dev/$THINPOOL_VG/$vm_name'.\n" $vm_number
 		virt-sparsify -q --in-place "/dev/$THINPOOL_VG/$vm_name" 2>&1|$DEBUG_LOG_CMD
+		;;
+	compact_image)
+		image_name="$2"
+		if [ -z "$image_name" ]; then pmsg $P_ERROR "missing image name\n"; usage compact_image; fi
+
+		if [ -b "/dev/$THINPOOL_VG/$VM_PREFIX$image_name" ]; then
+			# change group of LV so we can clean it up
+			echo "chgrp" "/dev/$THINPOOL_VG/$VM_PREFIX$image_name" | sudo -n $FASTVM_HELPER
+
+			pmsg $P_INFO "Compacting disk of image $image_name ....\n"
+			pmsg $P_DEBUG "Running 'virt-sparsify -q --in-place /dev/$THINPOOL_VG/$VM_PREFIX$image_name.\n"
+			virt-sparsify -q --in-place "/dev/$THINPOOL_VG/$VM_PREFIX$image_name" 2>&1|$DEBUG_LOG_CMD
+		else
+			pmsg $P_ERROR "image $image_name not found\n"
+			usage compact_image
+		fi
+
+
 		;;
 	*) 
 		pmsg $P_ERROR "unknown action\n"
