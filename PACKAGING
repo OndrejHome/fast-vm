@@ -100,8 +100,7 @@ resulting files
 # dnf install rpm-build dnf-utils
 # yumdownloader --source qemu-kvm
 # subscription-manager repos --enable=codeready-builder-for-rhel-8-x86_64-rpms
- ( download and install manually 'libssh2-devel' )
- # dnf install libssh2-devel*.rpm
+# yum module enable virt-devel
 # yum-builddep qemu-kvm
 # dnf install glusterfs-api-devel libcacard-devel glusterfs-devel libpmem-devel nss-devel spice-protocol spice-server-devel usbredir-devel iasl libepoxy-devel mesa-libgbm-devel libdrm-devel
   - these are build dependencies that are not pulled in by yum-builddep
