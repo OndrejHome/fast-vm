@@ -1,6 +1,6 @@
 .TH FAST-VM 8 "fast-vm 1.5 (2018-05-03)" "fast-vm" "fast-vm" \" -*- nroff -*-
 .SH NAME
-fast-vm \(em script for defining VMs from images provided in thin LVM pool
+fast-vm \(em script for creating VMs from images on top of thin LVM pool
 .SH SYNOPSIS
 .B fast-vm
 .RB <action>
@@ -128,16 +128,18 @@ fast-vm \(em script for defining VMs from images provided in thin LVM pool
 .IR "ImageName"
 
 .SH DESCRIPTION
-fast-vm is provides command-line interface to create virtual machines (VMs) in 
-libvirt based on imported disks in LVM and XML templates.
+fast-vm script provides simple command-line interface to create virtual machines (VMs) 
+in libvirt using VM disk images saved in LVM thinpool and XML templates stored on file system.
 
-Templates of VM disk drives are stored in LVM thinpool LV for space efficiency.
-Templates for VM are just libvirt XMLs with few macros from fast-vm.
-When creating a VM, fast-vm will create new writable LVM snapshot of disk drive, 
-define libvirt VM for it and make a static DHCP reservation for libvirt network 
-on which VM will be.
-Optionally fast-vm allows one to do some customization of disk drive of new machine
-before starting VM using the 'hack files'.
+VM disk images are saved in LVM thinpool LV for space efficiency. XML templates for VM are 
+libvirt XMLs with few macros that fast-vm replaces (see TEMPLATE MACROS).
+When creating a VM, fast-vm will create new writable LVM snapshot from existing image, 
+define libvirt VM from XML and crate a static DHCP reservation in libvirt network on 
+which VM will be for predictable IP address based on VmNumber (see OPTIONS).
+Optionally fast-vm customize new VM during creation using 'hack files' shell script.
+
+Images for fast-vm can be either downloaded from Internet (see GETTING IMAGES)
+or created from scratch (see CREATING CUSTOM IMAGES).
 
 .RB "To start using fast-vm you need to configure it first using command " configure-fast-vm 
 .RB "and add users that will fast-vm into " libvirt " system group.
@@ -146,7 +148,15 @@ existing ones.
 
 Primary use case of fast-vm is creation of scratch VMs on single local machine.
 
+.SH GETTING IMAGES
+
+To get prebuild images you can visit https://www.famera.cz/blog/fast-vm/image_list.html .
+
 .SH OPTIONS
+
+.TP
+.B VmNumber
+Number identifying the VM. Currently limited to range 20-220 that allows fast-vm to use it as octet of the IP address and still leave some space for static addresses.
 
 .TP
 .B ImageName
@@ -162,6 +172,7 @@ is part of the LV name and libvirt machine name.
 Local path or http/https URL to image file in GZIP or XZ format. From fast-vm-1.2 if the filename of image matches regular
 expression "[0-9]+g__" then the number before 'g' is used as the image size that will be imported (this can be overridden by
 .RB "using the " "import_custom_image" " action)."
+By default fast-vm assumes size of image to be 10GB.
 
 .TP
 .B PathToLibvirtXML
@@ -171,7 +182,7 @@ expression "[0-9]+g__" then the number before 'g' is used as the image size that
 .sp
 Local path or http/https URL to libvirt VM XML template. Check the
 .B TEMPLATE MACROS
-for list of supported macros.
+for list of supported macros in the VM XML template.
 
 .TP 
 .B PathToHacksFile
@@ -180,7 +191,7 @@ for list of supported macros.
 .BI "PathToHacksFile " http://url/to/hacks.sh
 .sp
 Local path or http/https URL to shell script which will be executed after creation of the VM and allows
-to access the disk drive of the VM before first running it. 
+to access the disk drive of the VM before first running it.
 
 .TP
 .B PathToDeleteHacksFile
@@ -192,35 +203,34 @@ Local path or http/https URL to shell script which will be executed during VM de
 before the VM is undefined from the libvirt.
 
 .TP
-.B VmNumber
-Number identifying the VM. Currently limited to range 20-220 to allow one to use them as last octet of the IP address and leave some space for static addresses.
-
-.TP
 .I /path/to/custom/script
 Local path to script which will be executed as soon as the VM is started and reachable by SSH via its IP address assigned by DHCP.
+This can be used for automation that needs to wait for SSH to become ready.
 
 .TP
 .I vm:/remote/sourcefile|/local/sourcefile
 Path to the source file to be copied via SCP.
-Can be local to the fast-vm host or remote, on a guest VM.
+Can be either local file on fast-vm host or remote file/direcotry on fast-vm VM.
 Use the literal hostname 
 .I vm
-to denote that the file should be copied from the specified vm.
-fast-vm will replace 'vm:' with the correct guest hostname.
+to denote that the file should be copied from the fast-vm VM.
+fast-vm will replace 'vm:' with the VM IP.
 
 .TP
 .I /local/destfile|vm:/remote/destfile
 Path to the destination file to be written to, via SCP.
-Can be local to the fast-vm host or remote, on a guest VM.
-Use the literal hostname
+Can be either local file on fast-vm host or remote file/direcotry on fast-vm VM.
+Use the literal hostname 
 .I vm
-to denote that the file should be copied to the specified vm.
-fast-vm will replace 'vm:' with the correct guest hostname.
+to denote that the file should be copied from the fast-vm VM.
+fast-vm will replace 'vm:' with the VM IP.
 
 .SH TEMPLATE MACROS
-In the libvirt XML and hack files you variables from 
+In the libvirt XML and hack files you can use variables from 
 .BR fast-vm.conf (5)
-and another special macros below.
+and additionally the macros bellow. These variables are only ones considered when new version
+of fast-vm is release. Try to avoid using other variables or suggest which one is useful for your use case to
+be added to this list.
 
 .TP
 .B IMAGE_NAME
@@ -250,7 +260,7 @@ Below is recommended procedure for creating your custom images.
 .TP
 .B 1. Create libvirt VM XML template
 If you are unsure about the template get some inspiration in the fast-vm-public-images repository and feel free to reuse the template
-files from there. You can change template later to suit more your needs. Here are some guidelines for creating a good libvirt XML:
+files from there. You can change template later to suit your needs. Here are some guidelines for creating a good libvirt XML:
 .nf
 .RB "\(bu Use " "TEMPLATE MACROS" " to describe paths and names. Avoid hardcoding path to single drive to prevenc concurrent access to it."
 \(bu Remove the exact hardware addresses where possible to let the destination libvirt decide where the devices should be assigned.
@@ -258,55 +268,56 @@ files from there. You can change template later to suit more your needs. Here ar
 
 .TP
 .B 2. Name your custom image and import "empty image" with the libvirt XML
-The custom image in example will be named 'cool_image' and libvirt XML file wil have name cool_image.xml
+The custom image in this example will be named 'cool_image' and libvirt XML file wil have name cool_image.xml
 
 .B fast-vm import_image cool_image empty cool_image.xml
 
 .TP
 .B 3. Create base VM and prepare your custom image
-First create the base VM which will use the empty drive that you have imported.
+This will create the "base VM" which will use the empty drive directly.
 
 .B fast-vm create cool_image base
 
 Now you will have a VM with empty disk drive and you can install any system you want to become your custom image.
-To make image as small as possible try to first remove unnecessary things from the VM such as cache files, logs. If the OS supports it,
-try to send TRIM (ATA devices) or UNMAP (SCSI devices) so the storage can mark free space as free. You can try command
+To make image as small as possible try to remove unnecessary things from the VM such as cache files, logs. If the OS supports it,
+try to use TRIM (ATA devices) or UNMAP (SCSI devices) commands to further reduce size. For example try command
 .BR fstrim .
 
-You can further cleanup image using the command
+You can further try to cleanup image using the command
 .BI "fast-vm compact_image " "ImageName"
-to perform cleanup of image and trim using
+. Cleanup of image is done using 
 .BR "virt-sparsify" " command."
 
 .TP
 .B 4. Export image in compressed form
-When you have done all modification to your image export it to GZ or XZ compressed file using one of the commands below.
+When you have done all modification to your image export it to GZ or XZ (recommended) compressed file using one of the commands below.
 
 .B fast-vm export_image cool_image xz
 .br
 .B fast-vm export_image cool_image gz
 
-TIP: To test how the fast-vm VM would be created from this image, simply create it based on your custom image
+TIP: You can test anytime your image by creating fast-vm VM based on it. Note that changing base VM disk will NOT change existing fast-vm VM using that image.
 
 .B fast-vm create cool_image VmNumber
 
 .TP
-.B 5. (optional) Creating hack file
-Hack files allows you to change some thing in the image at the time when new fast-vm VM is created and when you know for example the VmNumber.
-This is used in fast-vm-public-images to setup the hostname of the machine to match the fast-vm VM_NAME and also to alter the MAC address to match
-the one that got assigned by libvirt to new VM. fast-vm-public-images hack files are also doing some changes on the filesystem before the VM
-is run to setup serial console or SSH keys. Check those hack files for inspiration on what is possible. Note that hack files are run in context of
-user running the fast-vm command and they usually don't have root permissions (you can still use sudo).
+.B 5. (optional, but recommended) Creating hack file
+Hack files allows to change things in the image at the time when new fast-vm VM is created.
+This is heavilly used by fast-vm images from fast-vm-public-images to setup the hostname of the machine so it matches the fast-vm VM_NAME as much as possible. 
+Check those hack files for inspiration on what is possible. Note that hack files are run in context of
+user running the fast-vm command and they don't have root permissions.
 
 .SH CUSTOMIZING IMPORTED IMAGE
 You can further customize the disk image imported into fast-vm thinpool. This is practical if you are for example importing some systems that requires
-registration or some other repetitive task that is hard to put into hacks file. To begin customizing imported image create the 'base' VM using command below.
+registration or some other repetitive task that is hard to put into hacks file. However if something is possible doable in hack file, then hack file is the
+recommended way of customizing image because hack files are easier to ditribute compared to whole disk images.
+To begin customizing imported image create the 'base' VM using command below.
 
 .BI "fast-vm create " ImageName " base"
 
-Above command will define VM which will be able to directly alter the imported disk image. The VM will be created using default libvirt XML and fast-vm will
-apply hacks file on it. However as the 'base' is not a number, the VM will not be assigned the static DHCP lease by libvirt so it might be needed to connect
-to VM by other means that through network to figure out its IP address.
+Above command will define VM which will be able to directly alter the imported disk image. The VM will be created using default libvirt XML associated with that image
+and fast-vm will apply hacks file on it as on normal VM. However as the 'base' is not a number, the VM will not be assigned the static DHCP lease by libvirt so it might
+be needed to connect to VM by other means that through network to figure out its IP address or assign it one.
 
 It is save to alter imported image after you have created fast-vm VMs that are based on it. The changes you do to the imported image will be present only
 in the newly created VMs. It's strongly discouraged to create VMs based on imported image when the base VM is running.
@@ -315,15 +326,17 @@ in the newly created VMs. It's strongly discouraged to create VMs based on impor
 To use virtual machines with UEFI you will need a UEFI firmware for qemu which is most probably distributed separately from qemu.
 When creating the custom image you will have to specify location of UEFI firmware and provide the location of UEFI variable files in
 .RI " " "/etc/libvirt/qemu.conf" " file so the libvirt can automatically take care of UEFI vars creation and deletion."
+Some systems (such as CentOS/RHEL 6.x) needs UEFI vars file that contains needed variables after install to be bootable.
 
 .SH IMAGE PROFILES (from fast-vm-1.1)
-Profiles simplyfies the use of alternative libvirt XML files and hack files. Profile defines the set of alternative libvirt XML, hack files under one
-profile name that can be used as imageName when creating the new VM. If VM was created using profile this will be indicated in the list output of machines.
+To allow re-use of same disk image with different libvirt XML and/or hack files the IMAGE PROFILES can be used. Profile is basically alternative libvirt XML and/or hack file
+for existing disk image. Profiles can be specified in place of imageName. To create profile there must be already existing image based on which profile is created.
+Typical use of profile is to create VM with different virtual HW (more RAM, CPU, additional network cards, etc.).
 
 .SH RESIZING DISKS (from fast-vm-1.2)
 Disks can be resized in both images and created VMs. Resizing the image disk will affect only newly created VMs from that disk.
 .br
-.BR "WARNING: " "Shrinking disk size (making size of disk smaller) can cause DATA LOSS. THink before doing so. You will NOT be prompted to confirm your choice."
+.BR "WARNING: " "Shrinking disk size (making size of disk smaller) can cause DATA LOSS. Think before doing so. You will NOT be prompted to confirm your choice."
 
 .SH EXAMPLES
 Import local image into fast-vm
