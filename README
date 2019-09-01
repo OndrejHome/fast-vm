@@ -52,7 +52,7 @@ fast-vm is distributed under GPLv3 (or newer if it exists).
 Author will try to supports only the newest release.
 
 === Author ===
-Ondrej Famera <ofamera@redhat.com> or <ondrej-xa2iel8u@famera.cz>
+Ondrej Famera <ondrej-xa2iel8u@famera.cz>
 
 ====== Known bugs/limitation ======
 * initial setup requires root
