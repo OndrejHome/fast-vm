@@ -43,10 +43,7 @@ Distribution    Installation method
 * (optional) OVMF UEFI image for UEFI support in images
 
 === How to contribute ===
-- check GitHub issues with tag 'help_wanted'
-- report issues/request features in GitHub issues
-
-If unsure where to start check with author
+check CONTRIBUTING.md
 
 === License and Support ===
 fast-vm is distributed under GPLv3 (or newer if it exists).
