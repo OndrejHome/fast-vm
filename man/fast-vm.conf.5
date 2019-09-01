@@ -5,12 +5,12 @@ fast-vm.conf \(em global configuration file for fast-vm located in /etc/fast-vm.
 .SH DESCRIPTION
 .RB "This manual page describes the format of the " fast-vm " (8) configuration file."
 
-the /etc/fast-vm.conf must exist to fast-vm function properly. On first configuration the default 
-values are taken from file /usr/share/fast-vm/fast-vm.conf.defaults.
+The /etc/fast-vm.conf must exist so fast-vm can function properly. During first configuration the default
+.RI "values are taken from file " /usr/share/fast-vm/fast-vm.conf.defaults .
 
-File is loaded as shell script that provides variables to fast-vm script.
+.IR /etc/fast-vm.conf " is loaded during each fast-vm command run and provides it with needed variables."
 
-Following variables are defined
+Following variables are defined and used by fast-vm:
 
 .TP
 .B VM_PREFIX
@@ -18,27 +18,27 @@ Prefix for LV disk name and libvirt machine name.
 
 .TP 
 .B THINPOOL_VG
-Name of Volume Group (VG) on which is the thin LV for fast-vm.
+Name of LVM Volume Group (VG) on which the thin LV for fast-vm is located.
 
 .TP
 .B THINPOOL_LV
-Name of Thinpool Logical Volume (LV) for fast-vm.
+LVM Logical Volume (LV) name of thinpool used for fast-vm.
 
 .TP
 .B LIBVIRT_NETWORK
-Name of the libvirt network and bridge adapter for NAT networking.
+Name of the libvirt network that will be used by fast-vm for NAT networking. Bridge for this network will have same name as the network.
 
 .TP
 .B SUBNET_NUMBER
-The XX in the 192.168.XX.0/24 libvirt network created by setup.
+The XX in the 192.168.XX.0/24 libvirt network created by setup. 
 
 .TP
 .B FASTVM_GROUP
 System group which will be allowed access to fast-vm. Users in this group can use fast-vm
-and fast-vm will allow access disks to this group (prior to version 0.9 this was a 'libvirt' group).
+and fast-vm will allow access to VM disks for this group (prior to version 0.9 this was a 'libvirt' group).
 If you setup this to other group than 'libvirt' you would most probably need to allow RW access for
-this groupto libvirt RW socket. typically this can be done by changing following two options in
-.BR /etc/libvirt/libvirtd.conf ". Changes below disable polkit authentication."
+this group to libvirt RW socket. Usually this can be done by changing following two options in
+.BR /etc/libvirt/libvirtd.conf ". Please note that changes below disable default polkit authentication."
 .sp
 .BI "unix_sock_group = " "<new_group>"
 .sp
@@ -53,7 +53,7 @@ Defines the minimum priority of messages that will be logged to syslog. Default 
 Defines the minimum priority of messages that will be showed when running fast-vm. Default is 7 (debug = all messages)
 
 .TP
-.B FASTVM_NOTES_DIR (DEPRECATED)
+.B FASTVM_NOTES_DIR (DEPRECATED) - this will be removed in next fast-vm version
 Directory in which to store notes for VMs that are shown in 'Notes' column when listing VMs. Defaults to
 .BR /var/tmp ". Once the notes are migrated from this directory using " configure-fast-vm " script as 'root' user then it is possible to remove this variable"
 
@@ -62,6 +62,7 @@ Directory in which to store notes for VMs that are shown in 'Notes' column when 
 Allow only 'root' and VM 'owner' to delete VM. In fast-vm versions =< 0.9 all users able to use fast-vm can delete any fast-vm VM. Default is 
 .BR no ". To enable this behaviour set this to " yes .
 WARNING: This is not a security feature and aims only at preventing accidental deletes of machines not owned by users.
+Any user with access to qemu:///system can at any time delete any VM unless other measures are implemented.
 
 .SH SEE ALSO
 .BR fast-vm (8),

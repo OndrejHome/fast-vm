@@ -11,11 +11,12 @@ fast-vm list \(em shows the list of VMs recognized by fast-vm
 .SH DESCRIPTION
 Without any additional parameters list is shortcut for 'fast-vm list all'.
 The 'all' keyword represents all running and inactive VMs that fast-vm can recognize.
-Alternative keyword available are 'active' and 'inactive' that shows running and inactive
+Alternative available keywords are 'active' and 'inactive'. These shows  running and inactive
 VMs repsectivelly.
 
-For programatical use there is additional parameter called 'short' which will cause the output
-to only print the matching VM numbers - one number per line.
+For programatical use there is additional parameter 'short' which will cause the output
+to only print the matching VM numbers - one number per line. This is used by bash-completion script
+and can be used for any further automation if needed.
 
 .SH OUTPUT description
 Below is explanation of columns printed by 'list' action.
@@ -30,29 +31,30 @@ Name of the image, based on which this VM was created.
 
 .TP
 .B Status
-The VMs status as reported by libvirt.
+The VMs status as reported by libvirt. Note that value here will be shown in local language set in LANG.
 
 .TP
 .B Profile_name
-If the VMs was created using the profile then here is the name of profile. If no profile was used, then text '---' is present and VM is based only on the Image name. Profiles can define a special behaviour for VM creation and deletion but will always reuse the same Image.
+If the VMs was created using the profile then here is the name of profile. If no profile was used, then text '---' is present and VM is based only on the Image name.
+For more information about profiles check IMAGE PROFILES in fast-vm man page.
 
 .TP
 .B Size ( %used )
-Size of the VMs primary drive in GB and the percentage usage as reported by LVM. This is space that was used by VM and never marked as free. To save space you can try to use 'fstrim' inside of VM to mark empty space in way that LVM thin pool can reuse it.
+Size of the VMs primary drive in GB and the percentage usage as reported by LVM. This is space that was used by VM and never marked as free. To reclaim (and save) space you can try to use 'fstrim' inside of VM while VM is running or use command 'fast-vm compact XX' on inactive VM to attempt to reclaim the free space.
 
 .TP
 .B Activity
-Whole number of days since the last action done to listed VM. This value helps to determine which VMs were not used for extended period of time and might be cosidered for removal. The following list of actions affects this value: start, stop, ssh, console, resize, info.
+Whole number of days since the last action done to listed VM. This value helps to determine which VMs were not used for extended period of time and might be cosidered for removal. The following list of actions resets this value to 0 when used: start, stop, ssh, console, resize, info. If accessing VM externally without fast-vm commands you can use 'info' action to reset this value without any other side effects.
 
 .TP
 .B Notes
-Shows the name of user which created this VM and is considered as VM owner along with free for text that can be changed using 'fast-vm edit_note' command.
+Shows the name of user which created this VM and is considered to be the VM owner along with free form text that can be changed using 'fast-vm edit_note' command.
 
 .SH EXAMPLE OUTPUT
 
 VM# Image name   Status    Profile_name Size( %used )  Activity  Notes
- 29 centos-7.4   shut off  ---            6g( 17.23%)   53d ago  ondrej: machine with CentOS
- 43 fedora26     shut off  ---           10g( 18.20%)    6d ago  ondrej: build system
+ 29 centos-7.4   shut off  ---            6g( 17.23%)   53d ago  nikola: machine with CentOS
+ 43 fedora26     shut off  ---           10g( 18.20%)    6d ago  alex: build system
  45 centos-6.9   shut off  c6.9-cluster   6g( 29.90%)  132d ago  ondrej: node 1 with shared storage
  46 centos-6.9   shut off  c6.9-cluster   6g( 27.20%)  132d ago  ondrej: node 2 with shared storage
 
