@@ -88,3 +88,8 @@ machines that are based on previous version of the base image.
 Q: Why not to use BTRFS cow?
 A: BTRFS is not as widely spread as LVM and it is not clear if it would be able to provide same
 functionality as LVM. There is possibility that I will look at this in the future.
+
+Q: Are there any similar projects similar to fast-vm?
+A: Sure there are, below is a short list of some I run through or I was told about:
+- Lago (python) - https://github.com/lago-project/lago
+- upvm (python) - https://github.com/ryran/upvm
