@@ -1137,7 +1137,7 @@ case "$1" in
 		;;
 	edit_note)
 		vm_number="$2"
-		if [ -z "$vm_number" ]; then pmsg $P_ERROR "VM number missing\n"; usage delete; fi
+		if [ -z "$vm_number" ]; then pmsg $P_ERROR "VM number missing\n"; usage edit_note; fi
 		if $(echo "$vm_number"|grep -q ' '); then handle_multiple_requests $@; fi
 
 		if [ $(list_vm all|egrep "^$vm_number$"|wc -l) -eq 0 ]; then
@@ -1316,7 +1316,7 @@ case "$1" in
 		;;
 	info)
 		vm_number="$2"
-		if [ -z "$vm_number" ]; then pmsg $P_ERROR "VM number missing\n"; usage delete; fi
+		if [ -z "$vm_number" ]; then pmsg $P_ERROR "VM number missing\n"; usage info; fi
 		if $(echo "$vm_number"|grep -q ' '); then handle_multiple_requests $@; fi
 		check_vm_number "$vm_number"
 		update_access_time "$vm_number"
