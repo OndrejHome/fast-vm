@@ -1026,6 +1026,11 @@ case "$1" in
 		fi
 
 		wait_for_ssh "$vm_number"
+
+		pmsg $P_DEBUG "Adding SSH key fingerprints of VM to ~/.ssh/known_hosts\n" $vm_number
+		ssh-keyscan -T 1 "192.168.$SUBNET_NUMBER.$vm_number" 2>/dev/null|egrep '(ssh-|ecdsa-)' >> ~/.ssh/known_hosts
+
+		pmsg $P_DEBUG "Copy SSH key to VM\n" $vm_number
 		ssh-copy-id -i "$FASTVM_USER_CONF_DIR/id_fastvm" \
 			-o GlobalKnownHostsFile=/dev/null -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no \
 			"root@192.168.$SUBNET_NUMBER.$vm_number" | egrep '(password|Now try logging into the machine)' | sed "s@with:.*@with: $FVM ssh $vm_number@"
@@ -1114,6 +1119,9 @@ case "$1" in
 		
 		pmsg $P_DEBUG "removing VM drive\n" $vm_number
 		echo "lvremove" "/dev/$THINPOOL_VG/$vm_name" | sudo -n $FASTVM_HELPER
+
+		pmsg $P_DEBUG "removing SSH keys for this machine from ~/.ssh/known_hosts\n" $vm_number
+		sed -i "/^192\.168\.$SUBNET_NUMBER\.$vm_number /d" ~/.ssh/known_hosts
 
 		## apply delete hack file
 		if [ ! -z "$delete_hack_file" ]; then
