@@ -255,7 +255,7 @@ usage () {
 			echo "$FVM import_custom_image ImageSizeInGiB ImageName <empty |PathToImage> PathToLibvirtXML [PathToHacksFile] [PathToDeleteHackFile]"
 			;;
 		export_image)
-			echo "$FVM export_image ImageName <xz|gz>"
+			echo "$FVM export_image ImageName [ <xz|gz> ]"
 			;;
 		remove_image)
 			echo "$FVM remove_image ImageName"
@@ -550,7 +550,9 @@ case "$1" in
 	export_image)
 		image_name="$2"
 		if [ -z "$image_name" ]; then pmsg $P_ERROR "missing image name\n"; usage export_image; fi
+		# get image format or use default 'xz' if no format was specified
 		image_format="$3"
+		if [ -z "$image_format" ]; then image_format='xz'; fi
 		case "$image_format" in
 			gz)
 				which gzip >/dev/null 2>&1
