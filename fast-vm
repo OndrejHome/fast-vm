@@ -519,8 +519,14 @@ case "$1" in
 		else
 			# import from http(s)
 			if [ "$pv_ok" -eq '0' ]; then
+				stty_state=$(stty -g) # save terminal state in case we neeed to restore it due to 'pv' breaking terminal 'echo'
 				curl $CURL_OPTS -s "$image_path" | pv -N download -c -s "$image_size" | $decompress_cmd | pv -N unpack -c -s ${unpacked_image_size}G | dd of=/dev/$THINPOOL_VG/$VM_PREFIX$image_name bs=1M conv=sparse
 				import_exit="$?"
+				if $(stty -a|grep -q -E '\-echo[^a-z]'); then
+					pmsg $P_DEBUG "Missing 'echo' on termninal after 'pv', restoring terminal settings.\n"
+					# this should address issue #50 - https://github.com/OndrejHome/fast-vm/issues/50
+					stty "$stty_state"
+				fi
 			else
 				pmsg $P_DEBUG "please wait while importing image (to show image write progress, install 'pv')\n"
 				curl $CURL_OPTS "$image_path" | $decompress_cmd | dd of=/dev/$THINPOOL_VG/$VM_PREFIX$image_name bs=1M conv=sparse
