@@ -255,7 +255,7 @@ usage () {
 			echo "$FVM import_custom_image ImageSizeInGiB ImageName <empty |PathToImage> PathToLibvirtXML [PathToHacksFile] [PathToDeleteHackFile]"
 			;;
 		export_image)
-			echo "$FVM export_image ImageName [ <xz|gz> ]"
+			echo "$FVM export_image ImageName [ <zst|xz|gz> ]"
 			;;
 		remove_image)
 			echo "$FVM remove_image ImageName"
@@ -433,6 +433,14 @@ case "$1" in
 				fi
 				decompress_cmd="xz -d -c"
 				;;
+			zst)
+				which zstd >/dev/null 2>&1
+				if [ ! "$?" -eq 0 ]; then
+					pmsg $P_ERROR "'zstd' binary missing, install it to have support for ZST\n"
+					exit 1
+				fi
+				decompress_cmd="zstd -d --stdout"
+				;;
 			empty)
 				pmsg $P_DEBUG "we are creating empty image file\n"
 				;;
@@ -570,8 +578,16 @@ case "$1" in
 				fi
 				compress_cmd="xz -c -k --best --block-size=16777216 -T 0"
 				;;
+			zst)
+				which zstd >/dev/null 2>&1
+				if [ ! "$?" -eq 0 ]; then
+					pmsg $P_ERROR "'zstd' binary missing, install it to have support for ZST\n"
+					exit 1
+				fi
+				compress_cmd="zstd -c -k -19 -T0 --stdout"
+				;;
 			*)
-				pmsg $P_ERROR "unknown image format $image_format (supported: xz, gz)\n"
+				pmsg $P_ERROR "unknown image format $image_format (supported: zst, xz, gz)\n"
 				exit 1
 				;;
 		esac
@@ -583,7 +599,7 @@ case "$1" in
 		flock -s -n 9 || exit 4
 		if [ -b "/dev/$THINPOOL_VG/$VM_PREFIX$image_name" ]; then
 			pmsg $P_DEBUG "compressing the image $image_name into $(pwd)/${image_name}.img.${image_format}\n"
-			$compress_cmd /dev/$THINPOOL_VG/$VM_PREFIX$image_name > $(pwd)/${image_name}.img.${image_format}
+			cat /dev/$THINPOOL_VG/$VM_PREFIX$image_name | $compress_cmd > $(pwd)/${image_name}.img.${image_format}
 			if [ "$?" -eq "0" ]; then
 				pmsg $P_INFO "Image compression finished\n"
 			else

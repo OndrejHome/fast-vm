@@ -13,11 +13,11 @@ _fast-vm()
 	fi
 
 	if [ "$cword" -eq 3 ] && [ ${COMP_WORDS[1]} == "import_image" ]; then
-		_filedir '@(gz|xz)'
+		_filedir '@(gz|xz|zst)'
 		return 0
 	fi
 	if [ "$cword" -eq 4 ] && [ ${COMP_WORDS[1]} == "import_custom_image" ]; then
-		_filedir '@(gz|xz)'
+		_filedir '@(gz|xz|zst)'
 		return 0
 	fi
 	if [ "$cword" -eq 4 ] && [ ${COMP_WORDS[1]} == "import_image" ]; then
@@ -53,7 +53,7 @@ _fast-vm()
 	fi
 
 	if [ "$cword" -eq 3 ] && [ ${COMP_WORDS[1]} == "export_image" ]; then
-	        COMPREPLY=( $( compgen -W "xz gz" -- "$cur" ) )
+	        COMPREPLY=( $( compgen -W "zst xz gz" -- "$cur" ) )
 		return 0
 	fi
 
