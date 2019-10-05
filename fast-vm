@@ -63,7 +63,7 @@ check_empty () {
 
 wait_for_ssh () {
 	vm_number="$1"
-	pmsg $P_DEBUG "checking the 192.168.$SUBNET_NUMBER.$vm_number for active SSH connection (ctrl+c to interrupt)\n" $vm_number
+	pmsg $P_DEBUG "checking the 192.168.$SUBNET_NUMBER.$vm_number for active SSH connection (ctrl+c to interrupt)\n" "$vm_number"
 	ssh_ready=$(ssh-keyscan -T 1 "192.168.$SUBNET_NUMBER.$vm_number" 2>/dev/null|egrep '(ssh-|ecdsa-)'|wc -l)
 	while [ "$ssh_ready" -eq "0" ];
 	do
@@ -71,7 +71,7 @@ wait_for_ssh () {
 		ssh_ready=$(ssh-keyscan -T 1 "192.168.$SUBNET_NUMBER.$vm_number" 2>/dev/null|egrep '(ssh-|ecdsa-)'|wc -l)
 		sleep 1
 	done
-	pmsg $P_DEBUG "\nSSH ready\n" $vm_number
+	pmsg $P_DEBUG "\nSSH ready\n" "$vm_number"
 }
 
 check_file () {
@@ -134,11 +134,11 @@ check_vm_number () {
 	vm_number="$1"
 	vm_state="$2"
 	if [ $(list_vm all|egrep "^$vm_number$"|wc -l) -eq 0 ]; then
-		pmsg $P_ERROR "no VM with number '$vm_number' found\n" $vm_number
+		pmsg $P_ERROR "no VM with number '$vm_number' found\n" "$vm_number"
 		exit 1
 	fi
 	if [ ! -z "$vm_state" -a $(list_vm $vm_state|egrep "^$vm_number$"|wc -l) -eq 1 ]; then
-		pmsg $P_ERROR "VM with number '$vm_number' is $vm_state\n" $vm_number
+		pmsg $P_ERROR "VM with number '$vm_number' is $vm_state\n" "$vm_number"
 		exit 1
 	fi
 }
@@ -238,7 +238,7 @@ update_vm_metadata () {
 	fi
 	if [ "$metadata_user" = '--unknown--' ]; then
 		metadata_user='root'
-		pmsg $P_WARNING "VM without valid metadata! Creating empty metadata and changing ownership of VM to 'root'\n" $vm_number
+		pmsg $P_WARNING "VM without valid metadata! Creating empty metadata and changing ownership of VM to 'root'\n" "$vm_number"
 	fi
 	# actually update the VM description
 	virsh --connect qemu:///system desc --config $vm_name -- "1,$metadata_user,$(date '+%s'),$metadata_profile,$metadata_description" 2>&1|$DEBUG_LOG_CMD
@@ -756,13 +756,13 @@ case "$1" in
 			if [ -f "$profile_base_image" ]; then
 				profile_name=$image_name
 				image_name=$(cat $profile_base_image)
-				pmsg $P_DEBUG "using image $image_name with profile $profile_name\n" $vm_number
+				pmsg $P_DEBUG "using image $image_name with profile $profile_name\n" "$vm_number"
 				break
 			fi
 		done
 
 		if [ ! -b "/dev/$THINPOOL_VG/$VM_PREFIX$image_name" ]; then
-			pmsg $P_ERROR "Missing image for ${image_name}.\n/dev/$THINPOOL_VG/$VM_PREFIX$image_name not found.\nFirst import image using 'fast-vm image_import $image_name'\n" $vm_number
+			pmsg $P_ERROR "Missing image for ${image_name}.\n/dev/$THINPOOL_VG/$VM_PREFIX$image_name not found.\nFirst import image using 'fast-vm image_import $image_name'\n" "$vm_number"
 			exit 2
 		fi
 
@@ -776,12 +776,12 @@ case "$1" in
 				else
 					image_xml_path="$path"
 		                fi
-				pmsg $P_DEBUG "using file $path as libvirt XML\n" $vm_number
+				pmsg $P_DEBUG "using file $path as libvirt XML\n" "$vm_number"
 				break
 			fi
 		done
 		if [ -z "$image_xml_path" ]; then
-			pmsg $P_ERROR "no VM XML definition for image ${image_name}. Import image again or supply alternative xml\n" $vm_number
+			pmsg $P_ERROR "no VM XML definition for image ${image_name}. Import image again or supply alternative xml\n" "$vm_number"
 			usage create
 		fi
 
@@ -795,7 +795,7 @@ case "$1" in
 				else
 					hack_file="$path"
 		                fi
-				pmsg $P_DEBUG "using file $path as hack file\n" $vm_number
+				pmsg $P_DEBUG "using file $path as hack file\n" "$vm_number"
 				break
 			fi
 		done
@@ -806,18 +806,18 @@ case "$1" in
 		if [ "$?" -eq '0' ]
 		then
 			if [ "$vm_number" -lt 20 ] || [ "$vm_number" -gt 220 ];then
-				pmsg $P_ERROR "VM number out of range (20-220)\n" $vm_number
+				pmsg $P_ERROR "VM number out of range (20-220)\n" "$vm_number"
 				usage create
 			fi
 			if [ $(list_vm all|egrep "^$vm_number$"|wc -l) -gt 0 ]; then
-				pmsg $P_ERROR "VM with this VM number already exists\n" $vm_number
+				pmsg $P_ERROR "VM with this VM number already exists\n" "$vm_number"
 				exit 1
 			fi
 		else
 			if [ "$vm_number" = "base" ]; then
-				pmsg $P_DEBUG "creating base image VM for $image_name\n" $vm_number
+				pmsg $P_DEBUG "creating base image VM for $image_name\n" "$vm_number"
 			else
-				pmsg $P_ERROR "only numbers from range 20-220 and word 'base' permitted here\n" $vm_number
+				pmsg $P_ERROR "only numbers from range 20-220 and word 'base' permitted here\n" "$vm_number"
 				usage create
 			fi
 		fi
@@ -836,78 +836,78 @@ case "$1" in
 			sed -e "s/VM_NAME/$VM_PREFIX$image_name/g; s/THINPOOL_VG/$THINPOOL_VG/g; s/LIBVIRT_NETWORK/$LIBVIRT_NETWORK/g; s/VM_NUMBER/$vm_number/g; s/VM_HEX_NUMBER/$VM_HEX_NUMBER/g; s/IMAGE_NAME/$image_name/g;" "$image_xml_path" > $tmp_xml
 			virsh --connect qemu:///system define $tmp_xml
 			if [ ! "$?" -eq '0' ]; then
-				pmsg $P_ERROR "defining base VM for $image_name failed, doesn't it exists already?\n" $vm_number
+				pmsg $P_ERROR "defining base VM for $image_name failed, doesn't it exists already?\n" "$vm_number"
 				exit 2
 			fi
 
 			# source file with hacks and apply them
 			if [ ! -z "$hack_file" ]; then
 				hack_file=$(echo "$hack_file"|sed 's/^\([^\/]\)/\.\/\1/g')
-				pmsg $P_DEBUG "applying hacks from $hack_file\n" $vm_number
+				pmsg $P_DEBUG "applying hacks from $hack_file\n" "$vm_number"
 				. $hack_file
 				if [ ! "$?" -eq "0" ]; then
-					pmsg $P_WARNING "there was issue applying hacks to this machine, check syslog for more details\n" $vm_number
+					pmsg $P_WARNING "there was issue applying hacks to this machine, check syslog for more details\n" "$vm_number"
 				fi
-				pmsg $P_DEBUG "applying hacks finished\n" $vm_number
+				pmsg $P_DEBUG "applying hacks finished\n" "$vm_number"
 			fi
 
-			pmsg $P_DEBUG "base image VM created, to start this VM use 'virsh --connect qemu:///system start $VM_PREFIX$image_name'.\n This VM is used for customizing the base image of '$image_name' VMs.\n All changes you make to this VM would be available in newly created VMs of that version, this will not affect already existing VMs of same version\n" $vm_number
+			pmsg $P_DEBUG "base image VM created, to start this VM use 'virsh --connect qemu:///system start $VM_PREFIX$image_name'.\n This VM is used for customizing the base image of '$image_name' VMs.\n All changes you make to this VM would be available in newly created VMs of that version, this will not affect already existing VMs of same version\n" "$vm_number"
 			exit 0
 		fi
 		
 		## check if the machine doesn't exists already
 		vm_disk_test=$(ls /dev/${THINPOOL_VG}/${VM_PREFIX}*-${vm_number} 2>/dev/null|wc -l )
 		if [ "$vm_disk_test" -gt 0 ]; then
-			pmsg $P_ERROR "there is already disk for machine ${vm_number}, VM creation aborted\n" $vm_number
+			pmsg $P_ERROR "there is already disk for machine ${vm_number}, VM creation aborted\n" "$vm_number"
 			exit 1
 		fi
 
 		## create regular machine
 		VM_NAME="$VM_PREFIX$image_name-$vm_number"
-		VM_HEX_NUMBER=$(printf "%2x" $vm_number)
+		VM_HEX_NUMBER=$(printf "%2x" "$vm_number")
 
-		pmsg $P_DEBUG "defining virtual machine '$VM_PREFIX$image_name-$vm_number' in libvirt\n" $vm_number
+		pmsg $P_DEBUG "defining virtual machine '$VM_PREFIX$image_name-$vm_number' in libvirt\n" "$vm_number"
 		tmp_xml=$(mktemp --suffix=.xml)
 		sed -e "s/VM_NAME/$VM_PREFIX$image_name-$vm_number/g; s/THINPOOL_VG/$THINPOOL_VG/g; s/LIBVIRT_NETWORK/$LIBVIRT_NETWORK/g; s/VM_NUMBER/$vm_number/g; s/VM_HEX_NUMBER/$VM_HEX_NUMBER/g; s/IMAGE_NAME/$image_name/g;" "$image_xml_path" > $tmp_xml
 		virsh --connect qemu:///system define $tmp_xml
 		if [ ! "$?" -eq '0' ]; then
-			pmsg $P_ERROR "Unable to define virtual machine from $tmp_xml. Check syslog for more details\n" $vm_number
+			pmsg $P_ERROR "Unable to define virtual machine from $tmp_xml. Check syslog for more details\n" "$vm_number"
 			exit 2
 		fi
 		metadata_profile='---'
 		if [ "$profile_name" != "$image_name" ]; then metadata_profile=$profile_name; fi
 		# update libvirt XML with VM description
-		virsh --connect qemu:///system desc --config $VM_NAME --title --new-desc "$(printf '%03d' $vm_number) $(whoami)"
+		virsh --connect qemu:///system desc --config $VM_NAME --title --new-desc "$(printf '%03d' "$vm_number") $(whoami)"
 		# create metadata for the new VM
 		virsh --connect qemu:///system desc --config $VM_NAME -- "1,$(whoami),$(date '+%s'),$metadata_profile," 2>&1|$DEBUG_LOG_CMD
 
-		pmsg $P_DEBUG "creating disk '$VM_PREFIX$image_name-$vm_number'\n" $vm_number
+		pmsg $P_DEBUG "creating disk '$VM_PREFIX$image_name-$vm_number'\n" "$vm_number"
 		echo "lvcreate" "newvm" "$image_name" "$image_name-$vm_number" | sudo -n $FASTVM_HELPER
 		echo "chgrp" "/dev/$THINPOOL_VG/$VM_PREFIX$image_name-$vm_number" | sudo -n $FASTVM_HELPER
 
 		## add DHCP reservation only if the VM has the interface for fast-vm network
 		VM_MAC=$(virsh --connect qemu:///system dumpxml "$VM_PREFIX$image_name-$vm_number"|xmllint --xpath "//interface[.//source[@network='$LIBVIRT_NETWORK']]/mac/@address" - 2>/dev/null|cut -d\" -f 2|head -1)
 		if [ ! -z "$VM_MAC" ]; then
-			pmsg $P_DEBUG "adding static lease for 192.168.$SUBNET_NUMBER.$vm_number into libvirts DHCP\n" $vm_number
+			pmsg $P_DEBUG "adding static lease for 192.168.$SUBNET_NUMBER.$vm_number into libvirts DHCP\n" "$vm_number"
 			virsh --connect qemu:///system net-update "$LIBVIRT_NETWORK" add-last ip-dhcp-host --xml "<host mac='$VM_MAC' ip='192.168.$SUBNET_NUMBER.$vm_number'/>" --live --config 2>&1|$DEBUG_LOG_CMD
 		fi
 
 		# source file with hacks and apply them
 		if [ ! -z "$hack_file" ]; then
 			hack_file=$(echo "$hack_file"|sed 's/^\([^\/]\)/\.\/\1/g')
-			pmsg $P_DEBUG "applying hacks from $hack_file\n" $vm_number
+			pmsg $P_DEBUG "applying hacks from $hack_file\n" "$vm_number"
 			. $hack_file
 			if [ ! "$?" -eq "0" ]; then
-				pmsg $P_WARNING "there was issue applying hacks to this machine, check syslog for more details\n" $vm_number
+				pmsg $P_WARNING "there was issue applying hacks to this machine, check syslog for more details\n" "$vm_number"
 			fi
-			pmsg $P_DEBUG "applying hacks finished\n" $vm_number
+			pmsg $P_DEBUG "applying hacks finished\n" "$vm_number"
 		fi
 
-		pmsg $P_INFO "VM '$VM_NAME' created\n" $vm_number
+		pmsg $P_INFO "VM '$VM_NAME' created\n" "$vm_number"
 		# end of locked section
 		) 9</dev/$THINPOOL_VG/$VM_PREFIX$image_name
 		if [ "$?" != "0" ]; then
-			pmsg $P_ERROR "It is not possible to use image $image_name for creating VM now as it is being used by fast-vm or other process at the moment\n" $vm_number
+			pmsg $P_ERROR "It is not possible to use image $image_name for creating VM now as it is being used by fast-vm or other process at the moment\n" "$vm_number"
 			exit 1
 		else
 			rm -f /tmp/fast-vm.img.${image_name}.lock
@@ -926,35 +926,35 @@ case "$1" in
 		
 		# if there is any third argument start VM and console after
 		if [ -z "$3" ]; then
-			pmsg $P_DEBUG "starting VM $vm_name (192.168.$SUBNET_NUMBER.$vm_number)\n" $vm_number
+			pmsg $P_DEBUG "starting VM $vm_name (192.168.$SUBNET_NUMBER.$vm_number)\n" "$vm_number"
 			virsh --connect qemu:///system start $vm_name
 			if [ "$?" != '0' ]; then
-				pmsg $P_ERROR "failed to start VM, check syslog for more information\n" $vm_number
+				pmsg $P_ERROR "failed to start VM, check syslog for more information\n" "$vm_number"
 			fi
 		else
 			case "$3" in
 				console)
 					if [ ! -z "$MULTI_OPERATION" ] && [ "$MULTI_OPERATION" = 1 ]; then
-						pmsg $P_ERROR "When running start as part of multiple operations the console option is not available.\n" $vm_number
+						pmsg $P_ERROR "When running start as part of multiple operations the console option is not available.\n" "$vm_number"
 						exit 1
 					fi
-					pmsg $P_DEBUG "starting VM $vm_name and connecting to it serial console ...\n" $vm_number
+					pmsg $P_DEBUG "starting VM $vm_name and connecting to it serial console ...\n" "$vm_number"
 					virsh --connect qemu:///system start $vm_name
 					if [ "$?" != '0' ]; then
-						pmsg $P_ERROR "failed to start VM $vm_name, check syslog for more information\n" $vm_number
+						pmsg $P_ERROR "failed to start VM $vm_name, check syslog for more information\n" "$vm_number"
 					else
 						virsh --connect qemu:///system console $vm_name
 					fi
 				;;
 				ssh)
 					if [ -z "$4" ] && [ ! -z "$MULTI_OPERATION" ] && [ "$MULTI_OPERATION" = 1 ]; then
-						pmsg $P_ERROR "When running start with ssh as part of multiple operations, script for SSH must be specified.\n" $vm_number
+						pmsg $P_ERROR "When running start with ssh as part of multiple operations, script for SSH must be specified.\n" "$vm_number"
 						exit 1
 					fi
-					pmsg $P_DEBUG "starting VM $vm_name\n" $vm_number
+					pmsg $P_DEBUG "starting VM $vm_name\n" "$vm_number"
 					virsh --connect qemu:///system start $vm_name
 					if [ "$?" != '0' ]; then
-						pmsg $P_ERROR "failed to start VM $vm_name, check syslog for more information\n" $vm_number
+						pmsg $P_ERROR "failed to start VM $vm_name, check syslog for more information\n" "$vm_number"
 					else
 						wait_for_ssh "$vm_number"
 						if [ ! -z "$4" ] && [ -x "$4" ]; then
@@ -981,17 +981,17 @@ case "$1" in
 		vm_name=$(virsh --connect qemu:///system list --all |grep "$VM_PREFIX"|awk '{print $2}'|egrep "\-$vm_number$")
 
 		if [ ! -z "$3" ] && [ "$3" = "graceful" ]; then
-			pmsg $P_DEBUG "Sending ACPI shutdown event to $vm_name\n" $vm_number
+			pmsg $P_DEBUG "Sending ACPI shutdown event to $vm_name\n" "$vm_number"
 			virsh --connect qemu:///system shutdown $vm_name
 			if [ "$?" != '0' ]; then
-				pmsg $P_ERROR "failed to send graceful shutdown to VM $vm_name, check syslog for more information\n" $vm_number
+				pmsg $P_ERROR "failed to send graceful shutdown to VM $vm_name, check syslog for more information\n" "$vm_number"
 				exit 1
 			fi
 		else
-			pmsg $P_DEBUG "Stopping VM $vm_name now\n" $vm_number
+			pmsg $P_DEBUG "Stopping VM $vm_name now\n" "$vm_number"
 			virsh --connect qemu:///system destroy $vm_name
 			if [ "$?" != '0' ]; then
-				pmsg $P_ERROR "failed to forcefully shutdown VM $vm_name, check syslog for more information\n" $vm_number
+				pmsg $P_ERROR "failed to forcefully shutdown VM $vm_name, check syslog for more information\n" "$vm_number"
 				exit 1
 			fi
 		fi
@@ -1001,7 +1001,7 @@ case "$1" in
 		if [ -z "$vm_number" ]; then pmsg $P_ERROR "VM number missing\n"; usage ssh; fi
 		if $(echo "$vm_number"|grep -q ' '); then handle_multiple_requests $@; fi
 		if [ -z "$3" ] && [ ! -z "$MULTI_OPERATION" ] && [ "$MULTI_OPERATION" = 1 ]; then
-			pmsg $P_ERROR "When running ssh as part of multiple operations, script for SSH must be specified.\n" $vm_number
+			pmsg $P_ERROR "When running ssh as part of multiple operations, script for SSH must be specified.\n" "$vm_number"
 			exit 1
 		fi
 
@@ -1013,7 +1013,7 @@ case "$1" in
 			if [ -x "$3" ]; then
 				eval "$3 192.168.$SUBNET_NUMBER.$vm_number" | sed -e "s/^/\[$vmn\]/"
 			else
-				pmsg $P_ERROR "$3 not executable\n" $vm_number
+				pmsg $P_ERROR "$3 not executable\n" "$vm_number"
 			fi
 		else
 			ssh -i $FASTVM_USER_CONF_DIR/id_fastvm -o GlobalKnownHostsFile=/dev/null -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no "root@192.168.$SUBNET_NUMBER.$vm_number"
@@ -1027,7 +1027,7 @@ case "$1" in
 		update_access_time "$vm_number"
 
 		if [ -z "$4" ]; then
-			pmsg $P_ERROR "scp requires a sourcepath and destination path to copy\n" $vm_number
+			pmsg $P_ERROR "scp requires a sourcepath and destination path to copy\n" "$vm_number"
 			exit 1
 		fi
 
@@ -1045,16 +1045,16 @@ case "$1" in
 		update_access_time "$vm_number"
 
 		if [ ! -f "$FASTVM_USER_CONF_DIR/id_fastvm" ]; then
-			pmsg $P_WARNING "Generating new ssh key with empty passphrase for fast-vm use at $FASTVM_USER_CONF_DIR/id_fastvm\n" $vm_number
+			pmsg $P_WARNING "Generating new ssh key with empty passphrase for fast-vm use at $FASTVM_USER_CONF_DIR/id_fastvm\n" "$vm_number"
 			ssh-keygen -P '' -f $FASTVM_USER_CONF_DIR/id_fastvm
 		fi
 
 		wait_for_ssh "$vm_number"
 
-		pmsg $P_DEBUG "Adding SSH key fingerprints of VM to ~/.ssh/known_hosts\n" $vm_number
+		pmsg $P_DEBUG "Adding SSH key fingerprints of VM to ~/.ssh/known_hosts\n" "$vm_number"
 		ssh-keyscan -T 1 "192.168.$SUBNET_NUMBER.$vm_number" 2>/dev/null|egrep '(ssh-|ecdsa-)' >> ~/.ssh/known_hosts
 
-		pmsg $P_DEBUG "Copy SSH key to VM\n" $vm_number
+		pmsg $P_DEBUG "Copy SSH key to VM\n" "$vm_number"
 		ssh-copy-id -i "$FASTVM_USER_CONF_DIR/id_fastvm" \
 			-o GlobalKnownHostsFile=/dev/null -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no \
 			"root@192.168.$SUBNET_NUMBER.$vm_number" | egrep '(password|Now try logging into the machine)' | sed "s@with:.*@with: $FVM ssh $vm_number@"
@@ -1076,7 +1076,7 @@ case "$1" in
 		if $(echo "$vm_number"|grep -q ' '); then handle_multiple_requests $@; fi
 
 		if [ $(list_vm all|egrep "^$vm_number$"|wc -l) -eq 0 ]; then
-			pmsg $P_ERROR "no VM with number '$vm_number' found\n" $vm_number
+			pmsg $P_ERROR "no VM with number '$vm_number' found\n" "$vm_number"
 			exit 1
 		fi
 
@@ -1099,7 +1099,7 @@ case "$1" in
 				else
 					delete_hack_file="$path"
 		                fi
-				pmsg $P_DEBUG "using file $path as delete hack file\n" $vm_number
+				pmsg $P_DEBUG "using file $path as delete hack file\n" "$vm_number"
 				break
 			fi
 		done
@@ -1107,9 +1107,9 @@ case "$1" in
 		if [ "$FASTVM_OWNER_ONLY_DELETE" = "yes" ]; then
 			if [ $(whoami) != "root" ] && [ $(whoami) != "$metadata_user" ]; then
 				if [ -z "$metadata_user" ]; then
-					pmsg $P_ERROR "only 'root' is allowed to delete this VM\n" $vm_number
+					pmsg $P_ERROR "only 'root' is allowed to delete this VM\n" "$vm_number"
 				else
-					pmsg $P_ERROR "only 'root' and '$metadata_user' are allowed to delete this VM\n" $vm_number
+					pmsg $P_ERROR "only 'root' and '$metadata_user' are allowed to delete this VM\n" "$vm_number"
 				fi
 				exit 1
 			fi
@@ -1117,54 +1117,54 @@ case "$1" in
 
 
 		if [ $(list_vm active|egrep "^$vm_number$"|wc -l) -eq 1 ]; then
-			pmsg $P_WARNING "VM $vm_name is active, forcefully stopping it\n" $vm_number
+			pmsg $P_WARNING "VM $vm_name is active, forcefully stopping it\n" "$vm_number"
 			virsh --connect qemu:///system destroy $vm_name
 			if [ "$?" != '0' ]; then
-				pmsg $P_ERROR "failed to stop VM $vm_name, check syslog for more information\n" $vm_number
+				pmsg $P_ERROR "failed to stop VM $vm_name, check syslog for more information\n" "$vm_number"
 				exit 1
 			fi
 		fi
 
 		VM_MAC=$(virsh --connect qemu:///system dumpxml "$vm_name"|xmllint --xpath "//interface[.//source[@network='$LIBVIRT_NETWORK']]/mac/@address" - 2>/dev/null|cut -d\" -f 2|head -1)
 		if [ ! -z "$VM_MAC" ]; then
-			pmsg $P_DEBUG "removing DHCP reservation 192.168.$SUBNET_NUMBER.$vm_number for $VM_MAC\n" $vm_number
+			pmsg $P_DEBUG "removing DHCP reservation 192.168.$SUBNET_NUMBER.$vm_number for $VM_MAC\n" "$vm_number"
 			virsh --connect qemu:///system net-update "$LIBVIRT_NETWORK" delete ip-dhcp-host --xml "<host mac='$VM_MAC' ip='192.168.$SUBNET_NUMBER.$vm_number'/>" --live --config
 			if [ "$?" != '0' ]; then
-				pmsg $P_WARNING "failed to remove DHCP reservation 192.168.$SUBNET_NUMBER.$vm_number for $VM_MAC from libvirt, check syslog for more information\n" $vm_number
+				pmsg $P_WARNING "failed to remove DHCP reservation 192.168.$SUBNET_NUMBER.$vm_number for $VM_MAC from libvirt, check syslog for more information\n" "$vm_number"
 			fi
 
 			PATH="$PATH:/usr/sbin" which dhcp_release >/dev/null 2>&1
 			if [ "$?" -eq '0' ]; then
 				echo "dhcp_release" "$LIBVIRT_NETWORK" "$vm_number" "$VM_MAC" | sudo -n $FASTVM_HELPER
 			else
-				pmsg $P_WARNING "dhcp_release not found, to reuse the same VM number you would need to delete DHCP leases file for $LIBVIRT_NETWORK network and restart this network in the libvirt.\nhttp://lists.thekelleys.org.uk/pipermail/dnsmasq-discuss/2007q1/001094.html\n" $vm_number
+				pmsg $P_WARNING "dhcp_release not found, to reuse the same VM number you would need to delete DHCP leases file for $LIBVIRT_NETWORK network and restart this network in the libvirt.\nhttp://lists.thekelleys.org.uk/pipermail/dnsmasq-discuss/2007q1/001094.html\n" "$vm_number"
 			fi
 		fi
 		
-		pmsg $P_DEBUG "removing VM drive\n" $vm_number
+		pmsg $P_DEBUG "removing VM drive\n" "$vm_number"
 		echo "lvremove" "/dev/$THINPOOL_VG/$vm_name" | sudo -n $FASTVM_HELPER
 
-		pmsg $P_DEBUG "removing SSH keys for this machine from ~/.ssh/known_hosts\n" $vm_number
+		pmsg $P_DEBUG "removing SSH keys for this machine from ~/.ssh/known_hosts\n" "$vm_number"
 		sed -i "/^192\.168\.$SUBNET_NUMBER\.$vm_number /d" ~/.ssh/known_hosts
 
 		## apply delete hack file
 		if [ ! -z "$delete_hack_file" ]; then
 			delete_hack_file=$(echo "$delete_hack_file"|sed 's/^\([^\/]\)/\.\/\1/g')
-			pmsg $P_DEBUG "applying delete hacks from $delete_hack_file\n" $vm_number
+			pmsg $P_DEBUG "applying delete hacks from $delete_hack_file\n" "$vm_number"
 			. $delete_hack_file
 			if [ ! "$?" -eq "0" ]; then
-				pmsg $P_WARNING "there was issue applying delete hacks to this machine, check syslog for more details\n" $vm_number
+				pmsg $P_WARNING "there was issue applying delete hacks to this machine, check syslog for more details\n" "$vm_number"
 			fi
-			pmsg $P_DEBUG "applying delete hacks finished\n" $vm_number
+			pmsg $P_DEBUG "applying delete hacks finished\n" "$vm_number"
 		fi
 
-		pmsg $P_DEBUG "undefining VM $vm_name from libvirt\n" $vm_number
+		pmsg $P_DEBUG "undefining VM $vm_name from libvirt\n" "$vm_number"
 		virsh --connect qemu:///system undefine $vm_name --nvram --managed-save
 		if [ "$?" != '0' ]; then
-			pmsg $P_ERROR "failed to undefine VM $vm_name, check syslog for more information\n" $vm_number
+			pmsg $P_ERROR "failed to undefine VM $vm_name, check syslog for more information\n" "$vm_number"
 			exit 1
 		else
-			pmsg $P_INFO "VM '$vm_name' deleted\n" $vm_number
+			pmsg $P_INFO "VM '$vm_name' deleted\n" "$vm_number"
 		fi
 		;;
 	edit_note)
@@ -1177,7 +1177,7 @@ case "$1" in
 			exit 1
 		fi
 		if [ -z "$3" ] && [ ! -z "$MULTI_OPERATION" ] && [ "$MULTI_OPERATION" = 1 ]; then
-			pmsg $P_ERROR "When running edit_note as part of multiple operations the note must be specified as argument.\n" $vm_number
+			pmsg $P_ERROR "When running edit_note as part of multiple operations the note must be specified as argument.\n" "$vm_number"
 			exit 1
 		fi
 		vm_name=$(virsh --connect qemu:///system list --all |grep "$VM_PREFIX"|awk '{print $2}'|egrep "\-$vm_number$")
@@ -1200,8 +1200,8 @@ case "$1" in
 
 		# edit also title in libvirt XMl definition so applications like virt-manager can show same notes as seen in 'fast-vm list'
 		owner=$metadata_user
-		virsh --connect qemu:///system desc --config $vm_name --title --new-desc "$(printf '%03d' $vm_number) $owner $content"
-		update_vm_metadata $vm_number '*no_change*' "$content"
+		virsh --connect qemu:///system desc --config $vm_name --title --new-desc "$(printf '%03d' "$vm_number") $owner $content"
+		update_vm_metadata "$vm_number" '*no_change*' "$content"
 		;;
 	resize)
 		vm_number="$2"
@@ -1217,12 +1217,12 @@ case "$1" in
 		if [ -z "$new_size" ]; then pmsg $P_ERROR "invalid size. Use only whole decimal numbers\n"; usage resize; fi
 
 		#FIXME due to handling of logging in fast-vm-helper we might not receive error code if something went wrong
-		pmsg $P_DEBUG "resizing $vm_name disk to ${new_size}G\n" $vm_number
+		pmsg $P_DEBUG "resizing $vm_name disk to ${new_size}G\n" "$vm_number"
 		echo "lvresize" "/dev/$THINPOOL_VG/$vm_name" "$new_size" | sudo -n $FASTVM_HELPER
 		if [ "$?" = 0 ]; then
-			pmsg $P_INFO "VM $vm_number resize to ${new_size}G succeeded.\n" $vm_number
+			pmsg $P_INFO "VM $vm_number resize to ${new_size}G succeeded.\n" "$vm_number"
 		else
-			pmsg $P_ERROR "Resize failed. Check logs for more details\n" $vm_number
+			pmsg $P_ERROR "Resize failed. Check logs for more details\n" "$vm_number"
 		fi
 		;;
 	list)
@@ -1353,8 +1353,8 @@ case "$1" in
 		check_vm_number "$vm_number"
 		update_access_time "$vm_number"
 		vm_name=$(virsh --connect qemu:///system list --all |grep "$VM_PREFIX"|awk '{print $2}'|egrep "\-$vm_number$")
-		pmsg $P_DEBUG "IP: 192.168.$SUBNET_NUMBER.$vm_number\n" $vm_number
-		pmsg $P_DEBUG "vm_name: $vm_name\n" $vm_number
+		pmsg $P_DEBUG "IP: 192.168.$SUBNET_NUMBER.$vm_number\n" "$vm_number"
+		pmsg $P_DEBUG "vm_name: $vm_name\n" "$vm_number"
 		;;
 	compact)
 		vm_number="$2"
@@ -1368,8 +1368,8 @@ case "$1" in
 		# change group of LV so we can clean it up
 		echo "chgrp" "/dev/$THINPOOL_VG/$vm_name" | sudo -n $FASTVM_HELPER
 
-		pmsg $P_INFO "Compacting disk of VM $vm_number ....\n" $vm_number
-		pmsg $P_DEBUG "Running 'virt-sparsify -q --in-place /dev/$THINPOOL_VG/$vm_name'.\n" $vm_number
+		pmsg $P_INFO "Compacting disk of VM $vm_number ....\n" "$vm_number"
+		pmsg $P_DEBUG "Running 'virt-sparsify -q --in-place /dev/$THINPOOL_VG/$vm_name'.\n" "$vm_number"
 		virt-sparsify -q --in-place "/dev/$THINPOOL_VG/$vm_name" 2>&1|$DEBUG_LOG_CMD
 		;;
 	compact_image)
