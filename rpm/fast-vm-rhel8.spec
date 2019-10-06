@@ -73,7 +73,7 @@ drive of new machine before starting VM using the 'hack files'.
 %{nil}
 
 %files minimal
-%doc README
+%doc README.md
 %license LICENSE
 %{_bindir}/%{name}
 %{_bindir}/%{name}-net-cleanup
