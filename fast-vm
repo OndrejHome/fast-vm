@@ -612,7 +612,7 @@ case "$1" in
 				pmsg $P_ERROR "There was error compressing the image, check output above\n"
 			fi
 		else
-			pmsg $P_ERROR "image "$image_name" not found\n"
+			pmsg $P_ERROR "image '$image_name' not found\n"
 			usage export_image
 		fi
 		# end of locked section
@@ -714,7 +714,7 @@ case "$1" in
 		if [ -z "$profile_name" ]; then pmsg $P_ERROR "missing profile name\n"; usage remove_profile; fi
 
 		if [ ! -d "$FASTVM_USER_CONF_DIR/${profile_name}" ] && [ ! -d "$FASTVM_SYSTEM_CONF_DIR/${profile_name}" ]; then
-			pmsg $P_ERROR "profile "$profile_name" not found\n"
+			pmsg $P_ERROR "profile '$profile_name' not found\n"
 			usage remove_profile
 		fi
 
