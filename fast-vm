@@ -79,7 +79,7 @@ check_file () {
 	file_size=0
 	file_local=0
 	error_prefix="$2"
-	if [ -z "$file_Path" ]; then pmsg $P_DEBUG "provided empty file path\n"; fi
+	if [ -z "$file_path" ]; then pmsg $P_DEBUG "provided empty file path\n"; fi
 	if [ "$curl_ok" -eq 0 ] && [ "$(echo $file_path | awk  '{ s=substr($0, 0, 4); print s; }' )"  = "http" ]; then
 		curl_data=$(curl $CURL_OPTS --head "$file_path" 2>/dev/null)
 		curl_exit="$?"
