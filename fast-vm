@@ -29,7 +29,7 @@ pmsg () {
 	message="$2"
 	vmn=${3:-__}
 	if [ "$LOG_LEVEL" -ge "$priority" ]; then
-		printf "$USER |$vmn| $message"|logger -p $priority --id -t fast-vm
+		printf "$USER |$vmn| $message"|logger -p "$priority" --id -t fast-vm
 	fi
 	if [ "$DISPLAY_LEVEL" -ge "$priority" ]; then
 		case "$priority" in
@@ -105,7 +105,7 @@ download_file () {
 	file_url="$1"
 	tmp_file=$(mktemp)
 	pmsg $P_DEBUG "downloading $file_url\ninto $tmp_file\n" >&2
-	curl $CURL_OPTS -o $tmp_file -s "$file_url"
+	curl $CURL_OPTS -o "$tmp_file" -s "$file_url"
 	if [ "$?" -eq 0 ]; then
 		echo "$tmp_file"
 	else
@@ -137,7 +137,7 @@ check_vm_number () {
 		pmsg $P_ERROR "no VM with number '$vm_number' found\n" "$vm_number"
 		exit 1
 	fi
-	if [ ! -z "$vm_state" -a $(list_vm $vm_state|grep -E "^$vm_number$"|wc -l) -eq 1 ]; then
+	if [ ! -z "$vm_state" -a $(list_vm "$vm_state"|grep -E "^$vm_number$"|wc -l) -eq 1 ]; then
 		pmsg $P_ERROR "VM with number '$vm_number' is $vm_state\n" "$vm_number"
 		exit 1
 	fi
@@ -148,9 +148,9 @@ config_file_operation () {
 	options="$2"
 
 	if [ "$(whoami)" = 'root' ]; then
-		$cmd $FASTVM_SYSTEM_CONF_DIR/$options 2>&1|$DEBUG_LOG_CMD
+		$cmd "$FASTVM_SYSTEM_CONF_DIR/$options" 2>&1|$DEBUG_LOG_CMD
 	else
-		$cmd $FASTVM_USER_CONF_DIR/$options 2>&1|$DEBUG_LOG_CMD
+		$cmd "$FASTVM_USER_CONF_DIR/$options" 2>&1|$DEBUG_LOG_CMD
 	fi
 }
 
@@ -178,7 +178,7 @@ handle_multiple_requests () {
 	done
 	errors=0
 	for pid in $all_pids; do
-		wait $pid
+		wait "$pid"
 		if  [ "$?" != '0' ]; then errors=$(($errors+1)); fi
 	done
 	if [ "$errors" -gt '0' ]; then
@@ -212,7 +212,7 @@ calculate_day_difference () {
 
 get_vm_metadata () {
 	vm_name="$1"
-	desc_data=$(virsh --connect qemu:///system desc --config $vm_name)
+	desc_data=$(virsh --connect qemu:///system desc --config "$vm_name")
 	if [ "$desc_data" = "No description for domain: $vm_name" ]; then
 		desc_data="1,--unknown--,$(date '+%s'),---,--metadata-missing--"
 	fi
@@ -229,7 +229,7 @@ update_vm_metadata () {
 	vm_name=$(virsh --connect qemu:///system list --all |grep "$VM_PREFIX"|awk '{print $2}'|grep -E "\-$vm_number$")
 	profile_name="$2"
 	description_text="$3"
-	get_vm_metadata $vm_name
+	get_vm_metadata "$vm_name"
 	if [ ! -z "$profile_name" -a "$profile_name" != '*no_change*' ]; then
 		metadata_profile=$profile_name
 	fi
@@ -241,7 +241,7 @@ update_vm_metadata () {
 		pmsg $P_WARNING "VM without valid metadata! Creating empty metadata and changing ownership of VM to 'root'\n" "$vm_number"
 	fi
 	# actually update the VM description
-	virsh --connect qemu:///system desc --config $vm_name -- "1,$metadata_user,$(date '+%s'),$metadata_profile,$metadata_description" 2>&1|$DEBUG_LOG_CMD
+	virsh --connect qemu:///system desc --config "$vm_name" -- "1,$metadata_user,$(date '+%s'),$metadata_profile,$metadata_description" 2>&1|$DEBUG_LOG_CMD
 }
 
 usage () {
@@ -509,18 +509,18 @@ case "$1" in
 
 		if [ "$image_local" = "1" ]; then
 			if [ "$pv_ok" -eq '0' ]; then
-				$decompress_cmd "$image_path"| pv -s ${unpacked_image_size}G | dd of=/dev/$THINPOOL_VG/$VM_PREFIX$image_name bs=1M conv=sparse
+				$decompress_cmd "$image_path"| pv -s "${unpacked_image_size}G" | dd of="/dev/$THINPOOL_VG/$VM_PREFIX$image_name" bs=1M conv=sparse
 				import_exit="$?"
 			else
 				pmsg $P_DEBUG "please wait while importing image (to show progress, install 'pv')\n"
-				$decompress_cmd "$image_path"| dd of=/dev/$THINPOOL_VG/$VM_PREFIX$image_name bs=1M conv=sparse
+				$decompress_cmd "$image_path"| dd of="/dev/$THINPOOL_VG/$VM_PREFIX$image_name" bs=1M conv=sparse
 				import_exit="$?"
 			fi
 		else
 			# import from http(s)
 			if [ "$pv_ok" -eq '0' ]; then
 				stty_state=$(stty -g) # save terminal state in case we neeed to restore it due to 'pv' breaking terminal 'echo'
-				curl $CURL_OPTS -s "$image_path" | pv -N download -c -s "$image_size" | $decompress_cmd | pv -N unpack -c -s ${unpacked_image_size}G | dd of=/dev/$THINPOOL_VG/$VM_PREFIX$image_name bs=1M conv=sparse
+				curl $CURL_OPTS -s "$image_path" | pv -N download -c -s "$image_size" | $decompress_cmd | pv -N unpack -c -s "${unpacked_image_size}G" | dd of="/dev/$THINPOOL_VG/$VM_PREFIX$image_name" bs=1M conv=sparse
 				import_exit="$?"
 				if $(stty -a|grep -q -E '\-echo[^a-z]'); then
 					pmsg $P_DEBUG "Missing 'echo' on termninal after 'pv', restoring terminal settings.\n"
@@ -529,7 +529,7 @@ case "$1" in
 				fi
 			else
 				pmsg $P_DEBUG "please wait while importing image (to show image write progress, install 'pv')\n"
-				curl $CURL_OPTS "$image_path" | $decompress_cmd | dd of=/dev/$THINPOOL_VG/$VM_PREFIX$image_name bs=1M conv=sparse
+				curl $CURL_OPTS "$image_path" | $decompress_cmd | dd of="/dev/$THINPOOL_VG/$VM_PREFIX$image_name" bs=1M conv=sparse
 				import_exit="$?"
 			fi
 
@@ -553,12 +553,12 @@ case "$1" in
 
 		pmsg $P_INFO "Image $image_name imported\n"
 		# end of locked section
-		) 9</dev/$THINPOOL_VG/$VM_PREFIX$image_name
+		) 9<"/dev/$THINPOOL_VG/$VM_PREFIX$image_name"
 		if [ "$?" != "0" ]; then
 			pmsg $P_ERROR "It is not possible to import image $image_name now as it is being used by fast-vm or other process at the moment\n"
 			exit 1
 		else
-			rm -f /tmp/fast-vm.img.${image_name}.lock
+			rm -f "/tmp/fast-vm.img.${image_name}.lock"
 		fi
 		;;
 	export_image)
@@ -605,7 +605,7 @@ case "$1" in
 		flock -s -n 9 || exit 4
 		if [ -b "/dev/$THINPOOL_VG/$VM_PREFIX$image_name" ]; then
 			pmsg $P_DEBUG "compressing the image $image_name into $(pwd)/${image_name}.img.${image_format}\n"
-			cat /dev/$THINPOOL_VG/$VM_PREFIX$image_name | $compress_cmd > $(pwd)/${image_name}.img.${image_format}
+			cat "/dev/$THINPOOL_VG/$VM_PREFIX$image_name" | $compress_cmd > "$(pwd)/${image_name}.img.${image_format}"
 			if [ "$?" -eq "0" ]; then
 				pmsg $P_INFO "Image compression finished\n"
 			else
@@ -616,12 +616,12 @@ case "$1" in
 			usage export_image
 		fi
 		# end of locked section
-		) 9</dev/$THINPOOL_VG/$VM_PREFIX$image_name
+		) 9<"/dev/$THINPOOL_VG/$VM_PREFIX$image_name"
 		if [ "$?" != "0" ]; then
 			pmsg $P_ERROR "It is not possible to export image $image_name now as it is being used by fast-vm or other process at the moment\n"
 			exit 1
 		else
-			rm -f /tmp/fast-vm.img.${image_name}.lock
+			rm -f "/tmp/fast-vm.img.${image_name}.lock"
 		fi
 		;;
 	remove_image)
@@ -630,8 +630,8 @@ case "$1" in
 
 		if [ -b "/dev/$THINPOOL_VG/$VM_PREFIX$image_name" ]; then
 			pmsg $P_DEBUG "stopping and undefining the base VM of $image_name\n"
-			virsh --connect qemu:///system destroy $VM_PREFIX$image_name 2>&1|$DEBUG_LOG_CMD
-			virsh --connect qemu:///system undefine $VM_PREFIX$image_name --nvram --managed-save 2>&1|$DEBUG_LOG_CMD
+			virsh --connect qemu:///system destroy "$VM_PREFIX$image_name" 2>&1|$DEBUG_LOG_CMD
+			virsh --connect qemu:///system undefine "$VM_PREFIX$image_name" --nvram --managed-save 2>&1|$DEBUG_LOG_CMD
 			pmsg $P_DEBUG "removing LV $VM_PREFIX$image_name ...\n"
 			echo "lvremove" "/dev/$THINPOOL_VG/$VM_PREFIX$image_name" | sudo -n $FASTVM_HELPER
 			pmsg $P_DEBUG "removing XML and hack file(s) of $image_name...\n"
@@ -692,10 +692,10 @@ case "$1" in
 		# create profile and copy files to right places
 		config_file_operation "mkdir" "${profile_name}"
 		tmp_base_image=$(mktemp)
-                echo $image_name > $tmp_base_image
+                echo "$image_name" > "$tmp_base_image"
 		config_file_operation "cp $tmp_base_image" "${profile_name}/base_image"
 		config_file_operation "chmod +r" "${profile_name}/base_image"
-		rm -f $tmp_base_image
+		rm -f "$tmp_base_image"
 		config_file_operation "cp $image_xml_path" "${profile_name}/config.xml"
 		config_file_operation "chmod +r" "${profile_name}/config.xml"
 		if [ ! -z "$hack_file" ] && [ -f "$hack_file" ]; then
@@ -755,7 +755,7 @@ case "$1" in
 		do
 			if [ -f "$profile_base_image" ]; then
 				profile_name=$image_name
-				image_name=$(cat $profile_base_image)
+				image_name=$(cat "$profile_base_image")
 				pmsg $P_DEBUG "using image $image_name with profile $profile_name\n" "$vm_number"
 				break
 			fi
@@ -833,8 +833,8 @@ case "$1" in
 			VM_HEX_NUMBER='01'
 			
 			tmp_xml=$(mktemp --suffix=.xml)
-			sed -e "s/VM_NAME/$VM_PREFIX$image_name/g; s/THINPOOL_VG/$THINPOOL_VG/g; s/LIBVIRT_NETWORK/$LIBVIRT_NETWORK/g; s/VM_NUMBER/$vm_number/g; s/VM_HEX_NUMBER/$VM_HEX_NUMBER/g; s/IMAGE_NAME/$image_name/g;" "$image_xml_path" > $tmp_xml
-			virsh --connect qemu:///system define $tmp_xml
+			sed -e "s/VM_NAME/$VM_PREFIX$image_name/g; s/THINPOOL_VG/$THINPOOL_VG/g; s/LIBVIRT_NETWORK/$LIBVIRT_NETWORK/g; s/VM_NUMBER/$vm_number/g; s/VM_HEX_NUMBER/$VM_HEX_NUMBER/g; s/IMAGE_NAME/$image_name/g;" "$image_xml_path" > "$tmp_xml"
+			virsh --connect qemu:///system define "$tmp_xml"
 			if [ ! "$?" -eq '0' ]; then
 				pmsg $P_ERROR "defining base VM for $image_name failed, doesn't it exists already?\n" "$vm_number"
 				exit 2
@@ -868,8 +868,8 @@ case "$1" in
 
 		pmsg $P_DEBUG "defining virtual machine '$VM_PREFIX$image_name-$vm_number' in libvirt\n" "$vm_number"
 		tmp_xml=$(mktemp --suffix=.xml)
-		sed -e "s/VM_NAME/$VM_PREFIX$image_name-$vm_number/g; s/THINPOOL_VG/$THINPOOL_VG/g; s/LIBVIRT_NETWORK/$LIBVIRT_NETWORK/g; s/VM_NUMBER/$vm_number/g; s/VM_HEX_NUMBER/$VM_HEX_NUMBER/g; s/IMAGE_NAME/$image_name/g;" "$image_xml_path" > $tmp_xml
-		virsh --connect qemu:///system define $tmp_xml
+		sed -e "s/VM_NAME/$VM_PREFIX$image_name-$vm_number/g; s/THINPOOL_VG/$THINPOOL_VG/g; s/LIBVIRT_NETWORK/$LIBVIRT_NETWORK/g; s/VM_NUMBER/$vm_number/g; s/VM_HEX_NUMBER/$VM_HEX_NUMBER/g; s/IMAGE_NAME/$image_name/g;" "$image_xml_path" > "$tmp_xml"
+		virsh --connect qemu:///system define "$tmp_xml"
 		if [ ! "$?" -eq '0' ]; then
 			pmsg $P_ERROR "Unable to define virtual machine from $tmp_xml. Check syslog for more details\n" "$vm_number"
 			exit 2
@@ -877,9 +877,9 @@ case "$1" in
 		metadata_profile='---'
 		if [ "$profile_name" != "$image_name" ]; then metadata_profile=$profile_name; fi
 		# update libvirt XML with VM description
-		virsh --connect qemu:///system desc --config $VM_NAME --title --new-desc "$(printf '%03d' "$vm_number") $(whoami)"
+		virsh --connect qemu:///system desc --config "$VM_NAME" --title --new-desc "$(printf '%03d' "$vm_number") $(whoami)"
 		# create metadata for the new VM
-		virsh --connect qemu:///system desc --config $VM_NAME -- "1,$(whoami),$(date '+%s'),$metadata_profile," 2>&1|$DEBUG_LOG_CMD
+		virsh --connect qemu:///system desc --config "$VM_NAME" -- "1,$(whoami),$(date '+%s'),$metadata_profile," 2>&1|$DEBUG_LOG_CMD
 
 		pmsg $P_DEBUG "creating disk '$VM_PREFIX$image_name-$vm_number'\n" "$vm_number"
 		echo "lvcreate" "newvm" "$image_name" "$image_name-$vm_number" | sudo -n $FASTVM_HELPER
@@ -905,12 +905,12 @@ case "$1" in
 
 		pmsg $P_INFO "VM '$VM_NAME' created\n" "$vm_number"
 		# end of locked section
-		) 9</dev/$THINPOOL_VG/$VM_PREFIX$image_name
+		) 9<"/dev/$THINPOOL_VG/$VM_PREFIX$image_name"
 		if [ "$?" != "0" ]; then
 			pmsg $P_ERROR "It is not possible to use image $image_name for creating VM now as it is being used by fast-vm or other process at the moment\n" "$vm_number"
 			exit 1
 		else
-			rm -f /tmp/fast-vm.img.${image_name}.lock
+			rm -f "/tmp/fast-vm.img.${image_name}.lock"
 		fi
 		;;
 
@@ -927,7 +927,7 @@ case "$1" in
 		# if there is any third argument start VM and console after
 		if [ -z "$3" ]; then
 			pmsg $P_DEBUG "starting VM $vm_name (192.168.$SUBNET_NUMBER.$vm_number)\n" "$vm_number"
-			virsh --connect qemu:///system start $vm_name
+			virsh --connect qemu:///system start "$vm_name"
 			if [ "$?" != '0' ]; then
 				pmsg $P_ERROR "failed to start VM, check syslog for more information\n" "$vm_number"
 			fi
@@ -939,11 +939,11 @@ case "$1" in
 						exit 1
 					fi
 					pmsg $P_DEBUG "starting VM $vm_name and connecting to it serial console ...\n" "$vm_number"
-					virsh --connect qemu:///system start $vm_name
+					virsh --connect qemu:///system start "$vm_name"
 					if [ "$?" != '0' ]; then
 						pmsg $P_ERROR "failed to start VM $vm_name, check syslog for more information\n" "$vm_number"
 					else
-						virsh --connect qemu:///system console $vm_name
+						virsh --connect qemu:///system console "$vm_name"
 					fi
 				;;
 				ssh)
@@ -952,7 +952,7 @@ case "$1" in
 						exit 1
 					fi
 					pmsg $P_DEBUG "starting VM $vm_name\n" "$vm_number"
-					virsh --connect qemu:///system start $vm_name
+					virsh --connect qemu:///system start "$vm_name"
 					if [ "$?" != '0' ]; then
 						pmsg $P_ERROR "failed to start VM $vm_name, check syslog for more information\n" "$vm_number"
 					else
@@ -982,14 +982,14 @@ case "$1" in
 
 		if [ ! -z "$3" ] && [ "$3" = "graceful" ]; then
 			pmsg $P_DEBUG "Sending ACPI shutdown event to $vm_name\n" "$vm_number"
-			virsh --connect qemu:///system shutdown $vm_name
+			virsh --connect qemu:///system shutdown "$vm_name"
 			if [ "$?" != '0' ]; then
 				pmsg $P_ERROR "failed to send graceful shutdown to VM $vm_name, check syslog for more information\n" "$vm_number"
 				exit 1
 			fi
 		else
 			pmsg $P_DEBUG "Stopping VM $vm_name now\n" "$vm_number"
-			virsh --connect qemu:///system destroy $vm_name
+			virsh --connect qemu:///system destroy "$vm_name"
 			if [ "$?" != '0' ]; then
 				pmsg $P_ERROR "failed to forcefully shutdown VM $vm_name, check syslog for more information\n" "$vm_number"
 				exit 1
@@ -1016,7 +1016,7 @@ case "$1" in
 				pmsg $P_ERROR "$3 not executable\n" "$vm_number"
 			fi
 		else
-			ssh -i $FASTVM_USER_CONF_DIR/id_fastvm -o GlobalKnownHostsFile=/dev/null -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no "root@192.168.$SUBNET_NUMBER.$vm_number"
+			ssh -i "$FASTVM_USER_CONF_DIR/id_fastvm" -o GlobalKnownHostsFile=/dev/null -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no "root@192.168.$SUBNET_NUMBER.$vm_number"
 		fi
 		;;
 	scp)
@@ -1034,7 +1034,7 @@ case "$1" in
 		wait_for_ssh "$vm_number"
 		shift 2
 		arguments=$(echo "$@"|sed "s/\bvm:/root@192.168.$SUBNET_NUMBER.$vm_number:/g")
-		scp -i $FASTVM_USER_CONF_DIR/id_fastvm -o GlobalKnownHostsFile=/dev/null -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -r $arguments
+		scp -i "$FASTVM_USER_CONF_DIR/id_fastvm" -o GlobalKnownHostsFile=/dev/null -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -r $arguments
 		;;
 	keydist)
 		vm_number="$2"
@@ -1046,7 +1046,7 @@ case "$1" in
 
 		if [ ! -f "$FASTVM_USER_CONF_DIR/id_fastvm" ]; then
 			pmsg $P_WARNING "Generating new ssh key with empty passphrase for fast-vm use at $FASTVM_USER_CONF_DIR/id_fastvm\n" "$vm_number"
-			ssh-keygen -P '' -f $FASTVM_USER_CONF_DIR/id_fastvm
+			ssh-keygen -P '' -f "$FASTVM_USER_CONF_DIR/id_fastvm"
 		fi
 
 		wait_for_ssh "$vm_number"
@@ -1068,7 +1068,7 @@ case "$1" in
 
 		vm_name=$(virsh --connect qemu:///system list --all |grep "$VM_PREFIX"|awk '{print $2}'|grep -E "\-$vm_number$")
 
-		virsh --connect qemu:///system console $vm_name
+		virsh --connect qemu:///system console "$vm_name"
 		;;
 	delete)
 		vm_number="$2"
@@ -1082,7 +1082,7 @@ case "$1" in
 
 		vm_name=$(virsh --connect qemu:///system list --all |grep "$VM_PREFIX"|awk '{print $2}'|grep -E "\-$vm_number$")
 
-		get_vm_metadata $vm_name
+		get_vm_metadata "$vm_name"
 		if [ "$metadata_profile" != '---' ]; then
 			profile_name=$metadata_profile
 		fi
@@ -1118,7 +1118,7 @@ case "$1" in
 
 		if [ $(list_vm active|grep -E "^$vm_number$"|wc -l) -eq 1 ]; then
 			pmsg $P_WARNING "VM $vm_name is active, forcefully stopping it\n" "$vm_number"
-			virsh --connect qemu:///system destroy $vm_name
+			virsh --connect qemu:///system destroy "$vm_name"
 			if [ "$?" != '0' ]; then
 				pmsg $P_ERROR "failed to stop VM $vm_name, check syslog for more information\n" "$vm_number"
 				exit 1
@@ -1159,7 +1159,7 @@ case "$1" in
 		fi
 
 		pmsg $P_DEBUG "undefining VM $vm_name from libvirt\n" "$vm_number"
-		virsh --connect qemu:///system undefine $vm_name --nvram --managed-save
+		virsh --connect qemu:///system undefine "$vm_name" --nvram --managed-save
 		if [ "$?" != '0' ]; then
 			pmsg $P_ERROR "failed to undefine VM $vm_name, check syslog for more information\n" "$vm_number"
 			exit 1
@@ -1187,11 +1187,11 @@ case "$1" in
 		if [ -z "$3" ]; then
 			tmp_file=$(mktemp)
 			if [ ! -z "$metadata_description" ]; then
-				echo "$metadata_description" > $tmp_file
+				echo "$metadata_description" > "$tmp_file"
 			fi
-			$EDITOR $tmp_file
-			content=$(cat $tmp_file)
-			rm $tmp_file
+			$EDITOR "$tmp_file"
+			content=$(cat "$tmp_file")
+			rm "$tmp_file"
 		else
 			# get the whole content of note (do not care in how many arguments it seems to be splitted)
 			shift 2
@@ -1200,7 +1200,7 @@ case "$1" in
 
 		# edit also title in libvirt XMl definition so applications like virt-manager can show same notes as seen in 'fast-vm list'
 		owner=$metadata_user
-		virsh --connect qemu:///system desc --config $vm_name --title --new-desc "$(printf '%03d' "$vm_number") $owner $content"
+		virsh --connect qemu:///system desc --config "$vm_name" --title --new-desc "$(printf '%03d' "$vm_number") $owner $content"
 		update_vm_metadata "$vm_number" '*no_change*' "$content"
 		;;
 	resize)
@@ -1242,7 +1242,7 @@ case "$1" in
 			do
 				out=$(echo "$data"|grep -E "(^ $vm|^$vm) ")
 				vm_name=$(echo "$raw_data"|awk '{print $1}'|grep -E "\-$vm$")
-				get_vm_metadata $vm_name
+				get_vm_metadata "$vm_name"
 				note=$(echo "$metadata_user: $metadata_description"|cut -c 1-$(($TERMINAL_WIDTH-38)))
 				last_activity=$(calculate_day_difference "$metadata_last_action" $(date +%s))
 				last_activity="$last_activity ago"
@@ -1318,13 +1318,13 @@ case "$1" in
 		;;
 	list_profiles)
 		short_output="$2" # if non-zero the output suitable for external processing
-		profile_dir_list=$(find $FASTVM_SYSTEM_CONF_DIR/ $FASTVM_USER_CONF_DIR/ -mindepth 1 -maxdepth 1 -type d 2>/dev/null)
+		profile_dir_list=$(find "$FASTVM_SYSTEM_CONF_DIR/" "$FASTVM_USER_CONF_DIR/" -mindepth 1 -maxdepth 1 -type d 2>/dev/null)
 		if [ ! -z "$short_output" ] && [ "$short_output" = "short" ]; then
 			for dir in $profile_dir_list;
 			do
 				# valid profile must contain at least base image name
 				if [ -f "$dir/base_image" ]; then
-					basename $dir
+					basename "$dir"
 				fi
 			done
 		else
@@ -1332,8 +1332,8 @@ case "$1" in
 			printf "%-20s|%-20s|%-5s|%-7s|%-14s\n" 'Profile Name' 'Base Image Name' 'XML' 'hacks' 'delete-hacks'
 			for dir in $profile_dir_list;
 			do
-				profile_name=$(basename $dir)
-				base_image_name=$(cat $dir/base_image 2>/dev/null)
+				profile_name=$(basename "$dir")
+				base_image_name=$(cat "$dir/base_image" 2>/dev/null)
 				# skip directories not containing base image name
 				if [ -z "$base_image_name" ]; then continue; fi
 				profile_xml='no'

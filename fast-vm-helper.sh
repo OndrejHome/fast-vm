@@ -24,7 +24,7 @@ pmsg () {
 	priority="$1"
 	message="$2"
 	if [ "$LOG_LEVEL" -ge "$priority" ]; then
-		printf "$USER | $message"|logger -p $priority --id -t fast-vm-helper
+		printf "$USER | $message"|logger -p "$priority" --id -t fast-vm-helper
 	fi
 	if [ "$DISPLAY_LEVEL" -ge "$priority" ]; then
 		case "$priority" in
@@ -46,7 +46,7 @@ pmsg () {
 		esac
 	fi
 }
-if [ ! $(whoami) = 'root' ];
+if [ ! "$(whoami)" = 'root' ];
 then
         pmsg $P_ERROR "this must be run as root\n"
         exit 1
@@ -98,10 +98,10 @@ case "$action" in
 					pmsg $P_ERROR "LV size validation failed\n"
 					exit 1
 				fi
-				lvcreate -n $VM_PREFIX$arg2 -V ${arg3}G --thinpool $THINPOOL_VG/$THINPOOL_LV 2>&1|$DEBUG_LOG_CMD
+				lvcreate -n "$VM_PREFIX$arg2" -V "${arg3}G" --thinpool "$THINPOOL_VG/$THINPOOL_LV" 2>&1|$DEBUG_LOG_CMD
 			;;
 			newvm)
-				lvcreate -k n -s --thinpool $THINPOOL_VG/$THINPOOL_LV /dev/$THINPOOL_VG/$VM_PREFIX$arg2 --name $VM_PREFIX$arg3 2>&1|$DEBUG_LOG_CMD
+				lvcreate -k n -s --thinpool "$THINPOOL_VG/$THINPOOL_LV" "/dev/$THINPOOL_VG/$VM_PREFIX$arg2" --name "$VM_PREFIX$arg3" 2>&1|$DEBUG_LOG_CMD
 			;;
 			*)
 				pmsg $P_ERROR "wrong action for lvcreate\n"
@@ -129,7 +129,7 @@ case "$action" in
 			exit 1
 		fi
 
-		lvresize -f -L ${arg2}G "$arg1" 2>&1|$DEBUG_LOG_CMD
+		lvresize -f -L "${arg2}G" "$arg1" 2>&1|$DEBUG_LOG_CMD
 		;;
 	lvs)
 		lvs $THINPOOL_VG -o lv_name,lv_size,data_percent,role --separator ' ' |grep -E "($THINPOOL_LV|$VM_PREFIX)"
@@ -141,7 +141,7 @@ case "$action" in
 			exit 1
 		fi
 
-		chgrp $FASTVM_GROUP "$arg1" 2>&1|$DEBUG_LOG_CMD
+		chgrp "$FASTVM_GROUP" "$arg1" 2>&1|$DEBUG_LOG_CMD
 		;;
 	dhcp_release)
 		PATH="$PATH:/usr/sbin" which dhcp_release >/dev/null 2>&1
