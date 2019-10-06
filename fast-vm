@@ -64,11 +64,11 @@ check_empty () {
 wait_for_ssh () {
 	vm_number="$1"
 	pmsg $P_DEBUG "checking the 192.168.$SUBNET_NUMBER.$vm_number for active SSH connection (ctrl+c to interrupt)\n" "$vm_number"
-	ssh_ready=$(ssh-keyscan -T 1 "192.168.$SUBNET_NUMBER.$vm_number" 2>/dev/null|egrep '(ssh-|ecdsa-)'|wc -l)
+	ssh_ready=$(ssh-keyscan -T 1 "192.168.$SUBNET_NUMBER.$vm_number" 2>/dev/null|grep -E '(ssh-|ecdsa-)'|wc -l)
 	while [ "$ssh_ready" -eq "0" ];
 	do
 		if [ "$DISPLAY_LEVEL" = "$P_DEBUG" ]; then printf "."; fi
-		ssh_ready=$(ssh-keyscan -T 1 "192.168.$SUBNET_NUMBER.$vm_number" 2>/dev/null|egrep '(ssh-|ecdsa-)'|wc -l)
+		ssh_ready=$(ssh-keyscan -T 1 "192.168.$SUBNET_NUMBER.$vm_number" 2>/dev/null|grep -E '(ssh-|ecdsa-)'|wc -l)
 		sleep 1
 	done
 	pmsg $P_DEBUG "\nSSH ready\n" "$vm_number"
@@ -83,7 +83,7 @@ check_file () {
 	if [ "$curl_ok" -eq 0 ] && [ "$(echo $file_path | awk  '{ s=substr($0, 0, 4); print s; }' )"  = "http" ]; then
 		curl_data=$(curl $CURL_OPTS --head "$file_path" 2>/dev/null)
 		curl_exit="$?"
-		curl_httpok=$(echo "$curl_data"|egrep "HTTP.*200 OK"|wc -l)
+		curl_httpok=$(echo "$curl_data"|grep -E "HTTP.*200 OK"|wc -l)
 		if [ "$curl_httpok" -eq "1" ]; then
 			file_size=$(echo "$curl_data"|grep "Content-Length:"|awk '{print $2}'|sed 's/[^0-9]*//g')
 			pmsg $P_DEBUG "Detected remote file with size $file_size\n"
@@ -127,17 +127,17 @@ list_vm () {
 			vm_option='--all'
 		;;
 	esac
-	virsh --connect qemu:///system list "$vm_option"|awk '{print $2}'|egrep "^${VM_PREFIX}.*-[0-9]+$"|sed 's/.*-\([0-9]\+\)$/\1/'|sort -n
+	virsh --connect qemu:///system list "$vm_option"|awk '{print $2}'|grep -E "^${VM_PREFIX}.*-[0-9]+$"|sed 's/.*-\([0-9]\+\)$/\1/'|sort -n
 }
 
 check_vm_number () {
 	vm_number="$1"
 	vm_state="$2"
-	if [ $(list_vm all|egrep "^$vm_number$"|wc -l) -eq 0 ]; then
+	if [ $(list_vm all|grep -E "^$vm_number$"|wc -l) -eq 0 ]; then
 		pmsg $P_ERROR "no VM with number '$vm_number' found\n" "$vm_number"
 		exit 1
 	fi
-	if [ ! -z "$vm_state" -a $(list_vm $vm_state|egrep "^$vm_number$"|wc -l) -eq 1 ]; then
+	if [ ! -z "$vm_state" -a $(list_vm $vm_state|grep -E "^$vm_number$"|wc -l) -eq 1 ]; then
 		pmsg $P_ERROR "VM with number '$vm_number' is $vm_state\n" "$vm_number"
 		exit 1
 	fi
@@ -226,7 +226,7 @@ get_vm_metadata () {
 
 update_vm_metadata () {
 	vm_number="$1"
-	vm_name=$(virsh --connect qemu:///system list --all |grep "$VM_PREFIX"|awk '{print $2}'|egrep "\-$vm_number$")
+	vm_name=$(virsh --connect qemu:///system list --all |grep "$VM_PREFIX"|awk '{print $2}'|grep -E "\-$vm_number$")
 	profile_name="$2"
 	description_text="$3"
 	get_vm_metadata $vm_name
@@ -390,7 +390,7 @@ case "$1" in
 	import_image|import_custom_image)
 		unpacked_image_size="10"
 		if [ "$1" = "import_custom_image" ]; then
-			unpacked_image_size=$(echo "$2"|egrep '^[0-9]+$')
+			unpacked_image_size=$(echo "$2"|grep -E '^[0-9]+$')
 			if [ -z "$unpacked_image_size" ]; then pmsg $P_ERROR "invalid image size. Use only whole decimal numbers\n"; usage import_custom_image; fi
 			shift
 		fi
@@ -723,7 +723,7 @@ case "$1" in
 		;;
 	resize_image)
 		image_name="$2"
-		new_size=$(echo "$3"|egrep '^[0-9]+$')
+		new_size=$(echo "$3"|grep -E '^[0-9]+$')
 
 		if [ -z "$image_name" ]; then pmsg $P_ERROR "missing image name\n"; usage resize_image; fi
 		if [ -z "$new_size" ]; then pmsg $P_ERROR "invalid image size. Use only whole decimal numbers\n"; usage resize_image; fi
@@ -809,7 +809,7 @@ case "$1" in
 				pmsg $P_ERROR "VM number out of range (20-220)\n" "$vm_number"
 				usage create
 			fi
-			if [ $(list_vm all|egrep "^$vm_number$"|wc -l) -gt 0 ]; then
+			if [ $(list_vm all|grep -E "^$vm_number$"|wc -l) -gt 0 ]; then
 				pmsg $P_ERROR "VM with this VM number already exists\n" "$vm_number"
 				exit 1
 			fi
@@ -922,7 +922,7 @@ case "$1" in
 		check_vm_number "$vm_number" "active"
 		update_access_time "$vm_number"
 
-		vm_name=$(virsh --connect qemu:///system list --all |grep "$VM_PREFIX"|awk '{print $2}'|egrep "\-$vm_number$")
+		vm_name=$(virsh --connect qemu:///system list --all |grep "$VM_PREFIX"|awk '{print $2}'|grep -E "\-$vm_number$")
 		
 		# if there is any third argument start VM and console after
 		if [ -z "$3" ]; then
@@ -978,7 +978,7 @@ case "$1" in
 		check_vm_number "$vm_number" "inactive"
 		update_access_time "$vm_number"
 
-		vm_name=$(virsh --connect qemu:///system list --all |grep "$VM_PREFIX"|awk '{print $2}'|egrep "\-$vm_number$")
+		vm_name=$(virsh --connect qemu:///system list --all |grep "$VM_PREFIX"|awk '{print $2}'|grep -E "\-$vm_number$")
 
 		if [ ! -z "$3" ] && [ "$3" = "graceful" ]; then
 			pmsg $P_DEBUG "Sending ACPI shutdown event to $vm_name\n" "$vm_number"
@@ -1052,12 +1052,12 @@ case "$1" in
 		wait_for_ssh "$vm_number"
 
 		pmsg $P_DEBUG "Adding SSH key fingerprints of VM to ~/.ssh/known_hosts\n" "$vm_number"
-		ssh-keyscan -T 1 "192.168.$SUBNET_NUMBER.$vm_number" 2>/dev/null|egrep '(ssh-|ecdsa-)' >> ~/.ssh/known_hosts
+		ssh-keyscan -T 1 "192.168.$SUBNET_NUMBER.$vm_number" 2>/dev/null|grep -E '(ssh-|ecdsa-)' >> ~/.ssh/known_hosts
 
 		pmsg $P_DEBUG "Copy SSH key to VM\n" "$vm_number"
 		ssh-copy-id -i "$FASTVM_USER_CONF_DIR/id_fastvm" \
 			-o GlobalKnownHostsFile=/dev/null -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no \
-			"root@192.168.$SUBNET_NUMBER.$vm_number" | egrep '(password|Now try logging into the machine)' | sed "s@with:.*@with: $FVM ssh $vm_number@"
+			"root@192.168.$SUBNET_NUMBER.$vm_number" | grep -E '(password|Now try logging into the machine)' | sed "s@with:.*@with: $FVM ssh $vm_number@"
 		;;
 	console)
 		vm_number="$2"
@@ -1066,7 +1066,7 @@ case "$1" in
 		check_vm_number "$vm_number" "inactive"
 		update_access_time "$vm_number"
 
-		vm_name=$(virsh --connect qemu:///system list --all |grep "$VM_PREFIX"|awk '{print $2}'|egrep "\-$vm_number$")
+		vm_name=$(virsh --connect qemu:///system list --all |grep "$VM_PREFIX"|awk '{print $2}'|grep -E "\-$vm_number$")
 
 		virsh --connect qemu:///system console $vm_name
 		;;
@@ -1075,12 +1075,12 @@ case "$1" in
 		if [ -z "$vm_number" ]; then pmsg $P_ERROR "VM number missing\n"; usage delete; fi
 		if $(echo "$vm_number"|grep -q ' '); then handle_multiple_requests $@; fi
 
-		if [ $(list_vm all|egrep "^$vm_number$"|wc -l) -eq 0 ]; then
+		if [ $(list_vm all|grep -E "^$vm_number$"|wc -l) -eq 0 ]; then
 			pmsg $P_ERROR "no VM with number '$vm_number' found\n" "$vm_number"
 			exit 1
 		fi
 
-		vm_name=$(virsh --connect qemu:///system list --all |grep "$VM_PREFIX"|awk '{print $2}'|egrep "\-$vm_number$")
+		vm_name=$(virsh --connect qemu:///system list --all |grep "$VM_PREFIX"|awk '{print $2}'|grep -E "\-$vm_number$")
 
 		get_vm_metadata $vm_name
 		if [ "$metadata_profile" != '---' ]; then
@@ -1088,7 +1088,7 @@ case "$1" in
 		fi
 
 		# determine image name of VM
-		image_name=$(virsh --connect qemu:///system list --all|awk '{print $2,$3,$4}'|egrep "^${VM_PREFIX}.*-[0-9]+ "|sed "s/${VM_PREFIX}\(.\+\)-\([0-9]\+\) \(.\+\)$/\2 \1 \3/"|awk "\$1==$vm_number {printf \"%s\",\$2}")
+		image_name=$(virsh --connect qemu:///system list --all|awk '{print $2,$3,$4}'|grep -E "^${VM_PREFIX}.*-[0-9]+ "|sed "s/${VM_PREFIX}\(.\+\)-\([0-9]\+\) \(.\+\)$/\2 \1 \3/"|awk "\$1==$vm_number {printf \"%s\",\$2}")
 		delete_hack_file=""
 		for path in "$3" "$FASTVM_USER_CONF_DIR/${profile_name}/delete-hacks.sh" "$FASTVM_SYSTEM_CONF_DIR/${profile_name}/delete-hacks.sh" "$FASTVM_USER_CONF_DIR/delete-hacks-${image_name}.sh" "$FASTVM_SYSTEM_CONF_DIR/delete-hacks-${image_name}.sh"
 		do
@@ -1116,7 +1116,7 @@ case "$1" in
 		fi
 
 
-		if [ $(list_vm active|egrep "^$vm_number$"|wc -l) -eq 1 ]; then
+		if [ $(list_vm active|grep -E "^$vm_number$"|wc -l) -eq 1 ]; then
 			pmsg $P_WARNING "VM $vm_name is active, forcefully stopping it\n" "$vm_number"
 			virsh --connect qemu:///system destroy $vm_name
 			if [ "$?" != '0' ]; then
@@ -1172,7 +1172,7 @@ case "$1" in
 		if [ -z "$vm_number" ]; then pmsg $P_ERROR "VM number missing\n"; usage edit_note; fi
 		if $(echo "$vm_number"|grep -q ' '); then handle_multiple_requests $@; fi
 
-		if [ $(list_vm all|egrep "^$vm_number$"|wc -l) -eq 0 ]; then
+		if [ $(list_vm all|grep -E "^$vm_number$"|wc -l) -eq 0 ]; then
 			pmsg $P_ERROR "no VM with number '$vm_number' found\n"
 			exit 1
 		fi
@@ -1180,7 +1180,7 @@ case "$1" in
 			pmsg $P_ERROR "When running edit_note as part of multiple operations the note must be specified as argument.\n" "$vm_number"
 			exit 1
 		fi
-		vm_name=$(virsh --connect qemu:///system list --all |grep "$VM_PREFIX"|awk '{print $2}'|egrep "\-$vm_number$")
+		vm_name=$(virsh --connect qemu:///system list --all |grep "$VM_PREFIX"|awk '{print $2}'|grep -E "\-$vm_number$")
 		content=''
 		owner=$(whoami)
 		get_vm_metadata "$vm_name"
@@ -1211,9 +1211,9 @@ case "$1" in
 		check_vm_number "$vm_number" "active"
 		update_access_time "$vm_number"
 
-		vm_name=$(virsh --connect qemu:///system list --all |grep "$VM_PREFIX"|awk '{print $2}'|egrep "\-$vm_number$")
+		vm_name=$(virsh --connect qemu:///system list --all |grep "$VM_PREFIX"|awk '{print $2}'|grep -E "\-$vm_number$")
 
-		new_size=$(echo "$3"|egrep '^[0-9]+$')
+		new_size=$(echo "$3"|grep -E '^[0-9]+$')
 		if [ -z "$new_size" ]; then pmsg $P_ERROR "invalid size. Use only whole decimal numbers\n"; usage resize; fi
 
 		#FIXME due to handling of logging in fast-vm-helper we might not receive error code if something went wrong
@@ -1236,22 +1236,22 @@ case "$1" in
 		else
 			lvs_out=$(echo 'lvs'|LANG=C sudo -n $FASTVM_HELPER)
 			printf "%3s %-15s %-12s %-15s %-13s  %-8s  %s\n" "VM#" "Image name" "Status" "Profile_name" "Size( %used )" "Activity" "Notes"
-			raw_data=$(virsh --connect qemu:///system list --all|awk '{print $2,$3,$4}'|egrep "^${VM_PREFIX}.*-[0-9]+ ")
+			raw_data=$(virsh --connect qemu:///system list --all|awk '{print $2,$3,$4}'|grep -E "^${VM_PREFIX}.*-[0-9]+ ")
 			data=$(echo "$raw_data"|sed "s/${VM_PREFIX}\(.\+\)-\([0-9]\+\) \(.\+\)$/\2 \1 \3/"|awk '{printf "%3s %-15s %s %s\n",$1,$2,$3,$4}')
 			for vm in $vm_list;
 			do
-				out=$(echo "$data"|egrep "(^ $vm|^$vm) ")
-				vm_name=$(echo "$raw_data"|awk '{print $1}'|egrep "\-$vm$")
+				out=$(echo "$data"|grep -E "(^ $vm|^$vm) ")
+				vm_name=$(echo "$raw_data"|awk '{print $1}'|grep -E "\-$vm$")
 				get_vm_metadata $vm_name
 				note=$(echo "$metadata_user: $metadata_description"|cut -c 1-$(($TERMINAL_WIDTH-38)))
 				last_activity=$(calculate_day_difference "$metadata_last_action" $(date +%s))
 				last_activity="$last_activity ago"
 				## parse the size of VM
-				size=$(echo "$lvs_out"|grep snapshot|egrep " ${VM_PREFIX}.*-[0-9]+ "|grep "\-$vm "|sed 's/\.00g//'|awk '{printf "%3sg(%6s%%)",$2,$3}')
+				size=$(echo "$lvs_out"|grep snapshot|grep -E " ${VM_PREFIX}.*-[0-9]+ "|grep "\-$vm "|sed 's/\.00g//'|awk '{printf "%3sg(%6s%%)",$2,$3}')
 				## print the resulting line
 				printf "%-32s %-15s %-13s  %8s  %-s\n" "$out" "$metadata_profile" "$size" "$last_activity" "$note"
 			done
-			echo "$lvs_out"|egrep " $THINPOOL_LV "|awk '{printf "=== Space used: %6s%% of %7s\n",$3,$2}'
+			echo "$lvs_out"|grep -E " $THINPOOL_LV "|awk '{printf "=== Space used: %6s%% of %7s\n",$3,$2}'
 
 		fi
 		;;
@@ -1272,7 +1272,7 @@ case "$1" in
 		done
 		holder_regexp="($holder_regexp)"
 		# finaly parse the VM image versions from what we have
-		image_name_list=$(ls -l /dev/$THINPOOL_VG/ |egrep "$holder_regexp"|awk '{print $9}'|grep "$VM_PREFIX"|sed -e "s/$VM_PREFIX//; s/-[0-9]\+$//"|uniq)
+		image_name_list=$(ls -l /dev/$THINPOOL_VG/ |grep -E "$holder_regexp"|awk '{print $9}'|grep "$VM_PREFIX"|sed -e "s/$VM_PREFIX//; s/-[0-9]\+$//"|uniq)
 
 		if [ ! -z "$short_output" ] && [ "$short_output" = "short" ]; then
 			echo "$image_name_list"
@@ -1309,7 +1309,7 @@ case "$1" in
 				if [ -f "$FASTVM_SYSTEM_CONF_DIR/delete-hacks-${image_name}.sh" ]; then
 					system_hacks_exists=",delete"
 				fi
-				size=$(echo "$lvs_out"|egrep " ${VM_PREFIX}$image_name "|sed 's/\.00g//'|awk '{printf "%3sg(%6s%%)",$2,$3}')
+				size=$(echo "$lvs_out"|grep -E " ${VM_PREFIX}$image_name "|sed 's/\.00g//'|awk '{printf "%3sg(%6s%%)",$2,$3}')
 				printf "%-20s   %13s |%-8s %-13s|%-8s %-13s|\n" "$image_name" "$size" "$system_xml_exists" "$system_hacks_exists" "$user_xml_exists" "$user_hacks_exists"
 			done
 			printf "\nNOTE: if image is missing XML it wouldn't be possible to create a VM from it!\n Image with missing hack file(s) can work if it's not needed.\n"
@@ -1352,7 +1352,7 @@ case "$1" in
 		if $(echo "$vm_number"|grep -q ' '); then handle_multiple_requests $@; fi
 		check_vm_number "$vm_number"
 		update_access_time "$vm_number"
-		vm_name=$(virsh --connect qemu:///system list --all |grep "$VM_PREFIX"|awk '{print $2}'|egrep "\-$vm_number$")
+		vm_name=$(virsh --connect qemu:///system list --all |grep "$VM_PREFIX"|awk '{print $2}'|grep -E "\-$vm_number$")
 		pmsg $P_DEBUG "IP: 192.168.$SUBNET_NUMBER.$vm_number\n" "$vm_number"
 		pmsg $P_DEBUG "vm_name: $vm_name\n" "$vm_number"
 		;;
@@ -1363,7 +1363,7 @@ case "$1" in
 
 		check_vm_number "$vm_number" "active"
 
-		vm_name=$(virsh --connect qemu:///system list --all |grep "$VM_PREFIX"|awk '{print $2}'|egrep "\-$vm_number$")
+		vm_name=$(virsh --connect qemu:///system list --all |grep "$VM_PREFIX"|awk '{print $2}'|grep -E "\-$vm_number$")
 
 		# change group of LV so we can clean it up
 		echo "chgrp" "/dev/$THINPOOL_VG/$vm_name" | sudo -n $FASTVM_HELPER

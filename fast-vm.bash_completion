@@ -74,7 +74,7 @@ _fast-vm()
 		local number_used number_all number_available
 		number_used=$(mktemp)
 		number_all=$(mktemp)
-		virsh --connect qemu:///system list --all|awk '{print $2}'|egrep "^${vm_prefix}.*-[0-9]+"|sed 's/.*-\([0-9]\+\)$/\1/'> $number_used
+		virsh --connect qemu:///system list --all|awk '{print $2}'|grep -E "^${vm_prefix}.*-[0-9]+"|sed 's/.*-\([0-9]\+\)$/\1/'> $number_used
 		seq 20 220 > $number_all
 		number_available=$(comm -2 -3 <(sort $number_all) <(sort $number_used))
 		COMPREPLY=( $( compgen -W "base $number_available" -- "$cur" ) )
