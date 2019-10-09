@@ -1,3 +1,12 @@
+fast-vm (1.6) unstable; urgency=medium
+
+  * Debian 10 support
+  * 'compact' and 'copact_image' commands added
+  * zst compression support
+  * various fixes and documentation improvements
+
+ -- Ondrej Famera <ondrej-xa2iel8u@famera.cz>  Wed, 09 Oct 2019 17:00:00 +0900
+
 fast-vm (1.5) unstable; urgency=medium
 
   * recursive scp command

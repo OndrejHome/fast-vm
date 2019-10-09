@@ -33,12 +33,14 @@ Other resource: [https://www.famera.cz/blog/fast-vm/index.html](https://www.fame
 
 ### Supported/Tested OS {#supported_os}
 Distribution    Installation method
-- RHEL 7.5	RPM
-- CentOS 7.5	RPM
-- Fedora 28	RPM
-- Debian 9.5	DEB
+- RHEL 7.7	RPM
+- RHEL 8.0	RPM
+- CentOS 7.7	RPM
+- CentOS 8.0	RPM
+- Fedora 30	RPM
+- Debian 9.11	DEB
+- Debian 10.1	DEB
 - Gentoo	ebuild
-- RHEL 8.0 Beta RPM (experimental)
 
 ### Requirements {#requirements}
 - libvirt with qemu/kvm

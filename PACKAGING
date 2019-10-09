@@ -3,57 +3,58 @@ This file describes the procedures how to package the fast-vm and related packag
 === fast-vm RPM for CentOS/RHEL 7
 # yum install rpmdevtools bash-completion
 # rpmdev-setuptree
-# curl https://codeload.github.com/OndrejHome/fast-vm/tar.gz/1.5 > rpmbuild/SOURCES/1.5.tar.gz
+# curl https://codeload.github.com/OndrejHome/fast-vm/tar.gz/1.6 > rpmbuild/SOURCES/1.6.tar.gz
 # curl https://raw.githubusercontent.com/OndrejHome/fast-vm/master/rpm/fast-vm-el7.spec > rpmbuild/SPECS/fast-vm.spec
 # rpmbuild -ba rpmbuild/SPECS/fast-vm.spec
 
 resulting files
-- rpmbuild/SRPMS/fast-vm-1.5-1.el7.centos.src.rpm
-- rpmbuild/RPMS/noarch/fast-vm-1.5-1.el7.centos.noarch.rpm
-- rpmbuild/RPMS/noarch/fast-vm-minimal-1.5-1.el7.centos.noarch.rpm
+- rpmbuild/SRPMS/fast-vm-1.6-1.el7.src.rpm
+- rpmbuild/RPMS/noarch/fast-vm-1.6-1.el7.noarch.rpm
+- rpmbuild/RPMS/noarch/fast-vm-minimal-1.6-1.el7.noarch.rpm
 
 === fast-vm RPM for CentOS/RHEL 8
 # dnf install rpmdevtools bash-completion make
 # rpmdev-setuptree
-# curl https://codeload.github.com/OndrejHome/fast-vm/tar.gz/1.5 > rpmbuild/SOURCES/1.5.tar.gz
+# curl https://codeload.github.com/OndrejHome/fast-vm/tar.gz/1.6 > rpmbuild/SOURCES/1.6.tar.gz
 # curl https://raw.githubusercontent.com/OndrejHome/fast-vm/develop/rpm/fast-vm-el8.spec > rpmbuild/SPECS/fast-vm.spec
 # rpmbuild -ba rpmbuild/SPECS/fast-vm.spec
 
 resulting files
-- rpmbuild/SRPMS/fast-vm-1.5-2.el8.src.rpm
-- rpmbuild/RPMS/noarch/fast-vm-1.5-2.el8.noarch.rpm
-- rpmbuild/RPMS/noarch/fast-vm-minimal-1.5-2.el8.noarch.rpm
+- rpmbuild/SRPMS/fast-vm-1.6-1.el8.src.rpm
+- rpmbuild/RPMS/noarch/fast-vm-1.6-1.el8.noarch.rpm
+- rpmbuild/RPMS/noarch/fast-vm-minimal-1.6-1.el8.noarch.rpm
 
 === fast-vm RPM for Fedora
 # dnf install rpmdevtools bash-completion make
 # rpmdev-setuptree
-# curl https://codeload.github.com/OndrejHome/fast-vm/tar.gz/1.5 > rpmbuild/SOURCES/1.5.tar.gz
+# curl https://codeload.github.com/OndrejHome/fast-vm/tar.gz/1.6 > rpmbuild/SOURCES/1.6.tar.gz
 # curl https://raw.githubusercontent.com/OndrejHome/fast-vm/master/rpm/fast-vm-fedora.spec > rpmbuild/SPECS/fast-vm.spec
 # rpmbuild -ba rpmbuild/SPECS/fast-vm.spec
 
 resulting files
-- rpmbuild/SRPMS/fast-vm-1.5-1.fc29.src.rpm
-- rpmbuild/RPMS/noarch/fast-vm-1.5-1.fc29.noarch.rpm
-- rpmbuild/RPMS/noarch/fast-vm-minimal-1.5-1.fc29.noarch.rpm
+- rpmbuild/SRPMS/fast-vm-1.6-1.fc30.src.rpm
+- rpmbuild/RPMS/noarch/fast-vm-1.6-1.fc30.noarch.rpm
+- rpmbuild/RPMS/noarch/fast-vm-minimal-1.6-1.fc30.noarch.rpm
 
-=== fast-vm DEB for Debian
+=== fast-vm DEB for Debian 9/10
 # apt-get install dpkg-dev debhelper
-# curl https://codeload.github.com/OndrejHome/fast-vm/tar.gz/1.5 > 1.5.tar.gz
-# tar xf 1.5.tar.gz
-# cd fast-vm-1.5
+# curl https://codeload.github.com/OndrejHome/fast-vm/tar.gz/1.6 > 1.6.tar.gz
+# tar xf 1.6.tar.gz
+# cd fast-vm-1.6
+(Debian 10-only) # sed -i 's/Standards-Version:.*/Standards-Version: 4.3.0/' debian/control
 # dpkg-buildpackage -us -uc
 
 resulting files
-- fast-vm_1.5_all.deb
-- fast-vm_1.5_amd64.changes
+- fast-vm_1.6_all.deb
+- fast-vm_1.6_amd64.changes
 
 additional commands for checking
 # apt-get install lintian
-# lintian -i -I --show-overrides --no-tag-display-limit fast-vm_1.5_amd64.changes
+# lintian -i -I --show-overrides --no-tag-display-limit fast-vm_1.6_amd64.changes
 
 === fast-vm ebuild for Gentoo
 Git tag for new version must exist in order to be able to generate the correct checksum for the source.
-# ebuild fast-vm-1.5.ebuild Manifest
+# ebuild fast-vm-1.6.ebuild Manifest
 
 === qemu-kvm RPM for CentOS/RHEL 7
 (used to add the LSI_SCSI and MEGASAS_SCSI support)

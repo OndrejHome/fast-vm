@@ -1,5 +1,5 @@
 Name:		fast-vm
-Version:	1.5
+Version:	1.6
 Release:	1%{?dist}
 Summary:	Script for defining VMs from images provided in thin LVM pool - with extra dependencies
 
@@ -18,6 +18,7 @@ Recommends:	dnsmasq-utils
 Recommends:	gzip
 Recommends:	pv
 Recommends:	xz
+Recommends:	zstd
 Recommends:	libguestfs-tools-c
 
 %description
@@ -51,7 +52,7 @@ Requires:	qemu-kvm
 Requires:	libvirt-daemon-driver-storage
 Requires:	libvirt-daemon-driver-lxc
 Requires:	libvirt-daemon-driver-qemu
-Conflicts:	%{name} < 1.5
+Conflicts:	%{name} < 1.6
 
 %description minimal
 %{name} provides command-line interface to create virtual machines (VMs) in
@@ -88,6 +89,12 @@ drive of new machine before starting VM using the 'hack files'.
 %config(noreplace) %{_sysconfdir}/sudoers.d/%{name}-sudoers
 
 %changelog
+* Wed Oct 09 2019 Ondrej Famera <ondrej-xa2iel8u@famera.cz> 1.6-1
+- CentOS/RHEL 8 support
+- zst compression support (if installed)
+- 'compact' and 'compact_image' commands added
+- various fixes and documentation improvements
+
 * Thu Jul 19 2018 Ondrej Famera <ofamera@redhat.com> 1.5-1
 - recursive scp command
 - scp with multiple files (@itsbill)
