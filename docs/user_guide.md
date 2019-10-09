@@ -84,19 +84,31 @@ This type of installation is supported on latest releases of CentOS/RHEL/Fedora 
 
 From `fast-vm` version 1.5 the CentOS/RHEL/Fedora also provides RPM package `fast-vm-minimal` with less dependencies. From that time by default the `fast-vm` package will pull in also the dependencies needed for some VM images and other useful packages to simplify the installation.
 
+**Fedora 29**
+~~~
+# curl -o /etc/yum.repos.d/fast-vm.repo https://copr.fedorainfracloud.org/coprs/ondrejhome/fast-vm/repo/fedora-29/ondrejhome-fast-vm-fedora-29.repo
+# dnf install fast-vm
+~~~
+
 **Fedora 30**
 ~~~
 # curl -o /etc/yum.repos.d/fast-vm.repo https://copr.fedorainfracloud.org/coprs/ondrejhome/fast-vm/repo/fedora-30/ondrejhome-fast-vm-fedora-30.repo
 # dnf install fast-vm
 ~~~
 
-**CentOS 7.6**
+**CentOS 7.7**
 ~~~
 # curl -o /etc/yum.repos.d/fast-vm.repo https://copr.fedorainfracloud.org/coprs/ondrejhome/fast-vm/repo/epel-7/ondrejhome-fast-vm-epel-7.repo
 # yum install fast-vm
 ~~~
 
-**RHEL 7.6**
+**CentOS 8.0**
+~~~
+# curl -o /etc/yum.repos.d/fast-vm.repo https://copr.fedorainfracloud.org/coprs/ondrejhome/fast-vm/repo/epel-8/ondrejhome-fast-vm-epel-8.repo
+# dnf install fast-vm
+~~~
+
+**RHEL 7.7**
 
 On RHEL system some of dependencies are present only in `rhel-7-server-optional-rpms` repository that needs to be activated before `fast-vm` installation.
 ~~~
@@ -106,20 +118,19 @@ On RHEL system some of dependencies are present only in `rhel-7-server-optional-
 ~~~
 
 **RHEL 8.0**
-
-Installation bellow is valid until there is proper support for RHEL 8 repositories in COPR.
 ~~~
-# dnf install https://copr-be.cloud.fedoraproject.org/results/ondrejhome/fast-vm/rhelbeta-8-x86_64/00871628-fast-vm/fast-vm-minimal-1.5-2.el8.noarch.rpm https://copr-be.cloud.fedoraproject.org/results/ondrejhome/fast-vm/rhelbeta-8-x86_64/00871628-fast-vm/fast-vm-1.5-2.el8.noarch.rpm
+# curl -o /etc/yum.repos.d/fast-vm.repo https://copr.fedorainfracloud.org/coprs/ondrejhome/fast-vm/repo/epel-8/ondrejhome-fast-vm-epel-8.repo
+# dnf install fast-vm
 ~~~
 
-**Debian 9.9**
+**Debian 9.11/10.1**
 
 If you plan using publically available images from Author then also `libguestfs-tools` package is required for correct application of creation scripts and their proper functionality.
 ~~~
 # apt-get install gdebi-core
-# wget https://github.com/OndrejHome/fast-vm/releases/download/1.5/fast-vm_1.5_all-debian9.deb
-# gdebi fast-vm_1.5_all-debian9.deb
-# apt-get install libguestfs-tools
+# wget https://github.com/OndrejHome/fast-vm/releases/download/1.6/fast-vm_1.6_all-debian10.deb
+# gdebi fast-vm_1.6_all-debian10.deb
+# apt-get install libguestfs-tools zstd
 ~~~
 
 ### 2.2. Manual installation from source code {#installation_manual}
