@@ -2,7 +2,7 @@
 permalink: /fast-vm/user_guide.html
 title: fast-vm User Guide
 layout: post
-date: 2019-06-06 21:00:00+0900
+date: 2019-10-13 12:09:00+0900
 categories: [ fast-vm ]
 ---
 * TOC
@@ -10,7 +10,7 @@ categories: [ fast-vm ]
 
 ---
 
-- This is User Guide for `fast-vm` version 1.5.
+- This is User Guide for `fast-vm` version 1.6.
 - Did you find a mistake/inaccuracy/missing information and you think you
 know how to fix it or expand it? Then [edit this page on Github](https://github.com/OndrejHome/fast-vm/edit/master/docs/user_guide.txt) and once reviewed by author it will appear here.
 - Found a mistake but don't know how to fix it or you would like to request some part to be documented in this guide? Please get in touch with [the Author](https://www.famera.cz/blog/about.html).
@@ -19,7 +19,7 @@ know how to fix it or expand it? Then [edit this page on Github](https://github.
 ## 1. What is `fast-vm`? {#what_is_fast-vm}
 `fast-vm` is a script that provides command-line interface to create virtual machines (VMs) in libvirt based on imported disks in LVM and XML templates.
 
-### 1.1. system requirements for running `fast-vm` {#system_requirements}
+### 1.1. System requirements for running `fast-vm` {#system_requirements}
 `fast-vm` needs several things for proper operation, the minimum is:
 
 - running and functional libvirt daemon (pulled in as dependency from `fast-vm` RPM packages)
@@ -318,7 +318,7 @@ To use images provided by the Author with UEFI on Fedora following steps needs t
 # apt-get install ovmf
 ~~~
 
-2. Ensure that `/etc/libvirt/qemu.conf` contains following variable with value below. On Fedora 30, CentOS 7.6 this is already present in default comment and does not need changing.
+2\. Ensure that `/etc/libvirt/qemu.conf` contains following variable with value below. On Fedora 30, CentOS 7.6 this is already present in default comment and does not need changing.
 ~~~
 nvram = [
    "/usr/share/OVMF/OVMF_CODE.fd:/usr/share/OVMF/OVMF_VARS.fd"
@@ -389,7 +389,7 @@ Depending on Image this access might not be configured (for example headless sys
 
 The simplest way on how to get access to graphical console even when the `fast-vm server` is the remote system is to use GUI `virt-manager` which has integrated access to graphical console.
 
-### 3.2. Creating VM {#creating_vm}
+### 3.2. Creating VMs {#creating_vm}
 To create VM you need to know 2 things:
 <ul>
 <li>name of image or profile you want to use</li>
@@ -581,7 +581,7 @@ Further following actions requires giving user the root priviliges using sudo. A
 ## 6. fast-vm-server documentation {#fast-vm-server_documentation}
 This part of documentation describes best practices on how to use `fast-vm` in mutli user environment and how to deploy `fast-vm` in automated and scalable way.
 
-### 6.1.`fast-vm-server`: automated `fast-vm` deployment overview {#fast-vm-server_automated_fast-vm_deployment_overview}
+### 6.1. `fast-vm-server`: automated `fast-vm` deployment overview {#fast-vm-server_automated_fast-vm_deployment_overview}
 [`fast-vm-server` ansible role](https://galaxy.ansible.com/OndrejHome/fast-vm-server/) provides a solution how to deploy `fast-vm` in automated (unattended) way and also how to deploy it on larger amount of machines. This role deals only with following things:
 
 - `fast-vm` installation and configuration
@@ -604,7 +604,7 @@ Example of `install-fast-vm-server.yml`:
 - hosts: servers
   remote_user: root
   roles:
-    - { role: 'OndrejHome.fast-vm-server', fastvm_vg: 'my_vg' }
+    - { role: 'ondrejhome.fast-vm-server', fastvm_vg: 'my_vg' }
 ~~~
 
 Example of `fast-vm-server.hosts`:
