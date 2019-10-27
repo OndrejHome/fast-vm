@@ -77,6 +77,7 @@ drive of new machine before starting VM using the 'hack files'.
 %doc README.md
 %license LICENSE
 %{_bindir}/%{name}
+%{_bindir}/%{name}-image
 %{_bindir}/%{name}-net-cleanup
 %{_sbindir}/configure-%{name}
 %{_libexecdir}/%{name}-helper.sh
