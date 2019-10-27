@@ -169,7 +169,7 @@ do
 		exit 1
 	fi
 
-	if [ ! -z "$FASTVM_NOTES_DIR" ] && [ "$(whoami)" == "root" ]; then
+	if [ -n "$FASTVM_NOTES_DIR" ] && [ "$(whoami)" == "root" ]; then
 		# only root can run conversion to avoid accidental change by regular users
 		printf "[?] Do you want to convert VM notes into fast-vm 1.4 format? \n[yes]: "
 		read answer
@@ -186,7 +186,7 @@ do
 					fi
 					last_activity=$(date -r "$FASTVM_NOTES_DIR/$vm" +%s)
 					vm_name=$(virsh --connect qemu:///system list --all |grep "$VM_PREFIX"|awk '{print $2}'|egrep "\-$vm$")
-					if [ ! -z "$vm_name" ]; then
+					if [ -n "$vm_name" ]; then
 						virsh --connect qemu:///system desc --config $vm_name -- "1,$owner,$last_activity,$profile,$content"
 						rm "$FASTVM_NOTES_DIR/$vm"
 						if [ -f "$FASTVM_NOTES_DIR/$vm.profile" ]; then rm "$FASTVM_NOTES_DIR/$vm.profile"; fi

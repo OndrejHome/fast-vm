@@ -137,7 +137,7 @@ check_vm_number () {
 		pmsg $P_ERROR "no VM with number '$vm_number' found\n" "$vm_number"
 		exit 1
 	fi
-	if [ ! -z "$vm_state" -a $(list_vm "$vm_state"|grep -E "^$vm_number$"|wc -l) -eq 1 ]; then
+	if [ -n "$vm_state" -a $(list_vm "$vm_state"|grep -E "^$vm_number$"|wc -l) -eq 1 ]; then
 		pmsg $P_ERROR "VM with number '$vm_number' is $vm_state\n" "$vm_number"
 		exit 1
 	fi
@@ -230,10 +230,10 @@ update_vm_metadata () {
 	profile_name="$2"
 	description_text="$3"
 	get_vm_metadata "$vm_name"
-	if [ ! -z "$profile_name" -a "$profile_name" != '*no_change*' ]; then
+	if [ -n "$profile_name" -a "$profile_name" != '*no_change*' ]; then
 		metadata_profile=$profile_name
 	fi
-	if [ ! -z "$description_text" ]; then
+	if [ -n "$description_text" ]; then
 		metadata_description=$description_text
 	fi
 	if [ "$metadata_user" = '--unknown--' ]; then
@@ -534,7 +534,7 @@ case "$1" in
 			fi
 
 			# source file with hacks and apply them
-			if [ ! -z "$hack_file" ]; then
+			if [ -n "$hack_file" ]; then
 				hack_file=$(echo "$hack_file"|sed 's/^\([^\/]\)/\.\/\1/g')
 				pmsg $P_DEBUG "applying hacks from $hack_file\n" "$vm_number"
 				. $hack_file
@@ -580,13 +580,13 @@ case "$1" in
 
 		## add DHCP reservation only if the VM has the interface for fast-vm network
 		VM_MAC=$(virsh --connect qemu:///system dumpxml "$VM_PREFIX$image_name-$vm_number"|xmllint --xpath "//interface[.//source[@network='$LIBVIRT_NETWORK']]/mac/@address" - 2>/dev/null|cut -d\" -f 2|head -1)
-		if [ ! -z "$VM_MAC" ]; then
+		if [ -n "$VM_MAC" ]; then
 			pmsg $P_DEBUG "adding static lease for 192.168.$SUBNET_NUMBER.$vm_number into libvirts DHCP\n" "$vm_number"
 			virsh --connect qemu:///system net-update "$LIBVIRT_NETWORK" add-last ip-dhcp-host --xml "<host mac='$VM_MAC' ip='192.168.$SUBNET_NUMBER.$vm_number'/>" --live --config 2>&1|$DEBUG_LOG_CMD
 		fi
 
 		# source file with hacks and apply them
-		if [ ! -z "$hack_file" ]; then
+		if [ -n "$hack_file" ]; then
 			hack_file=$(echo "$hack_file"|sed 's/^\([^\/]\)/\.\/\1/g')
 			pmsg $P_DEBUG "applying hacks from $hack_file\n" "$vm_number"
 			. $hack_file
@@ -627,7 +627,7 @@ case "$1" in
 		else
 			case "$3" in
 				console)
-					if [ ! -z "$MULTI_OPERATION" ] && [ "$MULTI_OPERATION" = 1 ]; then
+					if [ -n "$MULTI_OPERATION" ] && [ "$MULTI_OPERATION" = 1 ]; then
 						pmsg $P_ERROR "When running start as part of multiple operations the console option is not available.\n" "$vm_number"
 						exit 1
 					fi
@@ -640,7 +640,7 @@ case "$1" in
 					fi
 				;;
 				ssh)
-					if [ -z "$4" ] && [ ! -z "$MULTI_OPERATION" ] && [ "$MULTI_OPERATION" = 1 ]; then
+					if [ -z "$4" ] && [ -n "$MULTI_OPERATION" ] && [ "$MULTI_OPERATION" = 1 ]; then
 						pmsg $P_ERROR "When running start with ssh as part of multiple operations, script for SSH must be specified.\n" "$vm_number"
 						exit 1
 					fi
@@ -650,7 +650,7 @@ case "$1" in
 						pmsg $P_ERROR "failed to start VM $vm_name, check syslog for more information\n" "$vm_number"
 					else
 						wait_for_ssh "$vm_number"
-						if [ ! -z "$4" ] && [ -x "$4" ]; then
+						if [ -n "$4" ] && [ -x "$4" ]; then
 							eval "$4 192.168.$SUBNET_NUMBER.$vm_number" | sed -e "s/^/\[$vmn\]/"
 						else
 							ssh -i "$FASTVM_USER_CONF_DIR/id_fastvm" -o GlobalKnownHostsFile=/dev/null -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no "root@192.168.$SUBNET_NUMBER.$vm_number"
@@ -673,7 +673,7 @@ case "$1" in
 
 		vm_name=$(virsh --connect qemu:///system list --all |grep "$VM_PREFIX"|awk '{print $2}'|grep -E "\-$vm_number$")
 
-		if [ ! -z "$3" ] && [ "$3" = "graceful" ]; then
+		if [ -n "$3" ] && [ "$3" = "graceful" ]; then
 			pmsg $P_DEBUG "Sending ACPI shutdown event to $vm_name\n" "$vm_number"
 			virsh --connect qemu:///system shutdown "$vm_name"
 			if [ "$?" != '0' ]; then
@@ -693,7 +693,7 @@ case "$1" in
 		vm_number="$2"
 		if [ -z "$vm_number" ]; then pmsg $P_ERROR "VM number missing\n"; usage ssh; fi
 		if $(echo "$vm_number"|grep -q ' '); then handle_multiple_requests $@; fi
-		if [ -z "$3" ] && [ ! -z "$MULTI_OPERATION" ] && [ "$MULTI_OPERATION" = 1 ]; then
+		if [ -z "$3" ] && [ -n "$MULTI_OPERATION" ] && [ "$MULTI_OPERATION" = 1 ]; then
 			pmsg $P_ERROR "When running ssh as part of multiple operations, script for SSH must be specified.\n" "$vm_number"
 			exit 1
 		fi
@@ -702,7 +702,7 @@ case "$1" in
 		update_access_time "$vm_number"
 
 		wait_for_ssh "$vm_number"
-		if [ ! -z "$3" ]; then
+		if [ -n "$3" ]; then
 			if [ -x "$3" ]; then
 				eval "$3 192.168.$SUBNET_NUMBER.$vm_number" | sed -e "s/^/\[$vmn\]/"
 			else
@@ -819,7 +819,7 @@ case "$1" in
 		fi
 
 		VM_MAC=$(virsh --connect qemu:///system dumpxml "$vm_name"|xmllint --xpath "//interface[.//source[@network='$LIBVIRT_NETWORK']]/mac/@address" - 2>/dev/null|cut -d\" -f 2|head -1)
-		if [ ! -z "$VM_MAC" ]; then
+		if [ -n "$VM_MAC" ]; then
 			pmsg $P_DEBUG "removing DHCP reservation 192.168.$SUBNET_NUMBER.$vm_number for $VM_MAC\n" "$vm_number"
 			virsh --connect qemu:///system net-update "$LIBVIRT_NETWORK" delete ip-dhcp-host --xml "<host mac='$VM_MAC' ip='192.168.$SUBNET_NUMBER.$vm_number'/>" --live --config
 			if [ "$?" != '0' ]; then
@@ -841,7 +841,7 @@ case "$1" in
 		sed -i "/^192\.168\.$SUBNET_NUMBER\.$vm_number /d" ~/.ssh/known_hosts
 
 		## apply delete hack file
-		if [ ! -z "$delete_hack_file" ]; then
+		if [ -n "$delete_hack_file" ]; then
 			delete_hack_file=$(echo "$delete_hack_file"|sed 's/^\([^\/]\)/\.\/\1/g')
 			pmsg $P_DEBUG "applying delete hacks from $delete_hack_file\n" "$vm_number"
 			. $delete_hack_file
@@ -869,7 +869,7 @@ case "$1" in
 			pmsg $P_ERROR "no VM with number '$vm_number' found\n"
 			exit 1
 		fi
-		if [ -z "$3" ] && [ ! -z "$MULTI_OPERATION" ] && [ "$MULTI_OPERATION" = 1 ]; then
+		if [ -z "$3" ] && [ -n "$MULTI_OPERATION" ] && [ "$MULTI_OPERATION" = 1 ]; then
 			pmsg $P_ERROR "When running edit_note as part of multiple operations the note must be specified as argument.\n" "$vm_number"
 			exit 1
 		fi
@@ -879,7 +879,7 @@ case "$1" in
 		get_vm_metadata "$vm_name"
 		if [ -z "$3" ]; then
 			tmp_file=$(mktemp)
-			if [ ! -z "$metadata_description" ]; then
+			if [ -n "$metadata_description" ]; then
 				echo "$metadata_description" > "$tmp_file"
 			fi
 			$EDITOR "$tmp_file"
@@ -924,7 +924,7 @@ case "$1" in
 		TERMINAL_WIDTH=$(stty size | cut -d ' ' -f 2)
 
 		vm_list=$(list_vm "$list_type")
-		if [ ! -z "$short_output" ] && [ "$short_output" = "short" ]; then
+		if [ -n "$short_output" ] && [ "$short_output" = "short" ]; then
 			echo "$vm_list"
 		else
 			lvs_out=$(echo 'lvs'|LANG=C sudo -n $FASTVM_HELPER)
