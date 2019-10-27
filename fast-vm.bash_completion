@@ -39,7 +39,7 @@ _fast-vm()
 	if [ "$cword" -eq 3 ] && [ ${COMP_WORDS[1]} == "import_profile" ]; then
 		local image_name
 
-		image_name=$(fast-vm list_images short)
+		image_name=$(fast-vm-image list short)
 		COMPREPLY=( $( compgen -W "$image_name" -- "$cur" ) )
 		return 0
 	fi
@@ -107,15 +107,15 @@ _fast-vm()
 			local image_name
 			local profile_name
 
-			image_name=$(fast-vm list_images short)
-			profile_name=$(fast-vm list_profiles short)
+			image_name=$(fast-vm-image list short)
+			profile_name=$(fast-vm-image list_profiles short)
 			COMPREPLY=( $( compgen -W "$image_name $profile_name" -- "$cur" ) )
 			return 0
 			;;
 		remove_profile)
 			local profile_name
 
-			profile_name=$(fast-vm list_profiles short)
+			profile_name=$(fast-vm-image list_profiles short)
 			COMPREPLY=( $( compgen -W "$profile_name" -- "$cur" ) )
 			return 0
 			;;

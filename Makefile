@@ -7,6 +7,7 @@ sysconfdir=/etc
 install:
 	mkdir -p ${DESTDIR}/${bindir}
 	install -pm 755 fast-vm ${DESTDIR}/${bindir}/
+	install -pm 755 fast-vm-image ${DESTDIR}/${bindir}/
 	install -pm 755 fast-vm-net-cleanup ${DESTDIR}/${bindir}/
 	mkdir -p ${DESTDIR}/${sbindir}
 	install -pm 755 configure-fast-vm ${DESTDIR}/${sbindir}/

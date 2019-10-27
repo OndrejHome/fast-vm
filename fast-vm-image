@@ -1,0 +1,688 @@
+#!/bin/sh
+DEBUG_LOG_CMD="logger -p debug -t fast-vm-image-dbg"
+FASTVM_HELPER=/usr/libexec/fast-vm-helper.sh
+FASTVM_USER_CONF_DIR="$HOME/.fast-vm"
+FASTVM_SYSTEM_CONF_DIR="/etc/fast-vm"
+CURL_OPTS=""
+LOG_LEVEL=7
+DISPLAY_LEVEL=7
+FVM=`basename $0`
+
+## terminal colors
+c_red=$(tput setaf 1)
+c_yellow=$(tput setaf 3)
+c_green=$(tput setaf 2)
+c_cyan=$(tput setaf 6)
+c_normal=$(tput sgr0)
+
+## LOG priorities
+P_DEBUG=7
+P_INFO=6
+P_NOTICE=5
+P_WARNING=4
+P_ERROR=3
+
+#### start common functions
+# function for message output to display&logs based on LOG/DISPLAY level
+pmsg () {
+	priority="$1"
+	message="$2"
+	vmn=${3:-__}
+	if [ "$LOG_LEVEL" -ge "$priority" ]; then
+		printf "$USER |$vmn| $message"|logger -p "$priority" --id -t fast-vm
+	fi
+	if [ "$DISPLAY_LEVEL" -ge "$priority" ]; then
+		case "$priority" in
+			$P_DEBUG)
+				printf "[${c_cyan}inf${c_normal}] $message" | sed -e "s/^/\[$vmn\]/"
+				;;
+			$P_INFO)
+				printf "[${c_green}ok${c_normal}] $message" | sed -e "s/^/\[$vmn\]/"
+				;;
+			$P_WARNING)
+				printf "[${c_yellow}wrn${c_normal}] $message" | sed -e "s/^/\[$vmn\]/"
+				;;
+			$P_ERROR)
+				printf "[${c_red}err${c_normal}] $message" | sed -e "s/^/\[$vmn\]/"
+				;;
+			*)
+				printf "[unk] $message" | sed -e "s/^/\[$vmn\]/"
+				;;
+		esac
+	fi
+}
+# helper function for loading and checking configuration
+check_empty () {
+	var_name="$1"
+	var_value="$2"
+	if [ -z "$var_value" ]; then
+                pmsg $P_ERROR "variable $var_name not declared in global configuration run configure-fast-vm again or fix manually\n"
+		exit 2
+	fi
+}
+
+check_file () {
+	file_path="$1"
+	file_size=0
+	file_local=0
+	error_prefix="$2"
+	if [ -z "$file_path" ]; then pmsg $P_DEBUG "provided empty file path\n"; fi
+	if [ "$curl_ok" -eq 0 ] && [ "$(echo $file_path | awk  '{ s=substr($0, 0, 4); print s; }' )"  = "http" ]; then
+		curl_data=$(curl $CURL_OPTS --head "$file_path" 2>/dev/null)
+		curl_exit="$?"
+		curl_httpok=$(echo "$curl_data"|grep -E "HTTP.*200 OK"|wc -l)
+		if [ "$curl_httpok" -eq "1" ]; then
+			file_size=$(echo "$curl_data"|grep "Content-Length:"|awk '{print $2}'|sed 's/[^0-9]*//g')
+			pmsg $P_DEBUG "Detected remote file with size $file_size\n"
+		else
+			pmsg $P_ERROR "$error_prefix: error checking remote file on the server.\nCURL exited with code $curl_exit and we got following information from server\n$curl_data\n"
+			return 2
+		fi
+	else
+		if [ -f "$file_path" ]; then
+			file_local=1
+		else
+			pmsg $P_ERROR "$error_prefix: local file '$file_path' not found\n"
+			return 2
+		fi
+	fi
+}
+
+download_file () {
+	file_url="$1"
+	tmp_file=$(mktemp)
+	pmsg $P_DEBUG "downloading $file_url\ninto $tmp_file\n" >&2
+	curl $CURL_OPTS -o "$tmp_file" -s "$file_url"
+	if [ "$?" -eq 0 ]; then
+		echo "$tmp_file"
+	else
+		pmsg $P_ERROR "Download failed\n" >&2
+		exit 1
+	fi
+}
+
+config_file_operation () {
+	cmd="$1"
+	options="$2"
+
+	if [ "$(whoami)" = 'root' ]; then
+		$cmd "$FASTVM_SYSTEM_CONF_DIR/$options" 2>&1|$DEBUG_LOG_CMD
+	else
+		$cmd "$FASTVM_USER_CONF_DIR/$options" 2>&1|$DEBUG_LOG_CMD
+	fi
+}
+
+usage () {
+	part="$1"
+
+	case $part in
+		import)
+			echo "$FVM import ImageName <empty |PathToImage> PathToLibvirtXML [PathToHacksFile] [PathToDeleteHackFile]"
+			;;
+		import_custom)
+			echo "$FVM import_custom ImageSizeInGiB ImageName <empty |PathToImage> PathToLibvirtXML [PathToHacksFile] [PathToDeleteHackFile]"
+			;;
+		export)
+			echo "$FVM export ImageName [ <zst|xz|gz> ]"
+			;;
+		remove)
+			echo "$FVM remove ImageName"
+			;;
+		resize)
+			echo "$FVM resize ImageName NewImageSizeInGiB"
+			;;
+		import_profile)
+			echo "$FVM import_profile ProfileName ImageName PathToLibvirtXML [PathToHacksFile] [PathToDeleteHackFile]"
+			;;
+		remove_profile)
+			echo "$FVM remove_profile ProfileName"
+			;;
+		list)
+			echo "$FVM list [short]"
+			;;
+		list_profiles)
+			echo "$FVM list_profiles [short]"
+			;;
+		compact)
+			echo "$FVM compact ImageName"
+			;;
+		*)
+			echo "== fast-vm-image version 1.6 <ondrej-xa2iel8u@famera.cz> =="
+			echo "$FVM <action> <options>"
+			for cmd in import import_custom export remove resize import_profile remove_profile list compact;
+			do
+				usage $cmd noexit
+			done
+			;;
+	esac
+	# exit only when second parameter is not specified, otherwise just return and continue
+	if [ -z "$2" ]; then exit 1; fi
+}
+
+#### end common functions
+
+# first parameter is compulsory
+if [ -z "$1" ]; then usage; fi
+
+# locate and load fast-vm configuration
+if [ -f "/etc/fast-vm.conf" ]; then
+	# load and verify configuration
+	. /etc/fast-vm.conf
+
+	check_empty "VM_PREFIX" "$VM_PREFIX"
+	check_empty "LIBVIRT_NETWORK" "$LIBVIRT_NETWORK"
+	check_empty "THINPOOL_VG" "$THINPOOL_VG"
+	check_empty "THINPOOL_LV" "$THINPOOL_LV"
+	check_empty "SUBNET_NUMBER" "$SUBNET_NUMBER"
+	check_empty "FASTVM_GROUP" "$FASTVM_GROUP"
+else
+	pmsg $P_ERROR "no global configuration file /etc/fast-vm.conf not found please run configure-fast-vm as root before using fast-vm\n"
+	exit 1
+fi
+
+# check if we are in $FASTVM_GROUP group or if we are root
+if [ $(id |grep "($FASTVM_GROUP)"|wc -l) -eq 0 ] && [ $(whoami) != "root" ]; then
+	pmsg $P_ERROR "User running fast-vm must be member of group '$FASTVM_GROUP'. You can easily add user to this group using command below\n # usermod -a -G $FASTVM_GROUP $(whoami)\n"
+	exit 1
+fi
+
+## try to detect if the defined thin pool is available
+double_dash_lv=$(echo "$THINPOOL_LV"|sed 's/-/--/g') # LVM uses double dash in the /dev/mapper
+double_dash_vg=$(echo "$THINPOOL_VG"|sed 's/-/--/g') # also for VGs
+if [ -b "/dev/mapper/${double_dash_vg}-${double_dash_lv}-tpool" ];then
+	THINPOOL_PATH="/dev/mapper/${double_dash_vg}-${double_dash_lv}-tpool"
+fi
+if [ -b "/dev/mapper/${double_dash_vg}-${double_dash_lv}_tdata" ] && [ -b "/dev/mapper/${double_dash_vg}-${double_dash_lv}_tmeta" ];then
+	THINPOOL_PATH="/dev/mapper/${double_dash_vg}-${double_dash_lv}"
+fi
+if [ -z "$THINPOOL_PATH" ]; then
+	pmsg $P_ERROR "thinpool $THINPOOL_VG/$THINPOOL_LV not found or not a thinpool LV, try running configure-fast-vm as root to check/correct\n"
+	exit 1
+fi
+
+# create local configuration directory if it doesn't exists
+if [ ! -d "$FASTVM_USER_CONF_DIR" ]; then
+	mkdir "$FASTVM_USER_CONF_DIR" 2>&1 |$DEBUG_LOG_CMD
+fi
+if [ ! -d "$FASTVM_SYSTEM_CONF_DIR" ] && [ $(whoami) = "root" ]; then
+	mkdir "$FASTVM_SYSTEM_CONF_DIR" 2>&1 |$DEBUG_LOG_CMD
+fi
+
+## check if there is curl available so we can fetch images from http/https
+which curl >/dev/null 2>&1
+curl_ok="$?"
+which pv >/dev/null 2>&1
+pv_ok="$?"
+
+#### main script
+case "$1" in
+	import|import_custom)
+		unpacked_image_size="10"
+		if [ "$1" = "import_custom" ]; then
+			unpacked_image_size=$(echo "$2"|grep -E '^[0-9]+$')
+			if [ -z "$unpacked_image_size" ]; then pmsg $P_ERROR "invalid image size. Use only whole decimal numbers\n"; usage import_custom; fi
+			shift
+		fi
+		image_name="$2"
+		if [ -z "$image_name" ]; then pmsg $P_ERROR "missing image name\n"; usage import; fi
+		image_name_stripped=$(echo "$image_name"|tr -d -C '[:alnum:]\-.')
+		if [ "$image_name" != "$image_name_stripped" ]; then
+			pmsg $P_ERROR "ImageName contains restricted characters, allowed are only letters, numbers, dot(.) and dash(-)\n"
+			exit 1
+		fi
+		image_name_stripped2=$(echo "$image_name_stripped"|sed -e 's/-[0-9]\+$//')
+		if [ "$image_name_stripped" != "$image_name_stripped2" ]; then
+			pmsg $P_ERROR "ImageName cannot end with '-XX' where XX is number.\n"
+			exit 1
+		fi
+		image_path="$3"
+		# skip path check for "empty" image file
+		if [ "$image_path" != "empty" ]; then
+			check_file "$image_path" "image file"
+			if [ "$?" = 2 ]; then  pmsg $P_ERROR "image file not found\n"; exit 2; fi
+			image_path="$file_path"
+		fi
+		image_size="$file_size"
+		image_local="$file_local"
+		image_extension="${image_path##*.}"
+		case "$image_extension" in
+			gz)
+				which gunzip >/dev/null 2>&1
+				if [ ! "$?" -eq 0 ]; then
+					pmsg $P_ERROR "'gunzip' binary missing, install it to have support for GZ\n"
+					exit 1
+				fi
+				decompress_cmd="gunzip -c"
+				;;
+			xz)
+				which xz >/dev/null 2>&1
+				if [ ! "$?" -eq 0 ]; then
+					pmsg $P_ERROR "'xz' binary missing, install it to have support for XZ\n"
+					exit 1
+				fi
+				decompress_cmd="xz -d -c"
+				;;
+			zst)
+				which zstd >/dev/null 2>&1
+				if [ ! "$?" -eq 0 ]; then
+					pmsg $P_ERROR "'zstd' binary missing, install it to have support for ZST\n"
+					exit 1
+				fi
+				decompress_cmd="zstd -d --stdout"
+				;;
+			empty)
+				pmsg $P_DEBUG "we are creating empty image file\n"
+				;;
+			*)
+				pmsg $P_ERROR "unknown image file extension $image_extension, (supported: xz, gz)\n"
+				exit 1
+				;;
+		esac
+
+		image_xml_path="$4"
+		check_file "$image_xml_path" "XML VM definition"
+		if [ "$?" = 2 ]; then pmsg $P_ERROR "XML file $image_xml_path not found\n"; exit 2; fi
+		if [ "$file_local" = '0' ]; then
+			image_xml_path=$(download_file "$image_xml_path")
+		fi
+
+		hack_file="$5"
+		if [ ! -z "$hack_file" ]; then
+			check_file "$hack_file" "hack file"
+			if [ "$?" = 2 ]; then pmsg $P_ERROR "hack file $hack_file not found\n"; exit 2; fi
+			if [ "$file_local" = '0' ]; then
+				hack_file=$(download_file "$hack_file")
+			fi
+		fi
+		delete_hack_file="$6"
+		if [ ! -z "$delete_hack_file" ]; then
+			check_file "$delete_hack_file" "delete hack file"
+			if [ "$?" = 2 ]; then pmsg $P_ERROR "delete hack file $delete_hack_file not found\n"; exit 2; fi
+			if [ "$file_local" = '0' ]; then
+				delete_hack_file=$(download_file "$delete_hack_file")
+			fi
+		fi
+
+		# try to autodect the size of image from filename
+		autodetected_size=$(basename "$image_path"|sed -nr 's/^([0-9]+)g__.*$/\1/gp')
+		if [ "$1" = "import" ] && [ ! -z "$autodetected_size" ]; then
+			unpacked_image_size=$autodetected_size
+			pmsg $P_DEBUG "Size of image was determined from the filename to be ${autodetected_size}G.\n"
+		fi
+
+		if [ -b "/dev/$THINPOOL_VG/$VM_PREFIX$image_name" ]; then
+			pmsg $P_ERROR "base image for '$image_name' version already exists. To remove image use 'remove' parameter\n"
+			exit 1
+
+		else
+			pmsg $P_DEBUG "creating LV $VM_PREFIX$image_name ...\n"
+			echo "lvcreate" "base" "$image_name" "$unpacked_image_size" | sudo -n $FASTVM_HELPER
+			if [ "$?" != "0" ]; then
+				pmsg $P_ERROR "Error creating thin LV for VM image\n"
+				exit 1
+			fi
+		fi
+
+		# change group of LV so we can use it for locking
+		echo "chgrp" "/dev/$THINPOOL_VG/$VM_PREFIX$image_name" | sudo -n $FASTVM_HELPER
+		(
+		# beginning of locked section
+		flock -x -n 9 || exit 4
+		pmsg $P_DEBUG "importing image $image_path into /dev/$THINPOOL_VG/$VM_PREFIX$image_name\n"
+
+		if [ "$image_path" = "empty" ]; then
+			config_file_operation "cp $image_xml_path" "config-${image_name}.xml"
+			pmsg $P_INFO "Empty image imported\n"
+			exit 0
+		fi
+
+		if [ "$image_local" = "1" ]; then
+			if [ "$pv_ok" -eq '0' ]; then
+				$decompress_cmd "$image_path"| pv -s "${unpacked_image_size}G" | dd of="/dev/$THINPOOL_VG/$VM_PREFIX$image_name" bs=1M conv=sparse
+				import_exit="$?"
+			else
+				pmsg $P_DEBUG "please wait while importing image (to show progress, install 'pv')\n"
+				$decompress_cmd "$image_path"| dd of="/dev/$THINPOOL_VG/$VM_PREFIX$image_name" bs=1M conv=sparse
+				import_exit="$?"
+			fi
+		else
+			# import from http(s)
+			if [ "$pv_ok" -eq '0' ]; then
+				stty_state=$(stty -g) # save terminal state in case we neeed to restore it due to 'pv' breaking terminal 'echo'
+				curl $CURL_OPTS -s "$image_path" | pv -N download -c -s "$image_size" | $decompress_cmd | pv -N unpack -c -s "${unpacked_image_size}G" | dd of="/dev/$THINPOOL_VG/$VM_PREFIX$image_name" bs=1M conv=sparse
+				import_exit="$?"
+				if $(stty -a|grep -q -E '\-echo[^a-z]'); then
+					pmsg $P_DEBUG "Missing 'echo' on termninal after 'pv', restoring terminal settings.\n"
+					# this should address issue #50 - https://github.com/OndrejHome/fast-vm/issues/50
+					stty "$stty_state"
+				fi
+			else
+				pmsg $P_DEBUG "please wait while importing image (to show image write progress, install 'pv')\n"
+				curl $CURL_OPTS "$image_path" | $decompress_cmd | dd of="/dev/$THINPOOL_VG/$VM_PREFIX$image_name" bs=1M conv=sparse
+				import_exit="$?"
+			fi
+
+		fi
+		if [ "$import_exit" != "0" ]; then
+			pmsg $P_ERROR "Error copying the image into thin LV\n"
+			exit 1
+		fi
+
+		# copy the XML configuration file
+		config_file_operation "cp $image_xml_path" "config-${image_name}.xml"
+		config_file_operation "chmod +r" "config-${image_name}.xml"
+		if [ ! -z "$hack_file" ] && [ -f "$hack_file" ]; then
+			config_file_operation "cp $hack_file" "hacks-${image_name}.sh"
+			config_file_operation "chmod +rx" "hacks-${image_name}.sh"
+		fi
+		if [ ! -z "$delete_hack_file" ] && [ -f "$delete_hack_file" ]; then
+			config_file_operation "cp $delete_hack_file" "delete-hacks-${image_name}.sh"
+			config_file_operation "chmod +rx" "delete-hacks-${image_name}.sh"
+		fi
+
+		pmsg $P_INFO "Image $image_name imported\n"
+		# end of locked section
+		) 9<"/dev/$THINPOOL_VG/$VM_PREFIX$image_name"
+		if [ "$?" != "0" ]; then
+			pmsg $P_ERROR "It is not possible to import image $image_name now as it is being used by fast-vm or other process at the moment\n"
+			exit 1
+		else
+			rm -f "/tmp/fast-vm.img.${image_name}.lock"
+		fi
+		;;
+	export)
+		image_name="$2"
+		if [ -z "$image_name" ]; then pmsg $P_ERROR "missing image name\n"; usage export; fi
+		# get image format or use default 'xz' if no format was specified
+		image_format="$3"
+		if [ -z "$image_format" ]; then image_format='xz'; fi
+		case "$image_format" in
+			gz)
+				which gzip >/dev/null 2>&1
+				if [ ! "$?" -eq 0 ]; then
+					pmsg $P_ERROR "'gzip' binary missing, install it to have support for GZ\n"
+					exit 1
+				fi
+				compress_cmd="gzip -c"
+				;;
+			xz)
+				which xz >/dev/null 2>&1
+				if [ ! "$?" -eq 0 ]; then
+					pmsg $P_ERROR "'xz' binary missing, install it to have support for XZ\n"
+					exit 1
+				fi
+				compress_cmd="xz -c -k --best --block-size=16777216 -T 0"
+				;;
+			zst)
+				which zstd >/dev/null 2>&1
+				if [ ! "$?" -eq 0 ]; then
+					pmsg $P_ERROR "'zstd' binary missing, install it to have support for ZST\n"
+					exit 1
+				fi
+				compress_cmd="zstd -c -k -19 -T0 --stdout"
+				;;
+			*)
+				pmsg $P_ERROR "unknown image format $image_format (supported: zst, xz, gz)\n"
+				exit 1
+				;;
+		esac
+
+		# change group of LV so we can use it for locking
+		echo "chgrp" "/dev/$THINPOOL_VG/$VM_PREFIX$image_name" | sudo -n $FASTVM_HELPER
+		(
+		# beginning of locked section
+		flock -s -n 9 || exit 4
+		if [ -b "/dev/$THINPOOL_VG/$VM_PREFIX$image_name" ]; then
+			pmsg $P_DEBUG "compressing the image $image_name into $(pwd)/${image_name}.img.${image_format}\n"
+			cat "/dev/$THINPOOL_VG/$VM_PREFIX$image_name" | $compress_cmd > "$(pwd)/${image_name}.img.${image_format}"
+			if [ "$?" -eq "0" ]; then
+				pmsg $P_INFO "Image compression finished\n"
+			else
+				pmsg $P_ERROR "There was error compressing the image, check output above\n"
+			fi
+		else
+			pmsg $P_ERROR "image '$image_name' not found\n"
+			usage export
+		fi
+		# end of locked section
+		) 9<"/dev/$THINPOOL_VG/$VM_PREFIX$image_name"
+		if [ "$?" != "0" ]; then
+			pmsg $P_ERROR "It is not possible to export image $image_name now as it is being used by fast-vm or other process at the moment\n"
+			exit 1
+		else
+			rm -f "/tmp/fast-vm.img.${image_name}.lock"
+		fi
+		;;
+	remove)
+		image_name="$2"
+		if [ -z "$image_name" ]; then pmsg $P_ERROR "missing image name\n"; usage remove; fi
+
+		if [ -b "/dev/$THINPOOL_VG/$VM_PREFIX$image_name" ]; then
+			pmsg $P_DEBUG "stopping and undefining the base VM of $image_name\n"
+			virsh --connect qemu:///system destroy "$VM_PREFIX$image_name" 2>&1|$DEBUG_LOG_CMD
+			virsh --connect qemu:///system undefine "$VM_PREFIX$image_name" --nvram --managed-save 2>&1|$DEBUG_LOG_CMD
+			pmsg $P_DEBUG "removing LV $VM_PREFIX$image_name ...\n"
+			echo "lvremove" "/dev/$THINPOOL_VG/$VM_PREFIX$image_name" | sudo -n $FASTVM_HELPER
+			pmsg $P_DEBUG "removing XML and hack file(s) of $image_name...\n"
+			config_file_operation "rm" "config-${image_name}.xml"
+			config_file_operation "rm" "hacks-${image_name}.sh"
+			config_file_operation "rm" "delete-hacks-${image_name}.sh"
+			pmsg $P_INFO "image $image_name removed\n"
+		else
+			pmsg $P_ERROR "image $image_name not found\n"
+			usage remove
+		fi
+		;;
+	import_profile)
+		profile_name="$2"
+		if [ -z "$profile_name" ]; then pmsg $P_ERROR "missing profile name\n"; usage import_profile; fi
+		profile_name_stripped=$(echo "$profile_name"|tr -d -C '[:alnum:]\-.')
+		if [ "$profile_name" != "$profile_name_stripped" ]; then
+			pmsg $P_ERROR "ProfileName contains restricted characters, allowed are only letters, numbers, dot(.) and dash(-)\n"
+			exit 1
+		fi
+		profile_name_stripped2=$(echo "$profile_name_stripped"|sed -e 's/-[0-9]\+$//')
+		if [ "$profile_name_stripped" != "$profile_name_stripped2" ]; then
+			pmsg $P_ERROR "ProfileName cannot end with '-XX' where XX is number.\n"
+			exit 1
+		fi
+		image_name="$3"
+		if [ -z "$image_name" ]; then pmsg $P_ERROR "missing image name\n"; usage import_profile; fi
+
+		image_xml_path="$4"
+		check_file "$image_xml_path" "XML VM definition"
+		if [ "$?" = 2 ]; then pmsg $P_ERROR "XML file $image_xml_path not found\n"; exit 2; fi
+		if [ "$file_local" = '0' ]; then
+			image_xml_path=$(download_file "$image_xml_path")
+		fi
+
+		hack_file="$5"
+		if [ ! -z "$hack_file" ]; then
+			check_file "$hack_file" "hack file"
+			if [ "$?" = 2 ]; then pmsg $P_ERROR "hack file $hack_file not found\n"; exit 2; fi
+			if [ "$file_local" = '0' ]; then
+				hack_file=$(download_file "$hack_file")
+			fi
+		fi
+		delete_hack_file="$6"
+		if [ ! -z "$delete_hack_file" ]; then
+			check_file "$delete_hack_file" "delete hack file"
+			if [ "$?" = 2 ]; then pmsg $P_ERROR "delete hack file $delete_hack_file not found\n"; exit 2; fi
+			if [ "$file_local" = '0' ]; then
+				delete_hack_file=$(download_file "$delete_hack_file")
+			fi
+		fi
+
+		if [ ! -b "/dev/$THINPOOL_VG/$VM_PREFIX$image_name" ]; then
+			pmsg $P_ERROR "Missing image for ${image_name}.\n/dev/$THINPOOL_VG/$VM_PREFIX$image_name not found.\nFirst import image using 'fast-vm image_import $image_name'\n"
+			exit 2
+		fi
+
+		# create profile and copy files to right places
+		config_file_operation "mkdir" "${profile_name}"
+		tmp_base_image=$(mktemp)
+                echo "$image_name" > "$tmp_base_image"
+		config_file_operation "cp $tmp_base_image" "${profile_name}/base_image"
+		config_file_operation "chmod +r" "${profile_name}/base_image"
+		rm -f "$tmp_base_image"
+		config_file_operation "cp $image_xml_path" "${profile_name}/config.xml"
+		config_file_operation "chmod +r" "${profile_name}/config.xml"
+		if [ ! -z "$hack_file" ] && [ -f "$hack_file" ]; then
+			config_file_operation "cp $hack_file" "${profile_name}/hacks.sh"
+			config_file_operation "chmod +rx" "${profile_name}/hacks.sh"
+		fi
+		if [ ! -z "$delete_hack_file" ] && [ -f "$delete_hack_file" ]; then
+			config_file_operation "cp $delete_hack_file" "${profile_name}/delete-hacks.sh"
+			config_file_operation "chmod +rx" "${profile_name}/delete-hacks.sh"
+		fi
+
+		pmsg $P_INFO "Profile $profile_name based on Image $image_name imported\n"
+		;;
+	remove_profile)
+		profile_name="$2"
+		if [ -z "$profile_name" ]; then pmsg $P_ERROR "missing profile name\n"; usage remove_profile; fi
+
+		if [ ! -d "$FASTVM_USER_CONF_DIR/${profile_name}" ] && [ ! -d "$FASTVM_SYSTEM_CONF_DIR/${profile_name}" ]; then
+			pmsg $P_ERROR "profile '$profile_name' not found\n"
+			usage remove_profile
+		fi
+
+		config_file_operation "rm -rf" "$profile_name"
+		pmsg $P_INFO "Profile $profile_name removed\n"
+		;;
+	resize)
+		image_name="$2"
+		new_size=$(echo "$3"|grep -E '^[0-9]+$')
+
+		if [ -z "$image_name" ]; then pmsg $P_ERROR "missing image name\n"; usage resize; fi
+		if [ -z "$new_size" ]; then pmsg $P_ERROR "invalid image size. Use only whole decimal numbers\n"; usage resize; fi
+
+		if [ -b "/dev/$THINPOOL_VG/$VM_PREFIX$image_name" ]; then
+			#FIXME due to handling of logging in fast-vm-helper we might not receive error code if something went wrong
+			pmsg $P_DEBUG "resizing image $image_name to ${new_size}G\n"
+			echo "lvresize" "/dev/$THINPOOL_VG/$VM_PREFIX$image_name" "$new_size" | sudo -n $FASTVM_HELPER
+			if [ "$?" = 0 ]; then
+				pmsg $P_INFO "Only newly created VMs from this image will use new size.\n"
+				pmsg $P_INFO "Resize of image to ${new_size}G succeeded.\n"
+			else
+				pmsg $P_ERROR "Resize failed. Check logs for more details\n"
+			fi
+		else
+			pmsg $P_ERROR "Image $image_name not found\n"
+			usage resize
+		fi
+		;;
+	list)
+		short_output="$2" # if non-zero the output suitable for external processing
+		# lets get the dm-XX number of the thinpool
+		pool_dm=$(ls -l "$THINPOOL_PATH"|cut -d / -f 5)
+		# from dm-XX of thinpool we can list the LVs inside the thinpool
+		holders=$(ls /sys/block/$pool_dm/holders)
+		holder_regexp=""
+		for dm in $holders
+		do
+			if [ -z "$holder_regexp" ]; then
+				holder_regexp="$dm"
+			else
+				holder_regexp="$holder_regexp|$dm"
+			fi
+		done
+		holder_regexp="($holder_regexp)"
+		# finaly parse the VM image versions from what we have
+		image_name_list=$(ls -l /dev/$THINPOOL_VG/ |grep -E "$holder_regexp"|awk '{print $9}'|grep "$VM_PREFIX"|sed -e "s/$VM_PREFIX//; s/-[0-9]\+$//"|uniq)
+
+		if [ ! -z "$short_output" ] && [ "$short_output" = "short" ]; then
+			echo "$image_name_list"
+		else
+			printf '%-36s |%-21s |%-21s |\n' 'IMAGE' 'SYSTEM' 'USER'
+			printf '%-20s   %13s |%-8s %-13s|%-8s %-13s|\n' 'Image name' 'Size( %used )' 'XML' 'Hack file for' 'XML' 'Hack file for'
+			lvs_out=$(echo 'lvs'|sudo -n $FASTVM_HELPER)
+			for image_name in $image_name_list; do
+				# check the existence of the XML file
+				if [ -f "$FASTVM_USER_CONF_DIR/config-${image_name}.xml" ]; then
+					user_xml_exists="ok"
+				else
+					user_xml_exists="missing"
+				fi
+				# check existence of hack file
+				user_hacks_exists="no hack files"
+				if [ -f "$FASTVM_USER_CONF_DIR/hacks-${image_name}.sh" ]; then
+					user_hacks_exists="create"
+				fi
+				if [ -f "$FASTVM_USER_CONF_DIR/delete-hacks-${image_name}.sh" ]; then
+					user_hacks_exists="${user_hacks_exists},delete"
+				fi
+				# check the existence of the XML file
+				if [ -f "$FASTVM_SYSTEM_CONF_DIR/config-${image_name}.xml" ]; then
+					system_xml_exists="ok"
+				else
+					system_xml_exists="missing"
+				fi
+				# check existence of hack file
+				system_hacks_exists="no hack files"
+				if [ -f "$FASTVM_SYSTEM_CONF_DIR/hacks-${image_name}.sh" ]; then
+					system_hacks_exists="create"
+				fi
+				if [ -f "$FASTVM_SYSTEM_CONF_DIR/delete-hacks-${image_name}.sh" ]; then
+					system_hacks_exists=",delete"
+				fi
+				size=$(echo "$lvs_out"|grep -E " ${VM_PREFIX}$image_name "|sed 's/\.00g//'|awk '{printf "%3sg(%6s%%)",$2,$3}')
+				printf "%-20s   %13s |%-8s %-13s|%-8s %-13s|\n" "$image_name" "$size" "$system_xml_exists" "$system_hacks_exists" "$user_xml_exists" "$user_hacks_exists"
+			done
+			printf "\nNOTE: if image is missing XML it wouldn't be possible to create a VM from it!\n Image with missing hack file(s) can work if it's not needed.\n"
+			printf "\n USER XML and hack file(s) takes precendense before SYSTEM ones.\n"
+		fi
+		;;
+	list_profiles)
+		short_output="$2" # if non-zero the output suitable for external processing
+		profile_dir_list=$(find "$FASTVM_SYSTEM_CONF_DIR/" "$FASTVM_USER_CONF_DIR/" -mindepth 1 -maxdepth 1 -type d 2>/dev/null)
+		if [ ! -z "$short_output" ] && [ "$short_output" = "short" ]; then
+			for dir in $profile_dir_list;
+			do
+				# valid profile must contain at least base image name
+				if [ -f "$dir/base_image" ]; then
+					basename "$dir"
+				fi
+			done
+		else
+			printf "%-41s|%-41s\n" 'Names' 'Changes provided by profile'
+			printf "%-20s|%-20s|%-5s|%-7s|%-14s\n" 'Profile Name' 'Base Image Name' 'XML' 'hacks' 'delete-hacks'
+			for dir in $profile_dir_list;
+			do
+				profile_name=$(basename "$dir")
+				base_image_name=$(cat "$dir/base_image" 2>/dev/null)
+				# skip directories not containing base image name
+				if [ -z "$base_image_name" ]; then continue; fi
+				profile_xml='no'
+				profile_hacks='no'
+				profile_delete_hacks='no'
+				if [ -f "$dir/config.xml" ]; then profile_xml='yes'; fi
+				if [ -f "$dir/hacks.sh" ]; then profile_hacks='yes'; fi
+				if [ -f "$dir/delete-hacks.sh" ]; then profile_delete_hacks='yes'; fi
+				printf "%-20s|%-20s|%-5s|%-7s|%-14s\n" "$profile_name" "$base_image_name" "$profile_xml" "$profile_hacks" "$profile_delete_hacks"
+			done
+		fi
+		;;
+	compact)
+		image_name="$2"
+		if [ -z "$image_name" ]; then pmsg $P_ERROR "missing image name\n"; usage compact; fi
+
+		if [ -b "/dev/$THINPOOL_VG/$VM_PREFIX$image_name" ]; then
+			# change group of LV so we can clean it up
+			echo "chgrp" "/dev/$THINPOOL_VG/$VM_PREFIX$image_name" | sudo -n $FASTVM_HELPER
+
+			pmsg $P_INFO "Compacting disk of image $image_name ....\n"
+			pmsg $P_DEBUG "Running 'virt-sparsify -q --in-place /dev/$THINPOOL_VG/$VM_PREFIX$image_name.\n"
+			virt-sparsify -q --in-place "/dev/$THINPOOL_VG/$VM_PREFIX$image_name" 2>&1|$DEBUG_LOG_CMD
+		else
+			pmsg $P_ERROR "image $image_name not found\n"
+			usage compact
+		fi
+
+
+		;;
+	*) 
+		pmsg $P_ERROR "unknown action\n"
+		usage
+		;;
+esac	
