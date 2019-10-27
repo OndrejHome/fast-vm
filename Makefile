@@ -23,6 +23,7 @@ install:
 	install -pm 644 fast-vm-image.bash_completion ${DESTDIR}/${datadir}/bash-completion/completions/fast-vm-image
 	mkdir -p ${DESTDIR}/${datadir}/man/man8
 	install -pm 644 man/fast-vm.8 ${DESTDIR}/${datadir}/man/man8/
+	install -pm 644 man/fast-vm-image.8 ${DESTDIR}/${datadir}/man/man8/
 	install -pm 644 man/fast-vm-list.8 ${DESTDIR}/${datadir}/man/man8/
 	install -pm 644 man/configure-fast-vm.8 ${DESTDIR}/${datadir}/man/man8/
 	install -pm 644 man/fast-vm-net-cleanup.8 ${DESTDIR}/${datadir}/man/man8/
