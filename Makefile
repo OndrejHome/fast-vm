@@ -20,6 +20,7 @@ install:
 	install -pm 440 fast-vm-sudoers ${DESTDIR}/${sysconfdir}/sudoers.d/
 	mkdir -p ${DESTDIR}/${datadir}/bash-completion/completions
 	install -pm 644 fast-vm.bash_completion ${DESTDIR}/${datadir}/bash-completion/completions/fast-vm
+	install -pm 644 fast-vm-image.bash_completion ${DESTDIR}/${datadir}/bash-completion/completions/fast-vm-image
 	mkdir -p ${DESTDIR}/${datadir}/man/man8
 	install -pm 644 man/fast-vm.8 ${DESTDIR}/${datadir}/man/man8/
 	install -pm 644 man/fast-vm-list.8 ${DESTDIR}/${datadir}/man/man8/
