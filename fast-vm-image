@@ -209,9 +209,9 @@ if [ ! -d "$FASTVM_SYSTEM_CONF_DIR" ] && [ $(whoami) = "root" ]; then
 fi
 
 ## check if there is curl available so we can fetch images from http/https
-which curl >/dev/null 2>&1
+command -v curl >/dev/null 2>&1
 curl_ok="$?"
-which pv >/dev/null 2>&1
+command -v pv >/dev/null 2>&1
 pv_ok="$?"
 
 #### main script
@@ -247,7 +247,7 @@ case "$1" in
 		image_extension="${image_path##*.}"
 		case "$image_extension" in
 			gz)
-				which gunzip >/dev/null 2>&1
+				command -v gunzip >/dev/null 2>&1
 				if [ ! "$?" -eq 0 ]; then
 					pmsg $P_ERROR "'gunzip' binary missing, install it to have support for GZ\n"
 					exit 1
@@ -255,7 +255,7 @@ case "$1" in
 				decompress_cmd="gunzip -c"
 				;;
 			xz)
-				which xz >/dev/null 2>&1
+				command -v xz >/dev/null 2>&1
 				if [ ! "$?" -eq 0 ]; then
 					pmsg $P_ERROR "'xz' binary missing, install it to have support for XZ\n"
 					exit 1
@@ -263,7 +263,7 @@ case "$1" in
 				decompress_cmd="xz -d -c"
 				;;
 			zst)
-				which zstd >/dev/null 2>&1
+				command -v zstd >/dev/null 2>&1
 				if [ ! "$?" -eq 0 ]; then
 					pmsg $P_ERROR "'zstd' binary missing, install it to have support for ZST\n"
 					exit 1
@@ -398,7 +398,7 @@ case "$1" in
 		if [ -z "$image_format" ]; then image_format='xz'; fi
 		case "$image_format" in
 			gz)
-				which gzip >/dev/null 2>&1
+				command -v gzip >/dev/null 2>&1
 				if [ ! "$?" -eq 0 ]; then
 					pmsg $P_ERROR "'gzip' binary missing, install it to have support for GZ\n"
 					exit 1
@@ -406,7 +406,7 @@ case "$1" in
 				compress_cmd="gzip -c"
 				;;
 			xz)
-				which xz >/dev/null 2>&1
+				command -v xz >/dev/null 2>&1
 				if [ ! "$?" -eq 0 ]; then
 					pmsg $P_ERROR "'xz' binary missing, install it to have support for XZ\n"
 					exit 1
@@ -414,7 +414,7 @@ case "$1" in
 				compress_cmd="xz -c -k --best --block-size=16777216 -T 0"
 				;;
 			zst)
-				which zstd >/dev/null 2>&1
+				command -v zstd >/dev/null 2>&1
 				if [ ! "$?" -eq 0 ]; then
 					pmsg $P_ERROR "'zstd' binary missing, install it to have support for ZST\n"
 					exit 1

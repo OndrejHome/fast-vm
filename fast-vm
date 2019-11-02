@@ -380,10 +380,8 @@ if [ ! -d "$FASTVM_SYSTEM_CONF_DIR" ] && [ $(whoami) = "root" ]; then
 fi
 
 ## check if there is curl available so we can fetch images from http/https
-which curl >/dev/null 2>&1
+command -v curl >/dev/null 2>&1
 curl_ok="$?"
-which pv >/dev/null 2>&1
-pv_ok="$?"
 
 #### main script
 case "$1" in
@@ -826,7 +824,7 @@ case "$1" in
 				pmsg $P_WARNING "failed to remove DHCP reservation 192.168.$SUBNET_NUMBER.$vm_number for $VM_MAC from libvirt, check syslog for more information\n" "$vm_number"
 			fi
 
-			PATH="$PATH:/usr/sbin" which dhcp_release >/dev/null 2>&1
+			PATH="$PATH:/usr/sbin" command -v dhcp_release >/dev/null 2>&1
 			if [ "$?" -eq '0' ]; then
 				echo "dhcp_release" "$LIBVIRT_NETWORK" "$vm_number" "$VM_MAC" | sudo -n $FASTVM_HELPER
 			else

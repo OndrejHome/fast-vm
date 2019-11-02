@@ -144,7 +144,7 @@ case "$action" in
 		chgrp "$FASTVM_GROUP" "$arg1" 2>&1|$DEBUG_LOG_CMD
 		;;
 	dhcp_release)
-		PATH="$PATH:/usr/sbin" which dhcp_release >/dev/null 2>&1
+		PATH="$PATH:/usr/sbin" command -v dhcp_release >/dev/null 2>&1
 		if [ "$?" -eq '0' ]; then
 			arg2=$(echo "$arg2"| grep -E '^[0-9]+$')
 			arg3=$(echo "$arg3"| grep -E '^[a-f0-9]{2,2}:[a-f0-9]{2,2}:[a-f0-9]{2,2}:[a-f0-9]{2,2}:[a-f0-9]{2,2}:[a-f0-9]{2,2}$')
