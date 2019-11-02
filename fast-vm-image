@@ -6,7 +6,7 @@ FASTVM_SYSTEM_CONF_DIR="/etc/fast-vm"
 CURL_OPTS=""
 LOG_LEVEL=7
 DISPLAY_LEVEL=7
-FVM=`basename $0`
+FVM=$(basename "$0")
 
 ## terminal colors
 c_red=$(tput setaf 1)

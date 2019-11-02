@@ -175,7 +175,7 @@ do
 		read answer
 		if [ "$answer" == "yes" ] || [ -z "$answer" ]; then
 			printf "$o_inf Converting notes into VM metadata for fast-vm 1.4\n"
-			for vm in `seq 20 220`; do
+			for vm in $(seq 20 220); do
 				if [ -f "$FASTVM_NOTES_DIR/$vm" ]; then
 					printf "$o_inf Found note for VM $vm\n"
 					owner=$(stat --format="%U" "$FASTVM_NOTES_DIR/$vm")
