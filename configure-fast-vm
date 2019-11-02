@@ -69,7 +69,7 @@ do
 	ask_question "VG for LVM thin pool\n fast-vm is using LVM thin LV to store VM images and data.\n Available VGs on your system are: \n $available_vgs\n On which existing VG should be this thin LV?" "$THINPOOL_VG" "THINPOOL_VG"
 	ask_question "LVM thin pool name\n Name the thin LV on which data would be stored.\n NOTE: This can be both 'name of existing thinpool LV' or 'name for a new one'.\n If LV with this name doesn't exists, it will get created by this setup." "$THINPOOL_LV" "THINPOOL_LV"
 
-	lvdisplay $THINPOOL_VG/$THINPOOL_LV >/dev/null 2>&1
+	lvdisplay "$THINPOOL_VG/$THINPOOL_LV" >/dev/null 2>&1
 	if [ ! "$?" -eq "0" ]; then
 		ask_question "LVM thin pool size\n You can use units understood by LVM like M,G,T.\n NOTE: This applies only when thin LV doesn't exists yet." "$THINPOOL_SIZE" "THINPOOL_SIZE"
 	fi
@@ -99,7 +99,7 @@ do
 	fi
 
 	# LVM thinpool LV check
-	lvdisplay $THINPOOL_VG/$THINPOOL_LV >/dev/null 2>&1
+	lvdisplay "$THINPOOL_VG/$THINPOOL_LV" >/dev/null 2>&1
 	if [ ! "$?" -eq "0" ]; then
 		printf "$o_wrn LV '$THINPOOL_VG/$THINPOOL_LV' not found\n"
 		echo "Following commands would be executed to create thin pool:"
@@ -110,12 +110,12 @@ do
 		if [ "$answer" = "y" ]; then
 			printf "$o_inf Creating ...\n"
 			## create thin pool
-			lvcreate -n $THINPOOL_LV -L $THINPOOL_SIZE $THINPOOL_VG
+			lvcreate -n "$THINPOOL_LV" -L "$THINPOOL_SIZE" "$THINPOOL_VG"
 			if [ ! "$?" -eq "0" ]; then
 				printf "$o_err Error while creating LV for thin pool, aborting\n"
 				exit 1
 			fi
-			lvconvert --type thin-pool $THINPOOL_VG/$THINPOOL_LV
+			lvconvert --type thin-pool "$THINPOOL_VG/$THINPOOL_LV"
 			if [ ! "$?" -eq "0" ]; then
 				printf "$o_err Error while converting LV into thin pool, aborting\n"
 				exit 1
@@ -127,7 +127,7 @@ do
 	fi
 
 	# check if the LV is a thinpool
-	is_thin_pool=$(lvdisplay /dev/$THINPOOL_VG/$THINPOOL_LV 2>/dev/null|grep 'LV Pool'|wc -l)
+	is_thin_pool=$(lvdisplay "/dev/$THINPOOL_VG/$THINPOOL_LV" 2>/dev/null|grep 'LV Pool'|wc -l)
 	if [ ! "$is_thin_pool" -eq "2" ]; then
 		printf "$o_err LV /dev/$THINPOOL_VG/$THINPOOL_LV is not a thin pool. To create a thinpool for fast-vm delete this LV a run the configuration again\n"
 		exit 1
@@ -141,8 +141,8 @@ do
 		if [ "$answer" = "y" ]; then
 			printf "$o_inf Creating ...\n"
 			tmp_file=$(mktemp --suffix=.xml)
-			sed -e "s/NET_NAME/$LIBVIRT_NETWORK/g; s/SUBNET_NUMBER/$SUBNET_NUMBER/g" /usr/share/fast-vm/fast-vm-network.xml > $tmp_file
-			virsh --connect qemu:///system net-define $tmp_file
+			sed -e "s/NET_NAME/$LIBVIRT_NETWORK/g; s/SUBNET_NUMBER/$SUBNET_NUMBER/g" /usr/share/fast-vm/fast-vm-network.xml > "$tmp_file"
+			virsh --connect qemu:///system net-define "$tmp_file"
 			if [ ! "$?" -eq "0" ]; then
 				printf "$o_err Error creating libvirt network, aborting\n"
 				exit 1
@@ -182,12 +182,12 @@ do
 					content=$(cat "$FASTVM_NOTES_DIR/$vm")
 					profile='---'
 					if [ -f "$FASTVM_NOTES_DIR/$vm.profile" ]; then
-						profile=$(cat $FASTVM_NOTES_DIR/$vm.profile)
+						profile=$(cat "$FASTVM_NOTES_DIR/$vm.profile")
 					fi
 					last_activity=$(date -r "$FASTVM_NOTES_DIR/$vm" +%s)
 					vm_name=$(virsh --connect qemu:///system list --all |grep "$VM_PREFIX"|awk '{print $2}'|egrep "\-$vm$")
 					if [ -n "$vm_name" ]; then
-						virsh --connect qemu:///system desc --config $vm_name -- "1,$owner,$last_activity,$profile,$content"
+						virsh --connect qemu:///system desc --config "$vm_name" -- "1,$owner,$last_activity,$profile,$content"
 						rm "$FASTVM_NOTES_DIR/$vm"
 						if [ -f "$FASTVM_NOTES_DIR/$vm.profile" ]; then rm "$FASTVM_NOTES_DIR/$vm.profile"; fi
 					else

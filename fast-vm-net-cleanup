@@ -8,10 +8,10 @@ fi
 . /etc/fast-vm.conf
 
 echo "[inf] fixing fast-vm network $LIBVIRT_NETWORK"
-virsh --connect qemu:///system net-dumpxml $LIBVIRT_NETWORK|grep 'host mac'|awk '{print $2,$3}' | while read mac ip; do
-	mac=$(echo $mac|cut -d\' -f2)
-	ip=$(echo $ip|cut -d\' -f2)
-	vm_number=$(echo $ip|cut -d. -f4)
+virsh --connect qemu:///system net-dumpxml "$LIBVIRT_NETWORK"|grep 'host mac'|awk '{print $2,$3}' | while read mac ip; do
+	mac=$(echo "$mac"|cut -d\' -f2)
+	ip=$(echo "$ip"|cut -d\' -f2)
+	vm_number=$(echo "$ip"|cut -d. -f4)
 	vm_name=$(virsh --connect qemu:///system list --all|awk '{print $2}'|grep -E "^${VM_PREFIX}.*-$vm_number"|head -1)
 
 	if [ -z "$vm_name" ] && [ "$vm_number" -gt 2 ]; then
@@ -24,7 +24,7 @@ virsh --connect qemu:///system net-dumpxml $LIBVIRT_NETWORK|grep 'host mac'|awk 
 done
 
 echo "[inf] check for dummy DHCP reservation"
-if [ $(virsh --connect qemu:///system net-dumpxml $LIBVIRT_NETWORK|grep '52:54:00:99:ff:99'|wc -l) = "0" ]; then
+if [ $(virsh --connect qemu:///system net-dumpxml "$LIBVIRT_NETWORK"|grep '52:54:00:99:ff:99'|wc -l) = "0" ]; then
 	echo "[inf] adding missing dummy DHCP reservation"
 	virsh --connect qemu:///system net-update "$LIBVIRT_NETWORK" add-last ip-dhcp-host --xml "<host mac='52:54:00:99:ff:99' ip='192.168.${SUBNET_NUMBER}.2'/>" --live --config
 fi
