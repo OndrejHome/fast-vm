@@ -37,7 +37,7 @@ Distribution    Installation method
 - RHEL 8.0	RPM
 - CentOS 7.7	RPM
 - CentOS 8.0	RPM
-- Fedora 30	RPM
+- Fedora 31	RPM
 - Debian 9.11	DEB
 - Debian 10.1	DEB
 - Gentoo	ebuild

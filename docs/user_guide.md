@@ -2,7 +2,7 @@
 permalink: /fast-vm/user_guide.html
 title: fast-vm User Guide
 layout: post
-date: 2019-10-13 12:09:00+0900
+date: 2019-11-03 09:47:00+0900
 categories: [ fast-vm ]
 ---
 * TOC
@@ -93,6 +93,12 @@ From `fast-vm` version 1.5 the CentOS/RHEL/Fedora also provides RPM package `fas
 **Fedora 30**
 ~~~
 # curl -o /etc/yum.repos.d/fast-vm.repo https://copr.fedorainfracloud.org/coprs/ondrejhome/fast-vm/repo/fedora-30/ondrejhome-fast-vm-fedora-30.repo
+# dnf install fast-vm
+~~~
+
+**Fedora 31**
+~~~
+# curl -o /etc/yum.repos.d/fast-vm.repo https://copr.fedorainfracloud.org/coprs/ondrejhome/fast-vm/repo/fedora-31/ondrejhome-fast-vm-fedora-31.repo
 # dnf install fast-vm
 ~~~
 
