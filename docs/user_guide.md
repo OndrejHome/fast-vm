@@ -2,7 +2,7 @@
 permalink: /fast-vm/user_guide.html
 title: fast-vm User Guide
 layout: post
-date: 2019-11-03 09:47:00+0900
+date: 2019-11-07 22:26:00+0900
 categories: [ fast-vm ]
 ---
 * TOC
@@ -317,21 +317,21 @@ To use images provided by the Author with UEFI on Fedora following steps needs t
 
 1b. (CentOS/RHEL 7) Download the `edk2.git-ovmf-x64-xxxxx.noarch.rpm` from [OVMF generated RPMs](https://www.kraxel.org/repos/jenkins/edk2/) and install it manualy using `yum`.
 
-1c. (RHEL 8) While RHEL8 has package `edk2-ovmf` containing firmware files. This package at the moment provide only secure-boot version of firmware requiring different VM machine type (q35). To support images before q35 machines download the `edk2.git-ovmf-x64-xxxxx.noarch.rpm` from [OVMF generated RPMs](https://www.kraxel.org/repos/jenkins/edk2/) and install it manualy using `yum`. Check [GitHub Issue 48](https://github.com/OndrejHome/fast-vm/issues/48) for more details.
+1c. (CentOS/RHEL 8) While CentOS/RHEL 8 has package `edk2-ovmf` containing firmware files. This package at the moment provide only secure-boot version of firmware requiring different VM machine type (q35). To support images before q35 machines download the `edk2.git-ovmf-x64-xxxxx.noarch.rpm` from [OVMF generated RPMs](https://www.kraxel.org/repos/jenkins/edk2/) and install it manualy using `yum`. Check [GitHub Issue 48](https://github.com/OndrejHome/fast-vm/issues/48) for more details.
 
 1d. (Debian) Install package `ovmf` containing firmware files.
 ~~~
 # apt-get install ovmf
 ~~~
 
-2\. Ensure that `/etc/libvirt/qemu.conf` contains following variable with value below. On Fedora 30, CentOS 7.6 this is already present in default comment and does not need changing.
+2\. Ensure that `/etc/libvirt/qemu.conf` contains following variable with value below. On Fedora 30, CentOS 7.6+, RHEL/CentOS 8.0+ this is already present in default comment and does not need changing.
 ~~~
 nvram = [
    "/usr/share/OVMF/OVMF_CODE.fd:/usr/share/OVMF/OVMF_VARS.fd"
       ]
 ~~~
 
-3a. (Fedora 30) Ensure that variable from previous steps is pointing to correct firmware files. With default installation on Fedora no additional commands are needed.
+3a. (Fedora 30, 31) Ensure that variable from previous steps is pointing to correct firmware files. With default installation on Fedora no additional commands are needed.
 ~~~
 # ls -l /usr/share/OVMF/OVMF_{CODE,VARS}.fd
 lrwxrwxrwx. 1 root root /usr/share/OVMF/OVMF_CODE.fd -> ../edk2/ovmf/OVMF_CODE.fd
@@ -345,7 +345,7 @@ lrwxrwxrwx. 1 root root /usr/share/OVMF/OVMF_VARS.fd -> ../edk2/ovmf/OVMF_VARS.f
 # ln -s /usr/share/edk2.git/ovmf-x64/OVMF_VARS-pure-efi.fd /usr/share/OVMF/OVMF_VARS.fd
 ~~~
 
-3c. (RHEL 8) Adjust links in `/usr/share/OVMF/` with commands below. Note that steps will need to be repeated when the `edk2-ovmf` package is updated or reinstalled.
+3c. (CentOS/RHEL 8) Adjust links in `/usr/share/OVMF/` with commands below. **Note** that steps will need to be repeated when the `edk2-ovmf` package is updated or reinstalled.
 ~~~
 # rm /usr/share/OVMF/OVMF_VARS.fd
 # ln -s /usr/share/edk2.git/ovmf-x64/OVMF_CODE-pure-efi.fd /usr/share/OVMF/OVMF_CODE.fd
