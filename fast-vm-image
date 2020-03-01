@@ -673,7 +673,7 @@ case "$1" in
 
 			pmsg $P_INFO "Compacting disk of image $image_name ....\n"
 			pmsg $P_DEBUG "Running 'virt-sparsify -q --in-place /dev/$THINPOOL_VG/$VM_PREFIX$image_name.\n"
-			virt-sparsify -q --in-place "/dev/$THINPOOL_VG/$VM_PREFIX$image_name" 2>&1|$DEBUG_LOG_CMD
+			LIBGUESTFS_BACKEND=direct virt-sparsify -q --in-place "/dev/$THINPOOL_VG/$VM_PREFIX$image_name" 2>&1|$DEBUG_LOG_CMD
 		else
 			pmsg $P_ERROR "image $image_name not found\n"
 			usage compact

@@ -984,7 +984,7 @@ case "$1" in
 
 		pmsg $P_INFO "Compacting disk of VM $vm_number ....\n" "$vm_number"
 		pmsg $P_DEBUG "Running 'virt-sparsify -q --in-place /dev/$THINPOOL_VG/$vm_name'.\n" "$vm_number"
-		virt-sparsify -q --in-place "/dev/$THINPOOL_VG/$vm_name" 2>&1|$DEBUG_LOG_CMD
+		LIBGUESTFS_BACKEND=direct virt-sparsify -q --in-place "/dev/$THINPOOL_VG/$vm_name" 2>&1|$DEBUG_LOG_CMD
 		;;
 	compact_image)
 		# generate new command that will replace this action in next version
