@@ -146,10 +146,16 @@ usage () {
 		compact)
 			echo "$FVM compact ImageName"
 			;;
+		verify)
+			echo "$FVM verify ImageName [ PathToCheksumsDir ]"
+			;;
+		gen_checksums)
+			echo "$FVM gen_checksums ImageName"
+			;;
 		*)
 			echo "== fast-vm-image version 1.6 <ondrej-xa2iel8u@famera.cz> =="
 			echo "$FVM <action> <options>"
-			for cmd in import import_custom export remove resize import_profile remove_profile list compact;
+			for cmd in import import_custom export remove resize import_profile remove_profile list compact verify gen_checksums;
 			do
 				usage $cmd noexit
 			done
@@ -680,6 +686,58 @@ case "$1" in
 		fi
 
 
+		;;
+	verify)
+		image_name="$2"
+		if [ -z "$image_name" ]; then pmsg $P_ERROR "missing image name\n"; usage verify; fi
+		image_checksum_dir="$3"
+		if [ -z "$image_checksum_dir" ]; then image_checksum_dir='./'; fi
+		if [ ! -d "$image_checksum_dir" ]; then pmsg $P_ERROR "provided path is not directory\n"; usage verify; fi
+		lvs_out=$(echo 'lvs'|sudo -n $FASTVM_HELPER)
+                size=$(echo "$lvs_out"|grep -E " ${VM_PREFIX}$image_name "|sed 's/\.[0-9]\+g//'|awk '{printf $2}')
+		pmsg $P_INFO "Verifying image $image_name ($size) uscing checksums from $image_checksum_dir\n"
+		parts_ok=0
+		parts_fail=0
+		parts_missing=0
+		for part in $(seq -w 00 "$size");
+		do
+			if [ -f "$image_checksum_dir/${image_name}.part_${part}.sha512.txt" ]; then
+				# read the checksum from file
+				part_checksum=$(head -1 "$image_checksum_dir/${image_name}.part_${part}.sha512.txt")
+				# compute checksum of same part of imported image
+				checksum=$(dd if="/dev/$THINPOOL_VG/${VM_PREFIX}$image_name" skip="$part" bs=1G count=1 2>/dev/null|sha512sum |awk '{print $1}')
+				if [ "$part_checksum" = "$checksum" ]; then
+					parts_ok=$((parts_ok+1))
+					pmsg $P_DEBUG "part${part} checksum OK\n"
+				else
+					parts_fail=$((parts_fail+1))
+					pmsg $P_ERROR "part${part} checksum failed\n"
+				fi
+			else
+				parts_missing=$((parts_missing+1))
+				pmsg $P_WARNING "part${part} checksum file missing - $image_checksum_dir/${image_name}.part_${part}.sha512.txt\n"
+			fi
+		done
+		if [ "$parts_fail" = '0' ] && [ "$parts_missing" = '0' ]; then
+			pmsg $P_INFO "CHECK SUMMARY:   OK: $parts_ok  FAIL: $parts_fail  MISSING: $parts_missing\n"
+		else
+			pmsg $P_ERROR "CHECK SUMMARY:   OK: $parts_ok  FAIL: $parts_fail  MISSING: $parts_missing\n"
+			exit 1
+		fi
+		;;
+	gen_checksums)
+		image_name="$2"
+		if [ -z "$image_name" ]; then pmsg $P_ERROR "missing image name\n"; usage gen_checksums; fi
+		## get image size
+		lvs_out=$(echo 'lvs'|sudo -n $FASTVM_HELPER)
+                size=$(echo "$lvs_out"|grep -E " ${VM_PREFIX}$image_name "|sed 's/\.[0-9]\+g//'|awk '{printf $2}')
+		pmsg $P_INFO "Generating checksums for $image_name ($size)\n"
+		for part in $(seq -w 00 "$size");
+		do
+			checksum=$(dd if="/dev/$THINPOOL_VG/${VM_PREFIX}$image_name" skip="$part" bs=1G count=1 2>/dev/null|sha512sum |awk '{print $1}')
+			pmsg $P_DEBUG "${image_name}.part_${part}.sha512.txt: $checksum\n"
+			echo "$checksum" > "${image_name}.part_${part}.sha512.txt"
+		done
 		;;
 	*) 
 		pmsg $P_ERROR "unknown action\n"
