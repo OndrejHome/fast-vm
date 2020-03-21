@@ -373,7 +373,12 @@ case "$1" in
 			pmsg $P_ERROR "Error copying the image into thin LV\n"
 			exit 1
 		fi
-
+		## run image verification after successful image import
+		if [ "$image_local" = "1" ]; then
+			$0 verify "$image_name" "$(dirname $image_path)"
+		else
+			pmsg $P_DEBUG "image verification from non-local sources not implemented yet"
+		fi
 		# copy the XML configuration file
 		config_file_operation "cp $image_xml_path" "config-${image_name}.xml"
 		config_file_operation "chmod +r" "config-${image_name}.xml"
@@ -695,7 +700,7 @@ case "$1" in
 		if [ ! -d "$image_checksum_dir" ]; then pmsg $P_ERROR "provided path is not directory\n"; usage verify; fi
 		lvs_out=$(echo 'lvs'|sudo -n $FASTVM_HELPER)
                 size=$(echo "$lvs_out"|grep -E " ${VM_PREFIX}$image_name "|sed 's/\.[0-9]\+g//'|awk '{printf $2}')
-		pmsg $P_INFO "Verifying image $image_name ($size) uscing checksums from $image_checksum_dir\n"
+		pmsg $P_INFO "Verifying image $image_name ($size) using checksums from $image_checksum_dir\n"
 		parts_ok=0
 		parts_fail=0
 		parts_missing=0
