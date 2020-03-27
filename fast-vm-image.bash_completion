@@ -56,6 +56,10 @@ _fast-vm-image()
 	        COMPREPLY=( $( compgen -W "zst xz gz" -- "$cur" ) )
 		return 0
 	fi
+	if [ "$cword" -eq 3 ] && [ ${COMP_WORDS[1]} == "verify" ]; then
+	        _filedir -d
+		return 0
+	fi
 
 	case $prev in
 		import|import_custom|import_profile)
