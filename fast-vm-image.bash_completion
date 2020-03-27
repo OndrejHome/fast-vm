@@ -63,11 +63,9 @@ _fast-vm-image()
 			;;
 		remove|export|resize|compact)
 			local image_name
-			local profile_name
 
 			image_name=$(fast-vm-image list short)
-			profile_name=$(fast-vm-image list_profiles short)
-			COMPREPLY=( $( compgen -W "$image_name $profile_name" -- "$cur" ) )
+			COMPREPLY=( $( compgen -W "$image_name" -- "$cur" ) )
 			return 0
 			;;
 		remove_profile)
