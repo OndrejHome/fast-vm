@@ -63,6 +63,15 @@ fast-vm-image \(em script managing image and profiles for fast-vm
 .B compact
 .IR "ImageName"
 
+.B fast-vm-image
+.BR verify
+.IR ImageName
+.RI [ PathToCheksumsDir ]
+
+.B fast-vm-image
+.BR gen_checksums
+.IR ImageName
+
 .SH DESCRIPTION
 While fast-vm provides the easy script for creating VMs based on images, the fast-vm-image takes
 care of image operations including their creation, changes and export. When starting to use the
@@ -191,6 +200,15 @@ Typical use of profile is to create VM with different virtual HW (more RAM, CPU,
 Resizing the image disk will affect only newly created VMs from that disk.
 .br
 .BR "WARNING: " "Shrinking disk size (making size of disk smaller) can cause DATA LOSS. Think before doing so. You will NOT be prompted to confirm your choice."
+
+.SH IMAGE CHECKSUM GENERATION AND VERIFICATION (from fast-vm-1.7)
+By default the checksums are not generated, but are verified if the checksum files are present.
+
+Fast-vm is now able to generate and verify the imported image parts using SHA512 checksums. When generating cheksums, the already imported, image is split into 1GB parts and for each part the checksum is generated. Note that last part of image could be smaller than 1 GB and checksum will be made only from this remainder - it will NOT be padded to whole 1GB.
+
+When importing the image or when requesting verification manually via 'verify' operation each checksum file is checked agains the imported image part and compared. If all checksum files were present and image was not changed (or resized) then verification should succeed. If any of the checksum files is missing or image was extended beyond the size of original image that had checksums created, then verification can report 'missing' checksums.
+
+Idea of checksuming of images is to provide convenient method to detect if image was imported properly or that it was not modified later after import. This is first implementation of this generation and checking that is serializing both checksum generation and verification, future versions may switch to paralele checking and verification for faster operation.
 
 .SH EXAMPLES
 Import local image into fast-vm
