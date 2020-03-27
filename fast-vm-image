@@ -339,7 +339,7 @@ case "$1" in
 		# change group of LV so we can use it for locking
 		echo "chgrp" "/dev/$THINPOOL_VG/$VM_PREFIX$image_name" | sudo -n $FASTVM_HELPER
 		(
-		# beginning of locked section
+		# locked section - BEGIN
 		flock -x -n 9 || exit 4
 		pmsg $P_DEBUG "importing image $image_path into /dev/$THINPOOL_VG/$VM_PREFIX$image_name\n"
 
@@ -395,7 +395,7 @@ case "$1" in
 		$0 verify "$image_name" "$(dirname $image_path)"
 
 		pmsg $P_INFO "Image $image_name imported\n"
-		# end of locked section
+		# locked section - END
 		) 9<"/dev/$THINPOOL_VG/$VM_PREFIX$image_name"
 		if [ "$?" != "0" ]; then
 			pmsg $P_ERROR "It is not possible to import image $image_name now as it is being used by fast-vm or other process at the moment\n"
@@ -446,7 +446,7 @@ case "$1" in
 		# change group of LV so we can use it for locking
 		echo "chgrp" "/dev/$THINPOOL_VG/$VM_PREFIX$image_name" | sudo -n $FASTVM_HELPER
 		(
-		# beginning of locked section
+		# locked section - BEGIN
 		flock -s -n 9 || exit 4
 		pmsg $P_DEBUG "compressing the image $image_name into $(pwd)/${image_name}.img.${image_format}\n"
 		cat "/dev/$THINPOOL_VG/$VM_PREFIX$image_name" | $compress_cmd > "$(pwd)/${image_name}.img.${image_format}"
@@ -455,7 +455,7 @@ case "$1" in
 		else
 			pmsg $P_ERROR "There was error compressing the image, check output above\n"
 		fi
-		# end of locked section
+		# locked section - END
 		) 9<"/dev/$THINPOOL_VG/$VM_PREFIX$image_name"
 		if [ "$?" != "0" ]; then
 			pmsg $P_ERROR "It is not possible to export image $image_name now as it is being used by fast-vm or other process at the moment\n"
