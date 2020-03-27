@@ -691,6 +691,7 @@ case "$1" in
 	verify)
 		image_name="$2"
 		if [ -z "$image_name" ]; then pmsg $P_ERROR "missing image name\n"; usage verify; fi
+                if [ ! -b "/dev/$THINPOOL_VG/$VM_PREFIX$image_name" ]; then pmsg $P_ERROR "Image '$image_name' not found\n"; exit 1; fi
 		image_checksum_dir="$3"
 		if [ -z "$image_checksum_dir" ]; then image_checksum_dir='./'; fi
 		check_file "$image_checksum_dir/${image_name}.part_00.sha512.txt" "part_00 checksum"
@@ -737,6 +738,8 @@ case "$1" in
 	gen_checksums)
 		image_name="$2"
 		if [ -z "$image_name" ]; then pmsg $P_ERROR "missing image name\n"; usage gen_checksums; fi
+                if [ ! -b "/dev/$THINPOOL_VG/$VM_PREFIX$image_name" ]; then pmsg $P_ERROR "Image '$image_name' not found\n"; exit 1; fi
+
 		## get image size
 		lvs_out=$(echo 'lvs'|sudo -n $FASTVM_HELPER)
                 size=$(echo "$lvs_out"|grep -E " ${VM_PREFIX}$image_name "|sed 's/\.[0-9]\+g//'|awk '{printf $2}')
