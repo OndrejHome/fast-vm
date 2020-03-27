@@ -112,6 +112,13 @@ config_file_operation () {
 	fi
 }
 
+check_image_existance () {
+	if [ ! -b "/dev/$THINPOOL_VG/$VM_PREFIX$image_name" ]; then
+		pmsg $P_ERROR "Image '${image_name}' not found.\n '/dev/$THINPOOL_VG/$VM_PREFIX$image_name' is not a block device.\n"
+		exit 2
+	fi
+}
+
 usage () {
 	part="$1"
 
@@ -400,6 +407,8 @@ case "$1" in
 	export)
 		image_name="$2"
 		if [ -z "$image_name" ]; then pmsg $P_ERROR "missing image name\n"; usage export; fi
+		check_image_existance "$image_name"
+
 		# get image format or use default 'xz' if no format was specified
 		image_format="$3"
 		if [ -z "$image_format" ]; then image_format='xz'; fi
@@ -439,17 +448,12 @@ case "$1" in
 		(
 		# beginning of locked section
 		flock -s -n 9 || exit 4
-		if [ -b "/dev/$THINPOOL_VG/$VM_PREFIX$image_name" ]; then
-			pmsg $P_DEBUG "compressing the image $image_name into $(pwd)/${image_name}.img.${image_format}\n"
-			cat "/dev/$THINPOOL_VG/$VM_PREFIX$image_name" | $compress_cmd > "$(pwd)/${image_name}.img.${image_format}"
-			if [ "$?" -eq "0" ]; then
-				pmsg $P_INFO "Image compression finished\n"
-			else
-				pmsg $P_ERROR "There was error compressing the image, check output above\n"
-			fi
+		pmsg $P_DEBUG "compressing the image $image_name into $(pwd)/${image_name}.img.${image_format}\n"
+		cat "/dev/$THINPOOL_VG/$VM_PREFIX$image_name" | $compress_cmd > "$(pwd)/${image_name}.img.${image_format}"
+		if [ "$?" -eq "0" ]; then
+			pmsg $P_INFO "Image compression finished\n"
 		else
-			pmsg $P_ERROR "image '$image_name' not found\n"
-			usage export
+			pmsg $P_ERROR "There was error compressing the image, check output above\n"
 		fi
 		# end of locked section
 		) 9<"/dev/$THINPOOL_VG/$VM_PREFIX$image_name"
@@ -463,22 +467,18 @@ case "$1" in
 	remove)
 		image_name="$2"
 		if [ -z "$image_name" ]; then pmsg $P_ERROR "missing image name\n"; usage remove; fi
+		check_image_existance "$image_name"
 
-		if [ -b "/dev/$THINPOOL_VG/$VM_PREFIX$image_name" ]; then
-			pmsg $P_DEBUG "stopping and undefining the base VM of $image_name\n"
-			virsh --connect qemu:///system destroy "$VM_PREFIX$image_name" 2>&1|$DEBUG_LOG_CMD
-			virsh --connect qemu:///system undefine "$VM_PREFIX$image_name" --nvram --managed-save 2>&1|$DEBUG_LOG_CMD
-			pmsg $P_DEBUG "removing LV $VM_PREFIX$image_name ...\n"
-			echo "lvremove" "/dev/$THINPOOL_VG/$VM_PREFIX$image_name" | sudo -n $FASTVM_HELPER
-			pmsg $P_DEBUG "removing XML and hack file(s) of $image_name...\n"
-			config_file_operation "rm" "config-${image_name}.xml"
-			config_file_operation "rm" "hacks-${image_name}.sh"
-			config_file_operation "rm" "delete-hacks-${image_name}.sh"
-			pmsg $P_INFO "image $image_name removed\n"
-		else
-			pmsg $P_ERROR "image $image_name not found\n"
-			usage remove
-		fi
+		pmsg $P_DEBUG "stopping and undefining the base VM of $image_name\n"
+		virsh --connect qemu:///system destroy "$VM_PREFIX$image_name" 2>&1|$DEBUG_LOG_CMD
+		virsh --connect qemu:///system undefine "$VM_PREFIX$image_name" --nvram --managed-save 2>&1|$DEBUG_LOG_CMD
+		pmsg $P_DEBUG "removing LV $VM_PREFIX$image_name ...\n"
+		echo "lvremove" "/dev/$THINPOOL_VG/$VM_PREFIX$image_name" | sudo -n $FASTVM_HELPER
+		pmsg $P_DEBUG "removing XML and hack file(s) of $image_name...\n"
+		config_file_operation "rm" "config-${image_name}.xml"
+		config_file_operation "rm" "hacks-${image_name}.sh"
+		config_file_operation "rm" "delete-hacks-${image_name}.sh"
+		pmsg $P_INFO "image $image_name removed\n"
 		;;
 	import_profile)
 		profile_name="$2"
@@ -495,6 +495,7 @@ case "$1" in
 		fi
 		image_name="$3"
 		if [ -z "$image_name" ]; then pmsg $P_ERROR "missing image name\n"; usage import_profile; fi
+		check_image_existance "$image_name"
 
 		image_xml_path="$4"
 		check_file "$image_xml_path" "XML VM definition"
@@ -518,11 +519,6 @@ case "$1" in
 			if [ "$file_local" = '0' ]; then
 				delete_hack_file=$(download_file "$delete_hack_file")
 			fi
-		fi
-
-		if [ ! -b "/dev/$THINPOOL_VG/$VM_PREFIX$image_name" ]; then
-			pmsg $P_ERROR "Missing image for ${image_name}.\n/dev/$THINPOOL_VG/$VM_PREFIX$image_name not found.\nFirst import image using 'fast-vm image_import $image_name'\n"
-			exit 2
 		fi
 
 		# create profile and copy files to right places
@@ -562,21 +558,17 @@ case "$1" in
 		new_size=$(echo "$3"|grep -E '^[0-9]+$')
 
 		if [ -z "$image_name" ]; then pmsg $P_ERROR "missing image name\n"; usage resize; fi
+		check_image_existance "$image_name"
 		if [ -z "$new_size" ]; then pmsg $P_ERROR "invalid image size. Use only whole decimal numbers\n"; usage resize; fi
 
-		if [ -b "/dev/$THINPOOL_VG/$VM_PREFIX$image_name" ]; then
-			#FIXME due to handling of logging in fast-vm-helper we might not receive error code if something went wrong
-			pmsg $P_DEBUG "resizing image $image_name to ${new_size}G\n"
-			echo "lvresize" "/dev/$THINPOOL_VG/$VM_PREFIX$image_name" "$new_size" | sudo -n $FASTVM_HELPER
-			if [ "$?" = 0 ]; then
-				pmsg $P_INFO "Only newly created VMs from this image will use new size.\n"
-				pmsg $P_INFO "Resize of image to ${new_size}G succeeded.\n"
-			else
-				pmsg $P_ERROR "Resize failed. Check logs for more details\n"
-			fi
+		#FIXME due to handling of logging in fast-vm-helper we might not receive error code if something went wrong
+		pmsg $P_DEBUG "resizing image $image_name to ${new_size}G\n"
+		echo "lvresize" "/dev/$THINPOOL_VG/$VM_PREFIX$image_name" "$new_size" | sudo -n $FASTVM_HELPER
+		if [ "$?" = 0 ]; then
+			pmsg $P_INFO "Only newly created VMs from this image will use new size.\n"
+			pmsg $P_INFO "Resize of image to ${new_size}G succeeded.\n"
 		else
-			pmsg $P_ERROR "Image $image_name not found\n"
-			usage resize
+			pmsg $P_ERROR "Resize failed. Check logs for more details\n"
 		fi
 		;;
 	list)
@@ -673,25 +665,20 @@ case "$1" in
 	compact)
 		image_name="$2"
 		if [ -z "$image_name" ]; then pmsg $P_ERROR "missing image name\n"; usage compact; fi
+		check_image_existance "$image_name"
 
-		if [ -b "/dev/$THINPOOL_VG/$VM_PREFIX$image_name" ]; then
-			# change group of LV so we can clean it up
-			echo "chgrp" "/dev/$THINPOOL_VG/$VM_PREFIX$image_name" | sudo -n $FASTVM_HELPER
+		# change group of LV so we can clean it up
+		echo "chgrp" "/dev/$THINPOOL_VG/$VM_PREFIX$image_name" | sudo -n $FASTVM_HELPER
 
-			pmsg $P_INFO "Compacting disk of image $image_name ....\n"
-			pmsg $P_DEBUG "Running 'virt-sparsify -q --in-place /dev/$THINPOOL_VG/$VM_PREFIX$image_name.\n"
-			LIBGUESTFS_BACKEND=direct virt-sparsify -q --in-place "/dev/$THINPOOL_VG/$VM_PREFIX$image_name" 2>&1|$DEBUG_LOG_CMD
-		else
-			pmsg $P_ERROR "image $image_name not found\n"
-			usage compact
-		fi
-
+		pmsg $P_INFO "Compacting disk of image $image_name ....\n"
+		pmsg $P_DEBUG "Running 'virt-sparsify -q --in-place /dev/$THINPOOL_VG/$VM_PREFIX$image_name.\n"
+		LIBGUESTFS_BACKEND=direct virt-sparsify -q --in-place "/dev/$THINPOOL_VG/$VM_PREFIX$image_name" 2>&1|$DEBUG_LOG_CMD
 
 		;;
 	verify)
 		image_name="$2"
 		if [ -z "$image_name" ]; then pmsg $P_ERROR "missing image name\n"; usage verify; fi
-                if [ ! -b "/dev/$THINPOOL_VG/$VM_PREFIX$image_name" ]; then pmsg $P_ERROR "Image '$image_name' not found\n"; exit 1; fi
+		check_image_existance "$image_name"
 		image_checksum_dir="$3"
 		if [ -z "$image_checksum_dir" ]; then image_checksum_dir='./'; fi
 		check_file "$image_checksum_dir/${image_name}.part_00.sha512.txt" "part_00 checksum"
@@ -741,7 +728,7 @@ case "$1" in
 	gen_checksums)
 		image_name="$2"
 		if [ -z "$image_name" ]; then pmsg $P_ERROR "missing image name\n"; usage gen_checksums; fi
-                if [ ! -b "/dev/$THINPOOL_VG/$VM_PREFIX$image_name" ]; then pmsg $P_ERROR "Image '$image_name' not found\n"; exit 1; fi
+		check_image_existance "$image_name"
 
 		## get image size
 		lvs_out=$(echo 'lvs'|sudo -n $FASTVM_HELPER)
