@@ -61,7 +61,7 @@ _fast-vm-image()
 		import|import_custom|import_profile)
 			return 0
 			;;
-		remove|export|resize|compact)
+		remove|export|resize|compact|verify|gen_checksums)
 			local image_name
 
 			image_name=$(fast-vm-image list short)
@@ -83,7 +83,7 @@ _fast-vm-image()
 
 	$split && return 0
 	if [ "$cword" -lt 2 ]; then
-		COMPREPLY=( $( compgen -W 'import import_custom export remove resize import_profile remove_profile list list_profiles compact' -- "$cur" ) )
+		COMPREPLY=( $( compgen -W 'import import_custom export remove resize import_profile remove_profile list list_profiles compact verify gen_checksums' -- "$cur" ) )
 		return 0
 	fi
 
