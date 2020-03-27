@@ -18,7 +18,6 @@ c_normal=$(tput sgr0)
 ## LOG priorities
 P_DEBUG=7
 P_INFO=6
-P_NOTICE=5
 P_WARNING=4
 P_ERROR=3
 
