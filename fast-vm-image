@@ -699,6 +699,9 @@ case "$1" in
 
 		lvs_out=$(echo 'lvs'|sudo -n $FASTVM_HELPER)
                 size=$(echo "$lvs_out"|grep -E " ${VM_PREFIX}$image_name "|sed 's/\.[0-9]\+g//'|awk '{printf $2}')
+		# change group of LV so we can clean it up
+		echo "chgrp" "/dev/$THINPOOL_VG/$VM_PREFIX$image_name" | sudo -n $FASTVM_HELPER
+
 		pmsg $P_INFO "Verifying image $image_name ($size) using checksums from $image_checksum_dir\n"
 		parts_ok=0
 		parts_fail=0
@@ -743,6 +746,9 @@ case "$1" in
 		## get image size
 		lvs_out=$(echo 'lvs'|sudo -n $FASTVM_HELPER)
                 size=$(echo "$lvs_out"|grep -E " ${VM_PREFIX}$image_name "|sed 's/\.[0-9]\+g//'|awk '{printf $2}')
+		# change group of LV so we can clean it up
+		echo "chgrp" "/dev/$THINPOOL_VG/$VM_PREFIX$image_name" | sudo -n $FASTVM_HELPER
+
 		pmsg $P_INFO "Generating checksums for $image_name ($size)\n"
 		for part in $(seq -w 00 "$size");
 		do
