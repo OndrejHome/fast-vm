@@ -82,10 +82,15 @@ check_file () {
 	if [ "$curl_ok" -eq 0 ] && [ "$(echo $file_path | awk  '{ s=substr($0, 0, 4); print s; }' )"  = "http" ]; then
 		curl_data=$(curl $CURL_OPTS --head "$file_path" 2>/dev/null)
 		curl_exit="$?"
-		curl_httpok=$(echo "$curl_data"|grep -E "HTTP.*200 OK"|wc -l)
+		curl_httpok=$(echo "$curl_data"|grep -E "(HTTP.*200 OK|HTTP/2 200)"|wc -l)
 		if [ "$curl_httpok" -eq "1" ]; then
-			file_size=$(echo "$curl_data"|grep "Content-Length:"|awk '{print $2}'|sed 's/[^0-9]*//g')
-			pmsg $P_DEBUG "Detected remote file with size $file_size\n"
+			file_size=$(echo "$curl_data"|grep -i "Content-Length:"|awk '{print $2}'|sed 's/[^0-9]*//g')
+			if [ -z "$file_size" ]; then
+				file_size=0
+				pmsg $P_DEBUG "Unable to detect remote file. Using '$file_size' instead.\n"
+			else
+				pmsg $P_DEBUG "Detected remote file with size '$file_size'.\n"
+			fi
 		else
 			pmsg $P_ERROR "$error_prefix: error checking remote file on the server.\nCURL exited with code $curl_exit and we got following information from server\n$curl_data\n"
 			return 2
