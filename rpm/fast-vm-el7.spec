@@ -13,6 +13,7 @@ BuildRequires:	bash-completion
 Requires:	%{name}-minimal
 Requires:	libguestfs-tools-c
 Requires:	dnsmasq-utils
+Requires:	libguestfs-devel
 
 %description
 %{name} provides command-line interface to create virtual machines (VMs) in

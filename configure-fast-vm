@@ -52,6 +52,19 @@ ask_question () {
 	. $config_file
 }
 
+test_appliance () {
+	tmp_appliance_test=$(mktemp)
+	printf "$o_inf Running appliance test (libguestfs-test-tool)...\n"
+	if LIBGUESTFS_PATH=/var/lib/fast-vm/appliance libguestfs-test-tool >"$tmp_appliance_test" 2>&1; then
+		printf "$o_inf Appliance test looks OK\n"
+		rm -f "$tmp_appliance_test"
+		return 0
+	else
+		printf "$o_err Appliance test failed with error, check the '$tmp_appliance_test' file for details\n"
+		return 1
+	fi
+}
+
 printf "$o_inf ==>> fast-vm configuration script\nYou can run this script repeatedly and interrupt it with ctrl+c.\nScript will always recheck all configuration options. fast-vm system configuration will be saved in /etc/fast-vm.conf.\n\n"
 
 ## check if we can connect to libvirt and if not, inform the user that it is needed
@@ -84,6 +97,8 @@ do
 	ask_question "Libvirt subnet number (192.168.XX.0/24)" "$SUBNET_NUMBER" "SUBNET_NUMBER"
 
 	ask_question "Only 'root' and 'owner' of VM should be able to delete VM through fast-vm?\n \"yes\" - only 'root' and 'owner' can delete VM\n \"no\" - anyone allowed to use fast-vm can delete VM (default in versions =< 0.9)" "$FASTVM_OWNER_ONLY_DELETE" "FASTVM_OWNER_ONLY_DELETE"
+
+	ask_question "Generate or Import libguestfs appliance used by hack files for this system? ('Generate' will generate appliance localy, while 'import' allows to import pre-build Fedora 29 appliance from Internet. Some fast-vm images may require the Fedora 29 otherwise their hack files fails.)" "$FASTVM_APPLIANCE" "FASTVM_APPLIANCE"
 
 	## reload the configuration file and check the system for changes
 	. $config_file
@@ -200,6 +215,41 @@ do
 		else
 			printf "$o_inf Skipping, you need to answer 'yes' to run conversion\n"
 		fi
+	fi
+
+	if test_appliance; then
+		printf "$o_inf Current appliance looks OK. No changes needed. If you wanna replace it, then remove /var/lib/fast-vm/appliance directory\n"
+	else
+		case "$FASTVM_APPLIANCE" in
+		import)
+			printf "$o_inf Downloading appliance from http://ftp.linux.cz/pub/linux/people/ondrej_famera/fastvm-images/appliance-1.39.11.tar.xz\n"
+			tmp_file=$(mktemp)
+			curl http://ftp.linux.cz/pub/linux/people/ondrej_famera/fastvm-images/appliance-1.39.11.tar.xz > "$tmp_file"
+			printf "$o_inf Extracting file into /var/lib/fast-vm\n"
+			if [ ! -d "/var/lib/fast-vm" ]; then mkdir -p /var/lib/fast-vm; fi
+			tar xvf "$tmp_file" -C /var/lib/fast-vm
+			rm -f "$tmp_file"
+			test_appliance
+			;;
+		generate)
+			if command -v libguestfs-make-fixed-appliance >/dev/null 2>&1; then
+				printf "$o_inf Generating locally new appliance (this can take around minutes)\n"
+				libguestfs-make-fixed-appliance /var/lib/fast-vm/appliance
+				test_appliance
+			else
+				printf "$o_err Command 'libguestfs-make-fixed-appliance' not found.\n"
+				printf "$o_err Try installing package containing it (usually 'libguestfs-devel') or\n"
+				printf "$o_err choose to 'import' appliance instead of generating it.\n"
+			fi
+			;;
+		skip)
+			printf "$o_wrn Skipping appliance import/generation\n"
+			;;
+		*)
+			printf "$o_err Unrecognized option. Use one of 'import', 'generate' or 'skip'.\n"
+			;;
+		esac
+
 	fi
 
 	printf "$o_ok fast-vm configured\n"

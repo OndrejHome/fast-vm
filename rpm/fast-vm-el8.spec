@@ -20,6 +20,7 @@ Recommends:	pv
 Recommends:	xz
 Recommends:	zstd
 Recommends:	libguestfs-tools-c
+Recommends:	libguestfs-devel
 
 %description
 %{name} provides command-line interface to create virtual machines (VMs) in

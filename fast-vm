@@ -248,6 +248,17 @@ update_vm_metadata () {
 	virsh --connect qemu:///system desc --config "$vm_name" -- "1,$metadata_user,$(date '+%s'),$metadata_profile,$metadata_description" 2>&1|$DEBUG_LOG_CMD
 }
 
+check_appliance_presence () {
+	# export LIBGUESTFS_PATH to custom appliance if it looks to be present
+	# this doesn't check if appliance is usable (configure-fast-vm does that)
+	ap_path="/var/lib/fast-vm/appliance"
+	if [ -f "$ap_path/kernel" ] && [ -f "$ap_path/initrd" ] && [ -f "$ap_path/root" ]; then
+		export LIBGUESTFS_PATH="$ap_path"
+		pmsg $P_DEBUG "Using system appliance ($ap_path) with following capabilities:\n"
+                ls "$ap_path"/capability_* 2>/dev/null
+	fi
+}
+
 usage () {
 	part="$1"
 
@@ -538,6 +549,8 @@ case "$1" in
 			# source file with hacks and apply them
 			if [ -n "$hack_file" ]; then
 				hack_file=$(echo "$hack_file"|sed 's/^\([^\/]\)/\.\/\1/g')
+				# check if we have any libguest appliance
+				check_appliance_presence
 				pmsg $P_DEBUG "applying hacks from $hack_file\n" "$vm_number"
 				. $hack_file
 				if [ ! "$?" -eq "0" ]; then
@@ -590,6 +603,8 @@ case "$1" in
 		# source file with hacks and apply them
 		if [ -n "$hack_file" ]; then
 			hack_file=$(echo "$hack_file"|sed 's/^\([^\/]\)/\.\/\1/g')
+			# check if we have any libguest appliance
+			check_appliance_presence
 			pmsg $P_DEBUG "applying hacks from $hack_file\n" "$vm_number"
 			. $hack_file
 			if [ ! "$?" -eq "0" ]; then
@@ -845,6 +860,8 @@ case "$1" in
 		## apply delete hack file
 		if [ -n "$delete_hack_file" ]; then
 			delete_hack_file=$(echo "$delete_hack_file"|sed 's/^\([^\/]\)/\.\/\1/g')
+			# check if we have any libguest appliance
+			check_appliance_presence
 			pmsg $P_DEBUG "applying delete hacks from $delete_hack_file\n" "$vm_number"
 			. $delete_hack_file
 			if [ ! "$?" -eq "0" ]; then
