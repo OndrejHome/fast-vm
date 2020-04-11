@@ -100,6 +100,9 @@ do
 
 	ask_question "Generate or Import libguestfs appliance used by hack files for this system? ('Generate' will generate appliance localy, while 'import' allows to import pre-build Fedora 29 appliance from Internet. Some fast-vm images may require the Fedora 29 otherwise their hack files fails.)" "$FASTVM_APPLIANCE" "FASTVM_APPLIANCE"
 
+	ask_question "Default password for fast-vm keydist operation (use 'none' to disable this feature)" "$FASTVM_KEYDIST_PASSWORD" "FASTVM_KEYDIST_PASSWORD"
+	if [ "$FASTVM_KEYDIST_PASSWORD" = 'none' ]; then sed -i '/^FASTVM_KEYDIST_PASSWORD=/g' "$config_file"; fi
+
 	## reload the configuration file and check the system for changes
 	. $config_file
 

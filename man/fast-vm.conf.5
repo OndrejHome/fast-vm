@@ -64,6 +64,10 @@ Allow only 'root' and VM 'owner' to delete VM. In fast-vm versions =< 0.9 all us
 WARNING: This is not a security feature and aims only at preventing accidental deletes of machines not owned by users.
 Any user with access to qemu:///system can at any time delete any VM unless other measures are implemented.
 
+.TP
+.B FASTVM_KEYDIST_PASSWORD
+System-wide default password that is attempted first in fast-vm keydist operation. If removed or set to empty string then fast-vm keydist will always ask for password from user.
+
 .SH SEE ALSO
 .BR fast-vm (8),
 .BR configure-fast-vm (8)

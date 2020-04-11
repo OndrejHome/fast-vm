@@ -765,6 +765,18 @@ case "$1" in
 		ssh-keyscan -T 1 "192.168.$SUBNET_NUMBER.$vm_number" 2>/dev/null|grep -E '(ssh-|ecdsa-)' >> ~/.ssh/known_hosts
 
 		pmsg $P_DEBUG "Copy SSH key to VM\n" "$vm_number"
+		if [ -n "$FASTVM_KEYDIST_PASSWORD" ]; then
+			pmsg $P_DEBUG "Attempting to use password from /etc/fast-vm.conf\n" "$vm_number"
+			if sshpass -p"$FASTVM_KEYDIST_PASSWORD" -- ssh-copy-id -i "$FASTVM_USER_CONF_DIR/id_fastvm"\
+				-o GlobalKnownHostsFile=/dev/null -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no\
+				"root@192.168.$SUBNET_NUMBER.$vm_number" >/dev/null 2>&1; then
+				pmsg $P_INFO "Installed SSH key using default password.\n Now try logging into the machine with: '$FVM ssh $vm_number'\n" "$vm_number"
+				exit 0
+			else
+				pmsg $P_DEBUG "Couldn't copy SSH key using password from /etc/fast-vm.conf (FASTVM_KEYDIST_PASSWORD)\n" "$vm_number"
+			fi
+		fi
+
 		ssh-copy-id -i "$FASTVM_USER_CONF_DIR/id_fastvm" \
 			-o GlobalKnownHostsFile=/dev/null -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no \
 			"root@192.168.$SUBNET_NUMBER.$vm_number" | grep -E '(password|Now try logging into the machine)' | sed "s@with:.*@with: $FVM ssh $vm_number@"

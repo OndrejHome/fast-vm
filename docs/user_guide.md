@@ -112,7 +112,7 @@ From `fast-vm` version 1.5 the CentOS/RHEL/Fedora also provides RPM package `fas
 
 On RHEL system some of dependencies are present only in `rhel-7-server-optional-rpms` repository that needs to be activated before `fast-vm` installation.
 ~~~
-# subscription-manager repos --enable=rhel-7-server-optional-rpms
+# subscription-manager repos --enable=rhel-7-server-optional-rpms --enable=rhel-7-server-extras-rpms
 # curl -o /etc/yum.repos.d/fast-vm.repo https://copr.fedorainfracloud.org/coprs/ondrejhome/fast-vm/repo/epel-7/ondrejhome-fast-vm-epel-7.repo
 # yum install fast-vm
 ~~~

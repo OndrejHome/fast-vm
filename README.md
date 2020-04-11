@@ -55,6 +55,7 @@ Distribution    Installation method
 - (optional) `pv` to show import progress
 - (optional) `curl` to pass http(s) link for image_import
 - (optional) OVMF UEFI image for UEFI support in images
+- (optional) `sshpass` to try default password first in keydist operation
 
 ### How to contribute {#contribute}
 check [CONTRIBUTING.md](CONTRIBUTING.md)
