@@ -158,6 +158,9 @@ case "$action" in
 		fi
 
 		;;
+	vm_desc)
+		grep description /etc/libvirt/qemu/$VM_PREFIX*.xml
+		;;
 	*)
 		pmsg $P_ERROR "unknown action\n"
 		exit 3

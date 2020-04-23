@@ -962,11 +962,17 @@ case "$1" in
 			printf "%3s %-15s %-12s %-15s %-13s  %-8s  %s\n" "VM#" "Image name" "Status" "Profile_name" "Size( %used )" "Activity" "Notes"
 			raw_data=$(virsh --connect qemu:///system list --all|awk '{print $2,$3,$4}'|grep -E "^${VM_PREFIX}.*-[0-9]+ ")
 			data=$(echo "$raw_data"|sed "s/${VM_PREFIX}\(.\+\)-\([0-9]\+\) \(.\+\)$/\2 \1 \3/"|awk '{printf "%3s %-15s %s %s\n",$1,$2,$3,$4}')
+			all_metadata=$(echo "vm_desc"|sudo -n $FASTVM_HELPER )
 			for vm in $vm_list;
 			do
 				out=$(echo "$data"|grep -E "(^ $vm|^$vm) ")
 				vm_name=$(echo "$raw_data"|awk '{print $1}'|grep -E "\-$vm$")
-				get_vm_metadata "$vm_name"
+				# get metadata from fast-vm-helper instead of libvirt API (this is much faster on systems with many VMs)
+				desc_data=$(echo "$all_metadata" | grep "$vm_name.xml:" | sed "s#/etc/libvirt/qemu/$vm_name.xml:##" | xmllint --xpath '//description/text()' -)
+				metadata_user=$(echo "$desc_data"|cut -d, -f 2)
+				metadata_last_action=$(echo "$desc_data"|cut -d, -f 3)
+				metadata_profile=$(echo "$desc_data"|cut -d, -f 4)
+				metadata_description=$(echo "$desc_data"|cut -d, -f 5-)
 				note=$(echo "$metadata_user: $metadata_description"|cut -c 1-$(($TERMINAL_WIDTH-38)))
 				last_activity=$(calculate_day_difference "$metadata_last_action" $(date +%s))
 				last_activity="$last_activity ago"
