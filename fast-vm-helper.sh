@@ -131,8 +131,27 @@ case "$action" in
 		lvresize -f -L "${arg2}G" "$arg1" 2>&1|$DEBUG_LOG_CMD
 		;;
 	lvs)
-		lvs "$THINPOOL_VG" -o lv_name,lv_size,data_percent,role --separator ' ' |grep -E "($THINPOOL_LV|$VM_PREFIX)"
+		lvs $THINPOOL_VG -o lv_name,lv_size,data_percent,role,thin_id --separator ' ' --units g |grep -E "($THINPOOL_LV|$VM_PREFIX)"
 		;;
+        thin_dump)
+                ## try to detect if the defined thin pool is available
+                double_dash_lv=$(echo "$THINPOOL_LV"|sed 's/-/--/g') # LVM uses double dash in the /dev/mapper
+                double_dash_vg=$(echo "$THINPOOL_VG"|sed 's/-/--/g') # also for VGs
+                if [ -b "/dev/mapper/${double_dash_vg}-${double_dash_lv}-tpool" ];then
+                        THINPOOL_PATH="/dev/mapper/${double_dash_vg}-${double_dash_lv}-tpool"
+                fi
+                if [ -b "/dev/mapper/${double_dash_vg}-${double_dash_lv}_tdata" ] && [ -b "/dev/mapper/${double_dash_vg}-${double_dash_lv}_tmeta" ];then
+                        THINPOOL_PATH="/dev/mapper/${double_dash_vg}-${double_dash_lv}"
+                fi
+                if [ -z "$THINPOOL_PATH" ]; then
+                        pmsg $P_ERROR "thinpool $THINPOOL_VG/$THINPOOL_LV not found or not a thinpool LV, try running configure-fast-vm as root to check/correct\n"
+                        exit 1
+                fi
+                # dump thinpool metadata from temporary metadata snapshot in memory
+                dmsetup message "$THINPOOL_PATH-tpool" 0 reserve_metadata_snap
+                thin_dump --format xml -m "${THINPOOL_PATH}_tmeta"
+                dmsetup message "$THINPOOL_PATH-tpool" 0 release_metadata_snap
+                ;;
 	chgrp)
 		arg1=$(echo "$arg1" | grep -E "/dev/$THINPOOL_VG/$VM_PREFIX[a-zA-Z0-9.-]+$")
 		if [ -z "$arg1" ] || [ ! -b "$arg1" ]; then

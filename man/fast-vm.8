@@ -70,6 +70,11 @@ fast-vm \(em script for creating VMs from images on top of thin LVM pool
 .B compact
 .RI < VmNumber | "'VmNumber1 VmNumber2 ...'" >
 
+.B fast-vm
+.B disk_usage
+.RB [< all
+.RI | VmNumber >]
+
 .SH DESCRIPTION
 fast-vm script provides simple command-line interface to create virtual machines (VMs) 
 in libvirt using VM disk images saved in LVM thinpool and XML templates stored on file system.

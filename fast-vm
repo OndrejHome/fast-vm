@@ -326,6 +326,9 @@ usage () {
 		list)
 			echo "$FVM list [all|active|inactive [short]]"
 			;;
+		disk_usage)
+			echo "$FVM disk_usage [ <all|VmNumber > ]"
+			;;
 		compact)
 			echo "$FVM compact <VmNumber|'VmNumber1 VmNumber2 ...'>"
 			;;
@@ -335,7 +338,7 @@ usage () {
 		*)
 			echo "== fast-vm version 1.6 <ondrej-xa2iel8u@famera.cz> =="
 			echo "$FVM <action> <options>"
-			for cmd in import_image import_custom_image export_image remove_image resize_image import_profile remove_profile list_images create delete edit_note resize info list list_profiles start stop console keydist ssh scp compact compact_image;
+			for cmd in import_image import_custom_image export_image remove_image resize_image import_profile remove_profile list_images create delete edit_note resize info list list_profiles start stop console keydist ssh scp disk_usage compact compact_image;
 			do
 				usage $cmd noexit
 			done
@@ -948,6 +951,77 @@ case "$1" in
 		else
 			pmsg $P_ERROR "Resize failed. Check logs for more details\n" "$vm_number"
 		fi
+		;;
+	disk_usage)
+		vm_number="$2"
+		if [ -z "$vm_number" ] || [ "$vm_number" = "all" ]; then
+			vm_list=$(list_vm 'all')
+		else
+			check_vm_number "$vm_number"
+			vm_list="$vm_number"
+		fi
+		pmsg $P_WARNING "This is EXPERIMENTAL feature, usage data might not be 100%% accurate.\n"
+		# gather data
+		lvs_out=$(echo 'lvs'|LANG=C sudo -n $FASTVM_HELPER)
+		thin_out=$(echo 'thin_dump'|LANG=C sudo -n $FASTVM_HELPER)
+		raw_data=$(virsh --connect qemu:///system list --all|awk '{print $2}'|grep -E "^${VM_PREFIX}.*-[0-9]+$")
+		all_metadata=$(echo "vm_desc"|sudo -n $FASTVM_HELPER )
+		# process data and print relevant information on disk usage
+		echo "$lvs_out"|grep -E " $THINPOOL_LV "|awk '{printf "=== Thinpool space used: %6s%% of %7s\n",$3,$2}'
+		echo "VM# Image name    User     Size( %aloc )   Shared   Unshared  ('.'-Shared, '#'-Unshared)"
+		# get thinpool block size
+		thin_block_size=$(echo "$thin_out"| xmllint --xpath "//superblock/@data_block_size" -|cut -d\" -f 2)
+		for vm in $vm_list;
+		do
+			vm_name=$(echo "$raw_data"|grep -E "\-$vm$")
+			# get metadata from fast-vm-helper instead of libvirt API (this is much faster on systems with many VMs)
+			desc_data=$(echo "$all_metadata" | grep "$vm_name.xml:" | sed "s#/etc/libvirt/qemu/$vm_name.xml:##" | xmllint --xpath '//description/text()' -)
+			metadata_user=$(echo "$desc_data"|cut -d, -f 2)
+
+			# get dev_id that we will work on
+			dev_id=$(echo "$lvs_out"|grep snapshot|grep -E " ${VM_PREFIX}.*-[0-9]+ "|grep "\-$vm "|awk '{printf $5}')
+			image_lv_name=$(echo "$vm_name"|sed 's/-[0-9]\+$//')
+			# get dev_id of image this VM is using
+			image_dev_id=$(echo "$lvs_out"|grep -E " $image_lv_name "|awk '{printf $5}')
+			image_dev_creation_time=$(echo "$thin_out"| xmllint --xpath "//device[@dev_id=$image_dev_id]/@creation_time" -|cut -d\" -f 2)
+			# check if the 'creation_time' and 'snap_time' of VM dev_id are same
+			dev_creation_time=$(echo "$thin_out"| xmllint --xpath "//device[@dev_id=$dev_id]/@creation_time" -|cut -d\" -f 2)
+			dev_snap_time=$(echo "$thin_out"| xmllint --xpath "//device[@dev_id=$dev_id]/@snap_time" -|cut -d\" -f 2)
+			if [ "$dev_creation_time" != "$dev_snap_time" ]; then
+				pmsg $P_WARNING "Device $dev_id contain modifications that this cannot account for, results may be inaccurate!\n"
+			fi
+			# get device allocation and size
+			dev_size=$(echo "$lvs_out"|grep snapshot|grep -E " ${VM_PREFIX}.*-[0-9]+ "|grep "\-$vm "|sed 's/\.00g//'|awk '{printf "%3sg(%6s%%)",$2,$3}')
+			#dev_mapped_blocks=$(echo "$thin_out"|xmllint --xpath "//device[@dev_id=${dev_id}]/@mapped_blocks" -|cut -d\" -f 2)
+			#dev_allocated_gb=$(echo "scale=3; $dev_mapped_blocks*$thin_block_size/1024/1024/2"|bc)
+			# count the blocks that are shared and unique from thinpool metadata
+			shared_range_blocks=$( echo "$thin_out" | xmllint  --xpath "sum( //device[@dev_id=${dev_id}]/range_mapping[@time=${image_dev_creation_time}]/@length )" -)
+			shared_simple_blocks=$( echo "$thin_out" | xmllint  --xpath "count( //device[@dev_id=${dev_id}]/single_mapping[@time=${image_dev_creation_time}])" -)
+			unique_range_blocks=$( echo "$thin_out" | xmllint  --xpath "sum( //device[@dev_id=${dev_id}]/range_mapping[@time!=${image_dev_creation_time}]/@length )" -)
+			unique_simple_blocks=$( echo "$thin_out" | xmllint  --xpath "count( //device[@dev_id=${dev_id}]/single_mapping[@time!=${image_dev_creation_time}])" -)
+			shared_blocks=$(("$shared_range_blocks" + "$shared_simple_blocks"))
+			unique_blocks=$(("$unique_range_blocks" + "$unique_simple_blocks"))
+			dev_shared_gb=$(echo "scale=3; $shared_blocks*$thin_block_size/1024/1024/2"|bc|sed 's/^\./0./;s/^0$/0.000/')
+			dev_unique_gb=$(echo "scale=3; $unique_blocks*$thin_block_size/1024/1024/2"|bc|sed 's/^\./0./;s/^0$/0.000/')
+			# print text results
+			printf "%-3d %-12s %-8s  %8s %7sg   %7sg  " "$vm" $(echo "$image_lv_name"|sed "s/${VM_PREFIX}//") "$metadata_user" "$dev_size" "$dev_shared_gb" "$dev_unique_gb"
+
+			# visual space usage representation (20 segment bar)
+			dev_size2=$(echo "$lvs_out"|grep snapshot|grep -E " ${VM_PREFIX}.*-[0-9]+ "|grep "\-$vm "|sed 's/\.00g//'|awk '{printf "%3s",$2}')
+			size_segment=$(echo "scale=3; $dev_size2/20"|bc|sed 's/^\./0./;s/^0$/0.000/')
+			shared_segments=$(echo "scale=0; $dev_shared_gb/$size_segment"|bc|sed 's/^0$/1/')
+			unshared_segments=$(echo "scale=0; $dev_unique_gb/$size_segment"|bc|sed 's/^0$/1/')
+			remaining_segments=$((20 - "$shared_segments" - "$unshared_segments"))
+			printf "["
+			printf "%0.s." $(seq 1 "$shared_segments")
+			printf "%0.s#" $(seq 1 "$unshared_segments")
+			if [ "$remaining_segments" != '0' ]; then
+				printf "%0.s " $(seq 1 "$remaining_segments")
+			fi
+			printf "]\n"
+		done
+		pmsg $P_INFO "'Shared' space is stored only once in thinpool.\n When VM is created most of the space is shared with original image.\n"
+		pmsg $P_INFO "'UnShared' space is unique to VM and consumes extra thinpool space.\n This space increases with more changes done to VM such as updates or new data.\n"
 		;;
 	list)
 		list_type="$2"
