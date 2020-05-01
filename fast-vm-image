@@ -65,6 +65,7 @@ check_file () {
 	file_size=0
 	file_local=0
 	error_prefix="$2"
+	quiet_flag="$3"
 	if [ -z "$file_path" ]; then pmsg $P_DEBUG "provided empty file path\n"; fi
 	if [ "$curl_ok" -eq 0 ] && [ "$(echo $file_path | awk  '{ s=substr($0, 0, 4); print s; }' )"  = "http" ]; then
 		curl_data=$(curl $CURL_OPTS --head "$file_path" 2>/dev/null)
@@ -79,7 +80,10 @@ check_file () {
 				pmsg $P_DEBUG "Detected remote file with size '$file_size'.\n"
 			fi
 		else
-			pmsg $P_ERROR "$error_prefix: error checking remote file on the server.\nCURL exited with code $curl_exit and we got following information from server\n$curl_data\n"
+			if [ -z "$quiet_flag" ]; then
+				# print error only when "quiet" flag is not present
+				pmsg $P_ERROR "$error_prefix: error checking remote file on the server.\nCURL exited with code $curl_exit and we got following information from server\n$curl_data\n"
+			fi
 			return 2
 		fi
 	else
@@ -685,7 +689,7 @@ case "$1" in
 		check_image_existance "$image_name"
 		image_checksum_dir="$3"
 		if [ -z "$image_checksum_dir" ]; then image_checksum_dir='./'; fi
-		check_file "$image_checksum_dir/${image_name}.part_00.sha512.txt" "part_00 checksum"
+		check_file "$image_checksum_dir/${image_name}.part_00.sha512.txt" "part_00 checksum" "quiet"
 		if [ "$?" = 2 ]; then  pmsg $P_ERROR "part_00 checksum file not found\n"; exit 2; fi
 
 		lvs_out=$(echo 'lvs'|sudo -n $FASTVM_HELPER)
