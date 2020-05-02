@@ -143,11 +143,17 @@ _fast-vm()
 			COMPREPLY=( $( compgen -W "$vm_numbers" -- "$cur" ) )
 			return 0
 			;;
+		disk_usage)
+			local vm_numbers
+			vm_numbers=$(fast-vm list all short)
+			COMPREPLY=( $( compgen -W "all $vm_numbers" -- "$cur" ) )
+			return 0
+			;;
 	esac
 
 	$split && return 0
 	if [ "$cword" -lt 2 ]; then
-		COMPREPLY=( $( compgen -W 'import_image import_custom_image export_image remove_image resize_image import_profile remove_profile edit_note keydist list_images list_profiles create start stop delete resize console scp ssh list info compact compact_image' -- "$cur" ) )
+		COMPREPLY=( $( compgen -W 'import_image import_custom_image export_image remove_image resize_image import_profile remove_profile edit_note keydist list_images list_profiles create start stop delete resize console scp ssh list info compact compact_image disk_usage' -- "$cur" ) )
 		return 0
 	fi
 
