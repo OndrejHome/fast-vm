@@ -25,8 +25,7 @@ Before starting to work on such issue either comment into issue that you plan wo
 Write email to auther or create Issue on github with link to your article. Link to your article can be featured on page https://www.famera.cz/blog/fast-vm/ .
 
 ### Translation of fast-vm documentation
-If interested in translating the fast-vm documentation of 
-
+If you are interested in translating the fast-vm documentation please contact me via email - ondrej-xa2iel8u@famera.cz.
 
 ## Thank you
 In any case of contribution or feedback to fast-vm **Thank you!**
