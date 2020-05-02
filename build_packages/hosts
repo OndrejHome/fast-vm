@@ -1,0 +1,15 @@
+[rpm-systems]
+# fedora32
+192.168.22.50 spec_file=fast-vm-fedora.spec
+# fedora31
+192.168.22.51 spec_file=fast-vm-fedora.spec
+# CentOS 7.8
+192.168.22.53 spec_file=fast-vm-el7.spec
+# CentOS 8.1
+192.168.22.54 spec_file=fast-vm-el8.spec
+
+[deb-systems]
+# Debian 10.3
+192.168.22.55
+# Debian 9.12
+192.168.22.56

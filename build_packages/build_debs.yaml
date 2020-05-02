@@ -1,0 +1,52 @@
+---
+- name: build fast-vm DEBs 
+  hosts: deb-systems
+  vars:
+    fast_vm_version: '1.99'
+    local_path: '/tmp/'
+  tasks:
+  ####### prepare archive file
+  - name: create temporary location with archive
+    file:
+      state: 'directory'
+      path: "/tmp/fast-vm-{{ fast_vm_version }}"
+    delegate_to: localhost
+    run_once: True
+  - name: copy files for archive into temporary location
+    command: "rsync -a --exclude=.git ../ /tmp/fast-vm-{{ fast_vm_version }}"
+    delegate_to: localhost
+    run_once: True
+  - name: generate archive with fast-vm files
+    archive:
+      path: "/tmp/fast-vm-{{ fast_vm_version }}"
+      dest: "/tmp/{{ fast_vm_version }}.tar.gz"
+    delegate_to: localhost
+    run_once: True
+  #######
+  - name: install dependencies
+    apt:
+      name: [ 'dpkg-dev', 'debhelper', 'rsync' ]
+  - name: extract archive
+    unarchive:
+      src: "/tmp/{{ fast_vm_version }}.tar.gz"
+      dest: "/root/"
+  - name: adjust standards version for Debian-10
+    lineinfile:
+      path: "/root/fast-vm-{{ fast_vm_version }}/debian/control"
+      regexp: '^Standards-Version:.*'
+      line: "Standards-Version: 4.3.0"
+    when: ansible_distribution_major_version == "10"
+  - name: run build of package
+    command:
+      chdir: "/root/fast-vm-{{ fast_vm_version }}"
+      cmd: 'dpkg-buildpackage -us -uc'
+  - name: create directories for packages
+    file:
+      state: 'directory'
+      path: "{{ local_path }}/debian-{{ ansible_distribution_major_version }}/"
+    delegate_to: localhost
+  - name: synchronize DEB packages to local machine
+    synchronize:
+      src: '/root/*.deb'
+      dest: "{{ local_path }}/debian-{{ ansible_distribution_major_version }}/"
+      mode: pull

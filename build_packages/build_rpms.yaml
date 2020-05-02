@@ -1,0 +1,57 @@
+---
+- name: build fast-vm RPMs for Fedora
+  hosts: rpm-systems
+  vars:
+    fast_vm_version: '1.99'
+    local_path: '/tmp/'
+  tasks:
+  ####### prepare archive file
+  - name: create temporary location with archive
+    file:
+      state: 'directory'
+      path: "/tmp/fast-vm-{{ fast_vm_version }}"
+    delegate_to: localhost
+    run_once: True
+  - name: copy files for archive into temporary location
+    command: "rsync -a --exclude=.git ../ /tmp/fast-vm-{{ fast_vm_version }}"
+    delegate_to: localhost
+    run_once: True
+  - name: generate archive with fast-vm files
+    archive:
+      path: "/tmp/fast-vm-{{ fast_vm_version }}"
+      dest: "/tmp/{{ fast_vm_version }}.tar.gz"
+    delegate_to: localhost
+    run_once: True
+  #######
+  - name: install dependencies
+    yum:
+      name: [ 'rpmdevtools', 'bash-completion', 'make', 'rsync' ]
+  - name: create rpmbuild directory
+    command: rpmdev-setuptree
+    args:
+      creates: '/root/rpmbuild'
+  - name: copy archive into sources
+    copy:
+      src: "/tmp/{{ fast_vm_version }}.tar.gz"
+      dest: '/root/rpmbuild/SOURCES/'
+  - name: copy spec file
+    copy:
+      src: '../rpm/{{ spec_file }}'
+      dest: '/root/rpmbuild/SPECS/fast-vm.spec'
+  - name: adjust version in SPEC file
+    lineinfile:
+      path: '/root/rpmbuild/SPECS/fast-vm.spec'
+      regexp: '^Version:.*'
+      line: "Version: {{ fast_vm_version }}"
+  - name: run build of package
+    command: rpmbuild -ba /root/rpmbuild/SPECS/fast-vm.spec
+  - name: synchronize RPM packages to local machine
+    synchronize:
+      src: '/root/rpmbuild/RPMS/noarch/*rpm'
+      dest: "{{ local_path }}"
+      mode: pull
+  - name: synchronize SRPM packages to local machine
+    synchronize:
+      src: '/root/rpmbuild/SRPMS/*rpm'
+      dest: "{{ local_path }}"
+      mode: pull
