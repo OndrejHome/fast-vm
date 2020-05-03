@@ -417,6 +417,8 @@ case "$1" in
 		if [ -z "$image_name" ]; then pmsg $P_ERROR "missing image name\n"; usage export; fi
 		check_image_existance "$image_name"
 
+		lvs_out=$(echo 'lvs'|sudo -n $FASTVM_HELPER)
+		image_size=$(echo "$lvs_out"|grep -E " ${VM_PREFIX}$image_name "|sed 's/\.[0-9]\+g//'|awk '{printf $2}')
 		# get image format or use default 'xz' if no format was specified
 		image_format="$3"
 		if [ -z "$image_format" ]; then image_format='xz'; fi
@@ -457,7 +459,11 @@ case "$1" in
 		# locked section - BEGIN
 		flock -s -n 9 || exit 4
 		pmsg $P_DEBUG "compressing the image $image_name into $(pwd)/${image_name}.img.${image_format}\n"
-		cat "/dev/$THINPOOL_VG/$VM_PREFIX$image_name" | $compress_cmd > "$(pwd)/${image_name}.img.${image_format}"
+		if [ "$pv_ok" -eq '0' ]; then
+			pv -N "Image reading" -s "${image_size}G" < "/dev/$THINPOOL_VG/$VM_PREFIX$image_name" | $compress_cmd > "$(pwd)/${image_name}.img.${image_format}"
+		else
+			cat "/dev/$THINPOOL_VG/$VM_PREFIX$image_name" | $compress_cmd > "$(pwd)/${image_name}.img.${image_format}"
+		fi
 		if [ "$?" -eq "0" ]; then
 			pmsg $P_INFO "Image compression finished\n"
 		else
