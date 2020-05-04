@@ -178,7 +178,7 @@ case "$action" in
 
 		;;
 	vm_desc)
-		grep description /etc/libvirt/qemu/$VM_PREFIX*.xml
+		grep -H description /etc/libvirt/qemu/$VM_PREFIX*.xml 2>/dev/null
 		;;
 	*)
 		pmsg $P_ERROR "unknown action\n"
