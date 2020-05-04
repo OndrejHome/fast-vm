@@ -80,7 +80,7 @@ fast-vm script provides simple command-line interface to create virtual machines
 in libvirt using VM disk images saved in LVM thinpool and XML templates stored on file system.
 
 VM disk images are saved in LVM thinpool LV for space efficiency. XML templates for VM are 
-libvirt XMLs with few macros that fast-vm replaces (see TEMPLATE MACROS).
+libvirt XMLs with few macros that fast-vm replaces (see TEMPLATE MACROS in fast-vm-image man page).
 When creating a VM, fast-vm will create new writable LVM snapshot from existing image, 
 define libvirt VM from XML and crate a static DHCP reservation in libvirt network on 
 which VM will be for predictable IP address based on VmNumber (see OPTIONS).
@@ -90,9 +90,8 @@ Images for fast-vm can be either downloaded from Internet (see GETTING IMAGES in
 man page) or created from scratch (see CREATING CUSTOM IMAGES in fast-vm-image man page).
 
 .RB "To start using fast-vm you need to configure it first using command " configure-fast-vm 
-.RB "and add users that will fast-vm into " libvirt " system group.
-Configuration command will create thinpool LV and libvirt network for you or you can use
-existing ones.
+.RB "and add users that will use fast-vm into " libvirt " system group.
+"configure-fast-vm" script can create thinpool LV and libvirt network for you.
 
 Primary use case of fast-vm is creation of scratch VMs on single local machine.
 
@@ -100,7 +99,7 @@ Primary use case of fast-vm is creation of scratch VMs on single local machine.
 
 .TP
 .B VmNumber
-Number identifying the VM. Currently limited to range 20-220 that allows fast-vm to use it as octet of the IP address and still leave some space for static addresses.
+Number identifying the VM. Currently limited to range 20-220 that allows fast-vm to use it as last octet of the IP address and still leave some space for static addresses.
 
 .TP
 .B ImageName
@@ -109,24 +108,24 @@ is part of the LV name and libvirt machine name.
 
 .TP 
 .B PathToImage
-.BI "PathToImage " /path/to/image.{gz,xz}
+.BI "PathToImage " /path/to/image.{gz,xz,zst}
 .br
-.BI "PathToImage " http://url/to/image.{gz,xz}
+.BI "PathToImage " http://url/to/image.{gz,xz,zst}
 .sp
-Local path or http/https URL to image file in GZIP or XZ format. From fast-vm-1.2 if the filename of image matches regular
+Local path or http/https URL to image file in GZIP, XZ or ZST format. From fast-vm-1.2 if the filename of image matches regular
 expression "[0-9]+g__" then the number before 'g' is used as the image size that will be imported (this can be overridden by
-.RB "using the " "import_custom_image" " action)."
+.RB "using the " "import_custom" " action of " "fast-vm-image" ")."
 By default fast-vm assumes size of image to be 10GB.
 
 .TP
 .B PathToLibvirtXML
 .BI "PathToLibvirtXML " /path/to/libvirt.xml
 .br
-.BI "PathToLibvirtXML " htto://url/to/libvirt.xml
+.BI "PathToLibvirtXML " http://url/to/libvirt.xml
 .sp
 Local path or http/https URL to libvirt VM XML template. Check the
 .B TEMPLATE MACROS
-for list of supported macros in the VM XML template.
+in fast-vm-image man page for list of supported macros in the VM XML template.
 
 .TP 
 .B PathToHacksFile
@@ -134,8 +133,9 @@ for list of supported macros in the VM XML template.
 .br
 .BI "PathToHacksFile " http://url/to/hacks.sh
 .sp
-Local path or http/https URL to shell script which will be executed after creation of the VM and allows
-to access the disk drive of the VM before first running it.
+Local path or http/https URL to shell script which will be executed after creation of the VM and is allowed
+to access the disk drive of the VM before it is run for the first time. It usually contains customization such as
+change of hostname, setting of timezone to match hypervisor or configuration of serial console.
 
 .TP
 .B PathToDeleteHacksFile
@@ -170,7 +170,7 @@ to denote that the file should be copied from the fast-vm VM.
 fast-vm will replace 'vm:' with the VM IP.
 
 .SH RESIZING DISKS (from fast-vm-1.2)
-Disks can be resized only when VM is trned off.
+Disks can be resized only when VM is turned off. Note that this resizes only the disk drive and not partitions or filesystems on disk.
 .br
 .BR "WARNING: " "Shrinking disk size (making size of disk smaller) can cause DATA LOSS. Think before doing so. You will NOT be prompted to confirm your choice."
 
@@ -187,6 +187,14 @@ Start VM number 42 connect to it via SSH as root when SSH to machine is ready
 .sp
 .BI "fast-vm start " "42 ssh"
 
+Send ACPI poweroff signal to VM 42 to tell VM OS to gracefully shut down. Note that not all OSes will react to this.
+.sp
+.BI "fast-vm stop " "42 graceful"
+
+Forcefully shutdown VM 42. This is equivalent to disconnecting PC power cable.
+.sp
+.BI "fast-vm stop " "42"
+
 Create machine with custom definition and hack file. Start it and after it's SSH connection is ready execute custom script 'test.sh'.
 .sp
 .BI "fast-vm create " "6.7 42 /tmp/custom\-libvirt.xml /tmp/custom\-hacks.sh"
@@ -196,6 +204,14 @@ Create machine with custom definition and hack file. Start it and after it's SSH
 .RB "Assign text note to VM. If note text is not provided, default editor from " "$EDITOR" " is launched."
 .sp
 .BI "fast-vm edit_note " "42 'this is testing machine'"
+
+.RB "List all VMs defined by fast-vm."
+.sp
+.BI "fast-vm list"
+
+.RB "List VMs defined by fast-vm that are currently running (are active)."
+.sp
+.BI "fast-vm list " "active"
 
 .RB "Change disk size of the VM number " "42" " to " "20" " GB."
 .sp
@@ -216,6 +232,14 @@ Create machine with custom definition and hack file. Start it and after it's SSH
 .RB "Compact the disks of inactive VMs 41 and 42 ( using " "virt-sparsify" " ) to reclaim unused free space from VMs."
 .sp
 .BI "fast-vm compact " "'41 42'"
+
+.RB "Show the thinpool disk space usage of VM 42"
+.sp
+.BI "fast-vm disk_usage " "42"
+
+.RB "Show fast-vm VM 42 information like assigned IP address and libvirt VM name."
+.sp
+.BI "fast-vm info " "42"
 
 .SH EXIT CODES
 In case of error the fast-vm will return non-zero exit code. When multiple VMs were specified then zero exit code is returned only when operation succeeded on all VMs. If any of VMs reported non-zero exit code, then the overall exit code will also be non-zero.

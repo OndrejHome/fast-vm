@@ -6,7 +6,7 @@ configure-fast-vm \(em script for (re)configuring fast-vm
 .br
 
 .SH DESCRIPTION
-configure-fast-vm is used to setup the fast-vm environment or to change it's configuration.
+configure-fast-vm is used to setup the fast-vm environment or to change its configuration.
 Script is interactive and will ask series of question regarding fast-vm providing current or
 default values (default values are provided when no configuration exists).
 
@@ -22,6 +22,7 @@ define the libvirt network for fast-vm. Template for libvirt network is in file
 
 Additionally this script can either 'generate' system-wide libguestfs appliance or 'import' one by downloading it from 
 .IR http://ftp.linux.cz/pub/linux/people/ondrej_famera/fastvm-images/appliance-1.39.11.tar.xz .
+Import of appliance is recommended unless there is no access to Internet from machine running fast-vm.
 
 .SH LIBGUESTFS APPLIANCE CAPABILITIES
 Appliances imported into /var/lib/fast-vm/appliance can additionally contain files denoting their capabilities that might be needed by some hack files. Below is recommended naming for these capabilities with explanations on what they mean:
@@ -31,7 +32,7 @@ Appliances imported into /var/lib/fast-vm/appliance can additionally contain fil
 - capability_btrfs - appliance can mount read/write BTRFS filesystem
 
 .SH MANUALLY GENERATING APPLIANCE ON FEDORA SYSTEMS
-Make sure that you have packages 'libguestfs-devel' and 'libvirt' installed and that libvirtd.service is running. Then generate appliance archive with command 'libguestfs-make-fixed-appliance --xz'. Note that system should have more at least 2GB of RAM (systems with 1GB RAM often fails to complete the generation succesfully).
+Make sure that you have packages 'libguestfs-devel' and 'libvirt' installed and that libvirtd.service is running. Then generate appliance archive with command 'libguestfs-make-fixed-appliance --xz'. Note that system should have at least 2GB of RAM (systems with 1GB RAM often fails to complete the generation succesfully).
 
 .SH SEE ALSO
 .BR fast-vm.conf (5),

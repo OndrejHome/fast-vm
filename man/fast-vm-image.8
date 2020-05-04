@@ -86,22 +86,78 @@ fast-vm-images will be used much less than fast-vm command in day-to-day operati
 To get prebuild images you can visit https://www.famera.cz/blog/fast-vm/image_list.html .
 
 .SH OPTIONS
-Check the 'fast-vm' man page for options description.
+
+.TP
+.B ImageName
+.RB "Name of image imported in the fast-vm. It should contain only alpha-numerical characters. " "ImageName"
+is part of the LV name and libvirt machine name.
+
+.TP
+.B ProfileName
+.BR "ProfileName" " is used when using existing " "ImageName" " with alternative XML and hack files. Check " "IMAGE PROFILES" " for more details"
+
+.TP
+.B PathToImage
+.BI "PathToImage " /path/to/image.{gz,xz,zst}
+.br
+.BI "PathToImage " http://url/to/image.{gz,xz,zst}
+.sp
+Local path or http/https URL to image file in GZIP, XZ or ZST format. From fast-vm-1.2 if the filename of image matches regular
+expression "[0-9]+g__" then the number before 'g' is used as the image size that will be imported (this can be overridden by
+.RB "using the " "import_custom" " action of " "fast-vm-image" ")."
+By default fast-vm assumes size of image to be 10GB.
+
+.TP
+.B PathToLibvirtXML
+.BI "PathToLibvirtXML " /path/to/libvirt.xml
+.br
+.BI "PathToLibvirtXML " http://url/to/libvirt.xml
+.sp
+Local path or http/https URL to libvirt VM XML template. Check the
+.B TEMPLATE MACROS
+in fast-vm-image man page for list of supported macros in the VM XML template.
+
+.TP
+.B PathToHacksFile
+.BI "PathToHacksFile " /path/to/hacks.sh
+.br
+.BI "PathToHacksFile " http://url/to/hacks.sh
+.sp
+Local path or http/https URL to shell script which will be executed after creation of the VM and is allowed
+to access the disk drive of the VM before it is run for the first time. It usually contains customization such as
+change of hostname, setting of timezone to match hypervisor or configuration of serial console.
+
+.TP
+.B PathToDeleteHacksFile
+.BI "PathToDeleteHacksFile " /path/to/delete-hacks.sh
+.br
+.BI "PathToDeleteHacksFile " http://url/to/delete-hacks.sh
+.sp
+Local path or http/https URL to shell script which will be executed during VM delete process as last step
+before the VM is undefined from the libvirt.
+
+.TP
+.B PathToCheksumsDir
+.BI "PathToCheksumsDir " /path/to/checksums/dir/
+.br
+.BI "PathToCheksumsDir " http://url/to/checksums/dir/
+.sp
+Local path or http/https URL to directory containing checksums agains which the image integrity can be verified.
+.RB "Check the " "IMAGE CHECKSUM GENERATION AND VERIFICATION" " for more information."
 
 .SH TEMPLATE MACROS
 In the libvirt XML and hack files you can use variables from 
 .BR fast-vm.conf (5)
-and additionally the macros below. These variables are only ones considered when new version
-of fast-vm is release. Try to avoid using other variables or suggest which one is useful for your use case to
-be added to this list.
+and additionally the macros below. Try to avoid using other variables than ones listed here. 
+Feel free to open issue against fast-vm project to discuss if any new variable can be added.
 
 .TP
 .B IMAGE_NAME
-.RI "Contains value of " ImageName " ."
+.RI "Contains value of " ImageName "."
 
 .TP
 .B VM_NUMBER
-.RI "Contains value of " VmNumber " ."
+.RI "Contains value of " VmNumber "."
 
 .TP
 .B VM_HEX_NUMBER
@@ -115,7 +171,7 @@ Name of the VM composed from
 .TP
 .B VM_MAC
 .br
-MAC address assigned to VM.
+MAC address assigned to VM. This can be used only as variable in HackFile.
 
 .SH CREATING CUSTOM IMAGES
 Currently fast-vm expects that all images are 10GB in size (this can change in future).
@@ -125,7 +181,7 @@ Below is recommended procedure for creating your custom images.
 If you are unsure about the template get some inspiration in the fast-vm-public-images repository and feel free to reuse the template
 files from there. You can change template later to suit your needs. Here are some guidelines for creating a good libvirt XML:
 .nf
-.RB "\(bu Use " "TEMPLATE MACROS" " to describe paths and names. Avoid hardcoding path to single drive to prevenc concurrent access to it."
+.RB "\(bu Use " "TEMPLATE MACROS" " to describe paths and names. Avoid hardcoding path to single drive to prevent concurrent access to it."
 \(bu Remove the exact hardware addresses where possible to let the destination libvirt decide where the devices should be assigned.
 .fi
 
@@ -133,7 +189,11 @@ files from there. You can change template later to suit your needs. Here are som
 .B 2. Name your custom image and import "empty image" with the libvirt XML
 The custom image in this example will be named 'cool_image' and libvirt XML file wil have name cool_image.xml
 
-.B fast-vm import_image cool_image empty cool_image.xml
+.B fast-vm-image import cool_image empty cool_image.xml
+
+or import empty image with custom size (in example below 6GB)
+
+.B fast-vm-image import_custom 6 cool_image empty cool_image.xml
 
 .TP
 .B 3. Create base VM and prepare your custom image
@@ -147,19 +207,20 @@ try to use TRIM (ATA devices) or UNMAP (SCSI devices) commands to further reduce
 .BR fstrim .
 
 You can further try to cleanup image using the command
-.BI "fast-vm compact_image " "ImageName"
-". Cleanup of image is done using "
-.BR "virt-sparsify" " command."
+.BI "fast-vm-image compact " "ImageName"
+.RB "which cleans up image is using " "virt-sparsify" " command."
 
 .TP
 .B 4. Export image in compressed form
-When you have done all modification to your image export it to GZ or XZ (recommended) compressed file using one of the commands below.
+When you have done all modification to your image export it to GZ, XZ or ZST (recommended) compressed file using one of the commands below.
 
-.B fast-vm export_image cool_image xz
+.B fast-vm-image export cool_image zst
 .br
-.B fast-vm export_image cool_image gz
+.B fast-vm-image export cool_image xz
+.br
+.B fast-vm-image export cool_image gz
 
-TIP: You can test anytime your image by creating fast-vm VM based on it. Note that changing base VM disk will NOT change existing fast-vm VM using that image.
+TIP: You can test anytime your image by creating fast-vm VM based on it. Note that changing base VM disk will NOT change existing fast-vm VM that is using that image. In other words: changing file in base VM doesn't affect existing VMs, only newly created ones.
 
 .B fast-vm create cool_image VmNumber
 
@@ -175,6 +236,7 @@ You can further customize the disk image imported into fast-vm thinpool. This is
 registration or some other repetitive task that is hard to put into hacks file. However if something is possible doable in hack file, then hack file is the
 recommended way of customizing image because hack files are easier to ditribute compared to whole disk images.
 To begin customizing imported image create the 'base' VM using command below.
+.BR "NOTE: " "Customizing image will change data checksum of the image."
 
 .BI "fast-vm create " ImageName " base"
 
@@ -193,11 +255,11 @@ Some systems (such as CentOS/RHEL 6.x) needs UEFI vars file that contains needed
 
 .SH IMAGE PROFILES (from fast-vm-1.1)
 To allow re-use of same disk image with different libvirt XML and/or hack files the IMAGE PROFILES can be used. Profile is basically alternative libvirt XML and/or hack file
-for existing disk image. Profiles can be specified in place of imageName. To create profile there must be already existing image based on which profile is created.
+for existing disk image. Profiles can be specified in place of ImageName. To create profile there must be already existing image based on which profile is created.
 Typical use of profile is to create VM with different virtual HW (more RAM, CPU, additional network cards, etc.).
 
 .SH RESIZING DISKS (from fast-vm-1.2)
-Resizing the image disk will affect only newly created VMs from that disk.
+Resizing the image disk will affect only newly created VMs from that disk. Disks should be resized only when base VM is turned off. Note that this action resizes only the disk drive and not partitions or filesystems on disk.
 .br
 .BR "WARNING: " "Shrinking disk size (making size of disk smaller) can cause DATA LOSS. Think before doing so. You will NOT be prompted to confirm your choice."
 
@@ -213,17 +275,17 @@ Idea of checksuming of images is to provide convenient method to detect if image
 .SH EXAMPLES
 Import local image into fast-vm
 .sp
-.BI "fast-vm import_image " "6.7 /tmp/centosl6.7.img.gz /tmp/centos-6.3\-7.2.xml /tmp/centos\-7\-hacks.sh"
+.BI "fast-vm-image import " "6.7 /tmp/centosl6.7.img.gz /tmp/centos-6.3\-7.2.xml /tmp/centos\-7\-hacks.sh"
 
 .RB "Define new profile " "small-6.7" " based on image " "6.7" " with custom libvirt XML and hack files and create machine " "41" " using new profile"
 .sp
-.BI "fast-vm import_profile " "small-6.7 6.7 /tmp/alternative\-libvirt.xml /tmp/custom\-create\-hacks.sh /tmp/custom\-delete\-hacks.sh"
+.BI "fast-vm-image import " "small-6.7 6.7 /tmp/alternative\-libvirt.xml /tmp/custom\-create\-hacks.sh /tmp/custom\-delete\-hacks.sh"
 .br
 .BI "fast-vm create " "small-6.7 41"
 
 .RB "Change disk size of image " "small-6.7" " to " "40" " GB. All VMs created from this image after this change will have disk with " "40" " GB. Previously created VM are unaffected."
 .sp
-.BI "fast-vm resize_image " "small-67 40"
+.BI "fast-vm-image resize " "small-67 40"
 
 .SH EXIT CODES
 In case of error the fast-vm-image will return non-zero exit code. 
