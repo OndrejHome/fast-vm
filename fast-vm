@@ -999,8 +999,8 @@ case "$1" in
 			shared_simple_blocks=$( echo "$thin_out" | xmllint  --xpath "count( //device[@dev_id=${dev_id}]/single_mapping[@time=${image_dev_creation_time}])" -)
 			unique_range_blocks=$( echo "$thin_out" | xmllint  --xpath "sum( //device[@dev_id=${dev_id}]/range_mapping[@time!=${image_dev_creation_time}]/@length )" -)
 			unique_simple_blocks=$( echo "$thin_out" | xmllint  --xpath "count( //device[@dev_id=${dev_id}]/single_mapping[@time!=${image_dev_creation_time}])" -)
-			shared_blocks=$(("$shared_range_blocks" + "$shared_simple_blocks"))
-			unique_blocks=$(("$unique_range_blocks" + "$unique_simple_blocks"))
+			shared_blocks=$(echo "$shared_range_blocks+$shared_simple_blocks"|bc)
+			unique_blocks=$(echo "$unique_range_blocks+$unique_simple_blocks"|bc)
 			dev_shared_gb=$(echo "scale=3; $shared_blocks*$thin_block_size/1024/1024/2"|bc|sed 's/^\./0./;s/^0$/0.000/')
 			dev_unique_gb=$(echo "scale=3; $unique_blocks*$thin_block_size/1024/1024/2"|bc|sed 's/^\./0./;s/^0$/0.000/')
 			# print text results
@@ -1011,7 +1011,7 @@ case "$1" in
 			size_segment=$(echo "scale=3; $dev_size2/20"|bc|sed 's/^\./0./;s/^0$/0.000/')
 			shared_segments=$(echo "scale=0; $dev_shared_gb/$size_segment"|bc|sed 's/^0$/1/')
 			unshared_segments=$(echo "scale=0; $dev_unique_gb/$size_segment"|bc|sed 's/^0$/1/')
-			remaining_segments=$((20 - "$shared_segments" - "$unshared_segments"))
+			remaining_segments=$(echo "20-${shared_segments}-${unshared_segments}"|bc)
 			printf "["
 			printf "%0.s." $(seq 1 "$shared_segments")
 			printf "%0.s#" $(seq 1 "$unshared_segments")
