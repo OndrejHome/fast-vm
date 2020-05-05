@@ -30,12 +30,11 @@
     unarchive:
       src: "/tmp/{{ fast_vm_version }}.tar.gz"
       dest: "/root/"
-  - name: adjust standards version for Debian-10
+  - name: adjust standards version for DEB package
     lineinfile:
       path: "/root/fast-vm-{{ fast_vm_version }}/debian/control"
       regexp: '^Standards-Version:.*'
-      line: "Standards-Version: 4.3.0"
-    when: ansible_distribution_major_version == "10"
+      line: "Standards-Version: {{ standards_ver }}"
   - name: run build of package
     command:
       chdir: "/root/fast-vm-{{ fast_vm_version }}"
