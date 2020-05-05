@@ -130,7 +130,6 @@ If you plan using publically available images from Author then also `libguestfs-
 # apt-get install gdebi-core
 # wget https://github.com/OndrejHome/fast-vm/releases/download/1.6/fast-vm_1.6_all-debian10.deb
 # gdebi fast-vm_1.6_all-debian10.deb
-# apt-get install libguestfs-tools zstd
 ~~~
 
 ### 2.2. Manual installation from source code {#installation_manual}
