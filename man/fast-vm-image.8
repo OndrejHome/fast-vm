@@ -77,7 +77,7 @@ While fast-vm provides the easy script for creating VMs based on images, the fas
 care of image operations including their creation, changes and export. When starting to use the
 fast-vm you will need 'Image' that will be used to create VMs. You can either get prebuild images
 as described in GETTING IMAGES section or you can create your own one by following procedure in
-the CREATING CUSTOM IMAGES section. Originally image management functionallity
+the CREATING CUSTOM IMAGES section. Originally image management functionality
 was part of the fast-vm script and was moved into separate command for clarity. It is expected that
 fast-vm-images will be used much less than fast-vm command in day-to-day operations.
 
@@ -142,7 +142,7 @@ before the VM is undefined from the libvirt.
 .br
 .BI "PathToCheksumsDir " http://url/to/checksums/dir/
 .sp
-Local path or http/https URL to directory containing checksums agains which the image integrity can be verified.
+Local path or http/https URL to directory containing checksums against which the image integrity can be verified.
 .RB "Check the " "IMAGE CHECKSUM GENERATION AND VERIFICATION" " for more information."
 
 .SH TEMPLATE MACROS
@@ -226,7 +226,7 @@ TIP: You can test anytime your image by creating fast-vm VM based on it. Note th
 
 .TP
 .B 5. (optional, but recommended) Creating hack file
-Hack files allows to change things in the image at the time when new fast-vm VM is created.
+Hack files allows one to change things in the image at the time when new fast-vm VM is created.
 This is heavilly used by fast-vm images from fast-vm-public-images to setup the hostname of the machine so it matches the fast-vm VM_NAME as much as possible. 
 Check those hack files for inspiration on what is possible. Note that hack files are run in context of
 user running the fast-vm command and they don't have root permissions.
@@ -266,11 +266,11 @@ Resizing the image disk will affect only newly created VMs from that disk. Disks
 .SH IMAGE CHECKSUM GENERATION AND VERIFICATION (from fast-vm-1.7)
 By default the checksums are not generated, but are verified if the checksum files are present.
 
-Fast-vm is now able to generate and verify the imported image parts using SHA512 checksums. When generating cheksums, the already imported, image is split into 1GB parts and for each part the checksum is generated. Note that last part of image could be smaller than 1 GB and checksum will be made only from this remainder - it will NOT be padded to whole 1GB.
+Fast-vm is now able to generate and verify the imported image parts using SHA512 checksums. When generating checksums, the already imported, image is split into 1GB parts and for each part the checksum is generated. Note that last part of image could be smaller than 1 GB and checksum will be made only from this remainder - it will NOT be padded to whole 1GB.
 
-When importing the image or when requesting verification manually via 'verify' operation each checksum file is checked agains the imported image part and compared. If all checksum files were present and image was not changed (or resized) then verification should succeed. If any of the checksum files is missing or image was extended beyond the size of original image that had checksums created, then verification can report 'missing' checksums.
+When importing the image or when requesting verification manually via 'verify' operation each checksum file is checked against the imported image part and compared. If all checksum files were present and image was not changed (or resized) then verification should succeed. If any of the checksum files is missing or image was extended beyond the size of original image that had checksums created, then verification can report 'missing' checksums.
 
-Idea of checksuming of images is to provide convenient method to detect if image was imported properly or that it was not modified later after import. This is first implementation of this generation and checking that is serializing both checksum generation and verification, future versions may switch to paralele checking and verification for faster operation.
+Idea of checksumming of images is to provide convenient method to detect if image was imported properly or that it was not modified later after import. This is first implementation of this generation and checking that is serializing both checksum generation and verification, future versions may switch to paralele checking and verification for faster operation.
 
 .SH EXAMPLES
 Import local image into fast-vm

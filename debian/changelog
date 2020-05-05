@@ -1,7 +1,7 @@
 fast-vm (1.6) unstable; urgency=medium
 
   * Debian 10 support
-  * 'compact' and 'copact_image' commands added
+  * 'compact' and 'compact_image' commands added
   * zst compression support
   * various fixes and documentation improvements
 
