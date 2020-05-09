@@ -55,3 +55,7 @@
       src: '/root/rpmbuild/SRPMS/*rpm'
       dest: "{{ local_path }}"
       mode: pull
+  - name: remove rpmbuild directory from build machine
+    file:
+      path: '/root/rpmbuild'
+      state: 'absent'

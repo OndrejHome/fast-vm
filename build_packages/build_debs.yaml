@@ -26,18 +26,22 @@
   - name: install dependencies
     apt:
       name: [ 'dpkg-dev', 'debhelper', 'rsync' ]
+  - name: create build directory
+    file:
+      state: 'directory'
+      path: "/root/debbuild"
   - name: extract archive
     unarchive:
       src: "/tmp/{{ fast_vm_version }}.tar.gz"
-      dest: "/root/"
+      dest: "/root/debbuild/"
   - name: adjust standards version for DEB package
     lineinfile:
-      path: "/root/fast-vm-{{ fast_vm_version }}/debian/control"
+      path: "/root/debbuild/fast-vm-{{ fast_vm_version }}/debian/control"
       regexp: '^Standards-Version:.*'
       line: "Standards-Version: {{ standards_ver }}"
   - name: run build of package
     command:
-      chdir: "/root/fast-vm-{{ fast_vm_version }}"
+      chdir: "/root/debbuild/fast-vm-{{ fast_vm_version }}"
       cmd: 'dpkg-buildpackage -us -uc'
   - name: create directories for packages
     file:
@@ -46,6 +50,10 @@
     delegate_to: localhost
   - name: synchronize DEB packages to local machine
     synchronize:
-      src: '/root/*.deb'
+      src: '/root/debbuild/*.deb'
       dest: "{{ local_path }}/debian-{{ ansible_distribution_major_version }}/"
       mode: pull
+  - name: remove rpmbuild directory from build machine
+    file:
+      path: '/root/debbuild'
+      state: 'absent'
