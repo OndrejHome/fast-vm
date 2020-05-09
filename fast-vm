@@ -457,6 +457,7 @@ case "$1" in
 		if [ -z "$image_name" ]; then pmsg $P_ERROR "missing image or profile name\n"; usage create; fi
 		vm_number="$3"
 		if $(echo "$vm_number"|grep -q ' '); then handle_multiple_requests $@; fi
+		tmp_files=""
 
 		# if the image_name looks like ProfileName
 		profile_name=$image_name
@@ -482,6 +483,7 @@ case "$1" in
 			if [ "$?" != 2 ]; then
 				if [ "$file_local" = '0' ]; then
 		                        image_xml_path=$(download_file "$path")
+					tmp_files="$tmp_files $image_xml_path"
 				else
 					image_xml_path="$path"
 		                fi
@@ -501,6 +503,7 @@ case "$1" in
 			if [ "$?" != 2 ]; then
 				if [ "$file_local" = '0' ]; then
 		                        hack_file=$(download_file "$path")
+					tmp_files="$tmp_files $hack_file"
 				else
 					hack_file="$path"
 		                fi
@@ -547,6 +550,8 @@ case "$1" in
 			if [ ! "$?" -eq '0' ]; then
 				pmsg $P_ERROR "defining base VM for $image_name failed, doesn't it exists already?\n" "$vm_number"
 				exit 2
+			else
+				rm -f "$tmp_xml"
 			fi
 
 			# source file with hacks and apply them
@@ -561,6 +566,7 @@ case "$1" in
 				fi
 				pmsg $P_DEBUG "applying hacks finished\n" "$vm_number"
 			fi
+			rm -f "$tmp_files" # cleanup temporary files
 
 			pmsg $P_DEBUG "base image VM created, to start this VM use 'virsh --connect qemu:///system start $VM_PREFIX$image_name'.\n This VM is used for customizing the base image of '$image_name' VMs.\n All changes you make to this VM would be available in newly created VMs of that version, this will not affect already existing VMs of same version\n" "$vm_number"
 			exit 0
@@ -584,6 +590,8 @@ case "$1" in
 		if [ ! "$?" -eq '0' ]; then
 			pmsg $P_ERROR "Unable to define virtual machine from $tmp_xml. Check syslog for more details\n" "$vm_number"
 			exit 2
+		else
+			rm -f "$tmp_xml"
 		fi
 		metadata_profile='---'
 		if [ "$profile_name" != "$image_name" ]; then metadata_profile=$profile_name; fi
@@ -624,6 +632,7 @@ case "$1" in
 			exit 1
 		else
 			rm -f "/tmp/fast-vm.img.${image_name}.lock"
+			rm -f "$tmp_files" # cleanup temporary files
 		fi
 		;;
 
@@ -799,6 +808,7 @@ case "$1" in
 		vm_number="$2"
 		if [ -z "$vm_number" ]; then pmsg $P_ERROR "VM number missing\n"; usage delete; fi
 		if $(echo "$vm_number"|grep -q ' '); then handle_multiple_requests $@; fi
+		tmp_files=""
 
 		if [ $(list_vm all|grep -E "^$vm_number$"|wc -l) -eq 0 ]; then
 			pmsg $P_ERROR "no VM with number '$vm_number' found\n" "$vm_number"
@@ -821,6 +831,7 @@ case "$1" in
 			if [ "$?" != 2 ]; then
 				if [ "$file_local" = '0' ]; then
 		                        delete_hack_file=$(download_file "$path")
+					tmp_files="$tmp_files $delete_hack_file"
 				else
 					delete_hack_file="$path"
 		                fi
@@ -891,6 +902,7 @@ case "$1" in
 			pmsg $P_ERROR "failed to undefine VM $vm_name, check syslog for more information\n" "$vm_number"
 			exit 1
 		else
+			rm -f "$tmp_files" # cleanup temporary files
 			pmsg $P_INFO "VM '$vm_name' deleted\n" "$vm_number"
 		fi
 		;;

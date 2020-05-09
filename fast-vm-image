@@ -263,6 +263,7 @@ case "$1" in
 			if [ "$?" = 2 ]; then  pmsg $P_ERROR "image file not found\n"; exit 2; fi
 			image_path="$file_path"
 		fi
+		tmp_files=""
 		image_size="$file_size"
 		image_local="$file_local"
 		image_extension="${image_path##*.}"
@@ -305,6 +306,7 @@ case "$1" in
 		if [ "$?" = 2 ]; then pmsg $P_ERROR "XML file $image_xml_path not found\n"; exit 2; fi
 		if [ "$file_local" = '0' ]; then
 			image_xml_path=$(download_file "$image_xml_path")
+			tmp_files="$tmp_files $image_xml_path"
 		fi
 
 		hack_file="$5"
@@ -313,6 +315,7 @@ case "$1" in
 			if [ "$?" = 2 ]; then pmsg $P_ERROR "hack file $hack_file not found\n"; exit 2; fi
 			if [ "$file_local" = '0' ]; then
 				hack_file=$(download_file "$hack_file")
+				tmp_files="$tmp_files $hack_file"
 			fi
 		fi
 		delete_hack_file="$6"
@@ -321,6 +324,7 @@ case "$1" in
 			if [ "$?" = 2 ]; then pmsg $P_ERROR "delete hack file $delete_hack_file not found\n"; exit 2; fi
 			if [ "$file_local" = '0' ]; then
 				delete_hack_file=$(download_file "$delete_hack_file")
+				tmp_files="$tmp_files $delete_hack_file"
 			fi
 		fi
 
@@ -510,12 +514,14 @@ case "$1" in
 		image_name="$3"
 		if [ -z "$image_name" ]; then pmsg $P_ERROR "missing image name\n"; usage import_profile; fi
 		check_image_existance "$image_name"
+		tmp_files=""
 
 		image_xml_path="$4"
 		check_file "$image_xml_path" "XML VM definition"
 		if [ "$?" = 2 ]; then pmsg $P_ERROR "XML file $image_xml_path not found\n"; exit 2; fi
 		if [ "$file_local" = '0' ]; then
 			image_xml_path=$(download_file "$image_xml_path")
+			tmp_files="$tmp_files $image_xml_path"
 		fi
 
 		hack_file="$5"
@@ -524,6 +530,7 @@ case "$1" in
 			if [ "$?" = 2 ]; then pmsg $P_ERROR "hack file $hack_file not found\n"; exit 2; fi
 			if [ "$file_local" = '0' ]; then
 				hack_file=$(download_file "$hack_file")
+				tmp_files="$tmp_files $hack_file"
 			fi
 		fi
 		delete_hack_file="$6"
@@ -532,12 +539,14 @@ case "$1" in
 			if [ "$?" = 2 ]; then pmsg $P_ERROR "delete hack file $delete_hack_file not found\n"; exit 2; fi
 			if [ "$file_local" = '0' ]; then
 				delete_hack_file=$(download_file "$delete_hack_file")
+				tmp_files="$tmp_files $delete_hack_file"
 			fi
 		fi
 
 		# create profile and copy files to right places
 		config_file_operation "mkdir" "${profile_name}"
 		tmp_base_image=$(mktemp)
+		tmp_files="$tmp_files $tmp_base_image"
                 echo "$image_name" > "$tmp_base_image"
 		config_file_operation "cp $tmp_base_image" "${profile_name}/base_image"
 		config_file_operation "chmod +r" "${profile_name}/base_image"
@@ -553,6 +562,7 @@ case "$1" in
 			config_file_operation "chmod +rx" "${profile_name}/delete-hacks.sh"
 		fi
 
+		rm -f "$tmp_files" # cleanup temporary files
 		pmsg $P_INFO "Profile $profile_name based on Image $image_name imported\n"
 		;;
 	remove_profile)
