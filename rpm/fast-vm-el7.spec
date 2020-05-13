@@ -15,6 +15,7 @@ Requires:	libguestfs-tools-c
 Requires:	dnsmasq-utils
 Requires:	libguestfs-devel
 Requires:	sshpass
+Requires:	bash-completion
 
 %description
 %{name} provides command-line interface to create virtual machines (VMs) in
@@ -42,6 +43,7 @@ Requires:	sed
 Requires:	sudo
 Requires:	util-linux
 Requires:	qemu-kvm
+Requires:	bc
 Requires:	libvirt-daemon-driver-storage
 Requires:	libvirt-daemon-driver-lxc
 Requires:	libvirt-daemon-driver-qemu

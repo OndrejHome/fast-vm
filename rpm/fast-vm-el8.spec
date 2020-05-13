@@ -50,6 +50,7 @@ Requires:	sed
 Requires:	sudo
 Requires:	util-linux
 Requires:	qemu-kvm
+Requires:	bc
 Requires:	libvirt-daemon-driver-storage
 Requires:	libvirt-daemon-driver-qemu
 Conflicts:	%{name} < 1.6
