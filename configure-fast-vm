@@ -98,7 +98,7 @@ do
 
 	ask_question "Only 'root' and 'owner' of VM should be able to delete VM through fast-vm?\n \"yes\" - only 'root' and 'owner' can delete VM\n \"no\" - anyone allowed to use fast-vm can delete VM (default in versions =< 0.9)" "$FASTVM_OWNER_ONLY_DELETE" "FASTVM_OWNER_ONLY_DELETE"
 
-	ask_question "Generate or Import libguestfs appliance used by hack files for this system? ('Generate' will generate appliance localy, while 'import' allows to import pre-build Fedora 29 appliance from Internet. Some fast-vm images may require the Fedora 29 otherwise their hack files fails.)" "$FASTVM_APPLIANCE" "FASTVM_APPLIANCE"
+	ask_question "Generate or Import libguestfs appliance used by hack files for this system? ('Generate' will generate appliance localy, while 'import' allows to import pre-build Fedora 32 appliance from Internet. Some fast-vm images may require the Fedora 32 otherwise their hack files fails.)" "$FASTVM_APPLIANCE" "FASTVM_APPLIANCE"
 
 	ask_question "Default password for fast-vm keydist operation (use 'none' to disable this feature)" "$FASTVM_KEYDIST_PASSWORD" "FASTVM_KEYDIST_PASSWORD"
 	if [ "$FASTVM_KEYDIST_PASSWORD" = 'none' ]; then sed -i '/^FASTVM_KEYDIST_PASSWORD=/g' "$config_file"; fi
@@ -225,9 +225,9 @@ do
 	else
 		case "$FASTVM_APPLIANCE" in
 		import)
-			printf "$o_inf Downloading appliance from http://ftp.linux.cz/pub/linux/people/ondrej_famera/fastvm-images/appliance-1.39.11.tar.xz\n"
+			printf "$o_inf Downloading appliance from http://ftp.linux.cz/pub/linux/people/ondrej_famera/fastvm-images/appliance-1.42.0.tar.xz\n"
 			tmp_file=$(mktemp)
-			curl http://ftp.linux.cz/pub/linux/people/ondrej_famera/fastvm-images/appliance-1.39.11.tar.xz > "$tmp_file"
+			curl http://ftp.linux.cz/pub/linux/people/ondrej_famera/fastvm-images/appliance-1.42.0.tar.xz > "$tmp_file"
 			printf "$o_inf Extracting file into /var/lib/fast-vm\n"
 			if [ ! -d "/var/lib/fast-vm" ]; then mkdir -p /var/lib/fast-vm; fi
 			tar xvf "$tmp_file" -C /var/lib/fast-vm
