@@ -445,8 +445,8 @@ To create VM you need to know 2 things:
 
 To list available images and profiles you can use commands below
 ~~~
-# fast-vm list_images
-# fast-vm list_profiles
+# fast-vm-image list
+# fast-vm-image list_profiles
 ~~~
 To list VM_numbers that are already in use you can use the command below
 ~~~
@@ -456,7 +456,7 @@ Once you have needed information the creation of VM is done using command below
 ~~~
 # fast-vm create <image_name or profile_name> <VM_number>
 ~~~
-**TIP:** To make things easier the `fast-vm` provides bash command completion for both image/profile names and list of free VM_numbers. (just use TAB key to show possible options). Bash completion will also show 'only the free VM_numbers' when creating VM.
+**TIP:** To make things easier the `fast-vm` /`fast-vm-image` provides bash command completion for both image/profile names and list of free VM_numbers. (just use TAB key to show possible options). Bash completion will also show 'only the free VM_numbers' when creating VM.
 
 ### 3.3. Starting and stopping VMs {#starting_vm}
 Once VM exists you can start it using command below.
@@ -504,19 +504,21 @@ Sometimes VM_numbers might not be enough to contain enough information to identi
 This note will be shown in listing of VMs and also it will be included in the libvirt 'visible name' so some clients such as 'virt-manager' can show it to help you to identify your VM.
 
 ### 3.7. Importing images into `fast-vm` {#importing_images}
+**Note:** from `fast-vm-1.7` the image operations moved from `fast-vm` command to `fast-vm-image` command. While there is temporarily compatibility layer that will automatically reflect this change, make sure to adjust to new syntax documeted here.
+
 The main thing in `fast-vm` are **Images** which provides the templates upon which we create new VMs. It is possible to create you own Image or you can import some premade ones. Below is link for some images pre-made by Author.
 
 [Public `fast-vm` images created by the Author](https://www.famera.cz/blog/fast-vm/about.html)
 
 To import simple image into `fast-vm` you can use command below.
 ~~~
-# fast-vm import_image <Image_name> <path_or_URL_to_Image_file> <path_or_URL_to_libvirt_XML>
+# fast-vm-image import <Image_name> <path_or_URL_to_Image_file> <path_or_URL_to_libvirt_XML>
 ~~~
 Images can be optionally imported with additional 2 parameter specifying the scripts that should be run when the VM is created and deleted. (Images provided by Author uses only  scripts during VM creation to provide access to serial console and some minimal customization such as hostname and networking setup)
 
 Example of importing image of CentOS 7.6 with script used during VM creation from Authors site.
 ~~~
-# fast-vm import_image centos-7.6 http://ftp.linux.cz/pub/linux/people/ondrej_famera/fastvm-images/generated/6g__centos-7.6.img.xz https://raw.githubusercontent.com/OndrejHome/fast-vm-public-images/master/centos/xml/centos-6.3-current.xml https://raw.githubusercontent.com/OndrejHome/fast-vm-public-images/master/centos/hacks/6g_centos-7-hacks.sh
+# fast-vm-image import centos-7.6 http://ftp.linux.cz/pub/linux/people/ondrej_famera/fastvm-images/generated/6g__centos-7.6.img.xz https://raw.githubusercontent.com/OndrejHome/fast-vm-public-images/master/centos/xml/centos-6.3-current.xml https://raw.githubusercontent.com/OndrejHome/fast-vm-public-images/master/centos/hacks/6g_centos-7-hacks.sh
 ~~~
 
 ### 3.8. Importing and using Profiles {#importing_and_using_profiles}
@@ -524,7 +526,7 @@ Example of importing image of CentOS 7.6 with script used during VM creation fro
 
 To import a profile you can use command below.
 ~~~
-# fast-vm import_profile <ProfileName> <ImageName> <PathToLibvirtXML> <PathToHacksFile> <PathToDeleteHackFile>
+# fast-vm-image import_profile <ProfileName> <ImageName> <PathToLibvirtXML> <PathToHacksFile> <PathToDeleteHackFile>
 ~~~
 Last two parameters are optional the same way as when importing the Image.
 
@@ -537,7 +539,7 @@ Resizing the disk of `fast-vm` VM to new value
 ~~~
 Resizing the disk of `fast-vm` imported Image.
 ~~~
-# fast-vm resize_image <Image_name> <New_Image_disk_size_in_GB>
+# fast-vm-image resize <Image_name> <New_Image_disk_size_in_GB>
 ~~~
 
 **WARNING:** `fast-vm` will resize the disk regardless of the position of data on it which means that you can loose data if they are not within new disk size.
