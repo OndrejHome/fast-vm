@@ -1,6 +1,6 @@
 ---
 layout: page
-date:   2019-09-14 15:50:11+0900
+date:   2020-05-17 16:06:30+0900
 title: FAST-VM
 categories: [ fast-vm ]
 ---
@@ -12,7 +12,7 @@ categories: [ fast-vm ]
 **fast-vm** provides command-line interface to create virtual machines (VMs) in libvirt,
 based on imported disks in LVM and XML templates.
 
-### 5-minute Quick Start {#quickstart}
+### 5-minute Quick Start (fast-vm 1.6) {#quickstart}
 Check the videos below on how to:
 - Install and configure fast-vm (~1 minute) - [https://asciinema.org/a/147355](https://asciinema.org/a/147355)
 - Importing images and creating VMs (~1 minute) - [https://asciinema.org/a/143564](https://asciinema.org/a/143564)
@@ -24,6 +24,7 @@ user and installation guide:
 
 man pages:
 - `fast-vm(8)`
+- `fast-vm-image(8)`
 - `fast-vm.conf(5)`
 - `configure-fast-vm(8)`
 - `fast-vm-net-cleanup(8)`
@@ -33,13 +34,14 @@ Other resource: [https://www.famera.cz/blog/fast-vm/index.html](https://www.fame
 
 ### Supported/Tested OS {#supported_os}
 Distribution    Installation method
-- RHEL 7.7	RPM
-- RHEL 8.0	RPM
-- CentOS 7.7	RPM
-- CentOS 8.0	RPM
-- Fedora 30	RPM
-- Debian 9.11	DEB
-- Debian 10.1	DEB
+- RHEL 7.8	RPM
+- RHEL 8.1	RPM
+- CentOS 7.8	RPM
+- CentOS 8.1	RPM
+- Fedora 30/31/32 RPM
+- Debian 10.4	DEB
+- Ubuntu 18.04	DEB
+- Ubuntu 20.04	DEB
 - Gentoo	ebuild
 
 ### Requirements {#requirements}
