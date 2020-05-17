@@ -84,52 +84,83 @@ This type of installation is supported on latest releases of CentOS/RHEL/Fedora 
 
 From `fast-vm` version 1.5 the CentOS/RHEL/Fedora also provides RPM package `fast-vm-minimal` with less dependencies. From that time by default the `fast-vm` package will pull in also the dependencies needed for some VM images and other useful packages to simplify the installation.
 
-**Fedora 29**
-~~~
-# curl -o /etc/yum.repos.d/fast-vm.repo https://copr.fedorainfracloud.org/coprs/ondrejhome/fast-vm/repo/fedora-29/ondrejhome-fast-vm-fedora-29.repo
-# dnf install fast-vm
-~~~
-
-**Fedora 30**
+#### 2.1.1. Fedora 30 {#installation_fedora30}
 ~~~
 # curl -o /etc/yum.repos.d/fast-vm.repo https://copr.fedorainfracloud.org/coprs/ondrejhome/fast-vm/repo/fedora-30/ondrejhome-fast-vm-fedora-30.repo
 # dnf install fast-vm
 ~~~
 
-**CentOS 7.7**
+#### 2.1.2. Fedora 31 {#installation_fedora31}
 ~~~
-# curl -o /etc/yum.repos.d/fast-vm.repo https://copr.fedorainfracloud.org/coprs/ondrejhome/fast-vm/repo/epel-7/ondrejhome-fast-vm-epel-7.repo
-# yum install fast-vm
-~~~
-
-**CentOS 8.0**
-~~~
-# curl -o /etc/yum.repos.d/fast-vm.repo https://copr.fedorainfracloud.org/coprs/ondrejhome/fast-vm/repo/epel-8/ondrejhome-fast-vm-epel-8.repo
+# curl -o /etc/yum.repos.d/fast-vm.repo https://copr.fedorainfracloud.org/coprs/ondrejhome/fast-vm/repo/fedora-31/ondrejhome-fast-vm-fedora-31.repo
 # dnf install fast-vm
 ~~~
 
-**RHEL 7.7**
+#### 2.1.3. Fedora 32 {#installation_fedora32}
+~~~
+# curl -o /etc/yum.repos.d/fast-vm.repo https://copr.fedorainfracloud.org/coprs/ondrejhome/fast-vm/repo/fedora-32/ondrejhome-fast-vm-fedora-32.repo
+# dnf install fast-vm
+~~~
 
-On RHEL system some of dependencies are present only in `rhel-7-server-optional-rpms` repository that needs to be activated before `fast-vm` installation.
+#### 2.1.4. CentOS 7.8 {#installation_centos7}
+~~~
+# curl -o /etc/yum.repos.d/fast-vm.repo https://copr.fedorainfracloud.org/coprs/ondrejhome/fast-vm/repo/epel-7/ondrejhome-fast-vm-epel-7.repo
+~~~
+**NOTE:** Repository of fast-vm contains few additional packages from epel (`zstd`, `pv`) that are used by `fast-vm` for extra functionality. If you don't want to use them you can add line `exclude = zst pv` at the end of `/etc/yum.repos.d/fast-vm.repo` file before installing `fast-vm` package.
+~~~
+# yum install fast-vm
+~~~
+
+#### 2.1.5. CentOS 8.1 {#installation_centos8}
+~~~
+# curl -o /etc/yum.repos.d/fast-vm.repo https://copr.fedorainfracloud.org/coprs/ondrejhome/fast-vm/repo/epel-8/ondrejhome-fast-vm-epel-8.repo
+~~~
+**NOTE:** Repository of fast-vm contains few additional packages from epel (`zstd`, `sshpass`, `pv`) that are used by `fast-vm` for extra functionality. If you don't want to use them you can add line `exclude = zstd sshpass pv` at the end of `/etc/yum.repos.d/fast-vm.repo` file before installing `fast-vm` package.
+~~~
+# dnf install fast-vm
+~~~
+
+#### 2.1.6. RHEL 7.8 {#instalaation_rhel7}
+On RHEL system some of dependencies are present only in `rhel-7-server-optional-rpms` and `rhel-7-server-extras-rpms` repository that needs to be activated before `fast-vm` installation.
 ~~~
 # subscription-manager repos --enable=rhel-7-server-optional-rpms --enable=rhel-7-server-extras-rpms
 # curl -o /etc/yum.repos.d/fast-vm.repo https://copr.fedorainfracloud.org/coprs/ondrejhome/fast-vm/repo/epel-7/ondrejhome-fast-vm-epel-7.repo
+~~~
+**NOTE:** Repository of fast-vm contains few additional packages from epel (`zstd`, `pv`) that are used by `fast-vm` for extra functionality. If you don't want to use them you can add line `exclude = zst pv` at the end of `/etc/yum.repos.d/fast-vm.repo` file before installing `fast-vm` package.
+~~~
 # yum install fast-vm
 ~~~
 
-**RHEL 8.0**
+#### 2.1.7. RHEL 8.1 {#installation_rhel8}
 ~~~
 # curl -o /etc/yum.repos.d/fast-vm.repo https://copr.fedorainfracloud.org/coprs/ondrejhome/fast-vm/repo/epel-8/ondrejhome-fast-vm-epel-8.repo
+~~~
+**NOTE:** Repository of fast-vm contains few additional packages from epel (`sshpass`, `pv`) that are used by `fast-vm` for extra functionality. If you don't want to use them you can add line `exclude = sshpass pv` at the end of `/etc/yum.repos.d/fast-vm.repo` file before installing `fast-vm` package.
+~~~
 # dnf install fast-vm
 ~~~
 
-**Debian 9.11/10.1**
+#### 2.1.8. Debian 10.4 {#installation_debian10}
 
 If you plan using publically available images from Author then also `libguestfs-tools` package is required for correct application of creation scripts and their proper functionality.
 ~~~
 # apt-get install gdebi-core
-# wget https://github.com/OndrejHome/fast-vm/releases/download/1.6/fast-vm_1.6_all-debian10.deb
-# gdebi fast-vm_1.6_all-debian10.deb
+# wget https://github.com/OndrejHome/fast-vm/releases/download/1.7/fast-vm_1.7_all-debian10.deb
+# gdebi fast-vm_1.7_all-debian10.deb
+~~~
+
+#### 2.1.9. Ubuntu 18.04 {#installation_ubuntu18}
+~~~
+# apt-get install gdebi-core
+# wget https://github.com/OndrejHome/fast-vm/releases/download/1.7/fast-vm_1.7_all-ubuntu18.deb
+# gdebi fast-vm_1.7_all-debian10.deb
+~~~
+
+#### 2.1.10. Ubuntu 20.04 {#installation_ubuntu20}
+~~~
+# apt-get install gdebi-core
+# wget https://github.com/OndrejHome/fast-vm/releases/download/1.7/fast-vm_1.7_all-ubuntu20.deb
+# gdebi fast-vm_1.7_all-debian10.deb
 ~~~
 
 ### 2.2. Manual installation from source code {#installation_manual}
