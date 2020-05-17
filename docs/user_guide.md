@@ -218,7 +218,7 @@ b) Enter on which VG the fast-vm will have thinpool LV as storage.
 [?] VG for LVM thin pool
  fast-vm is using LVM thin LV to store VM images and data.
  On which existing VG should be this thin LV?
-[]: f30
+[]: f32
 ~~~
 
 c) Provide name of thinpool LV. If thinpool LV doesn't exist script will create for you later.
@@ -275,23 +275,35 @@ i) Decide if fast-vm should prevent delete of machines created by other users.
 [no]:
 ~~~
 
-j) (only if thinpool LV didn't existed) Configurator will ask if you wanna create the thinpool LV.
+j) Decide if libguestfs appliance should be imported from Internet or generated on local machine. **Note:** On some systems the localy generate appliance will lack support for features that some images may require (like XFS support in EL8, SELinux support, etc.). It is recommended to **import** appliance provided with fast-vm for best results.
 ~~~
-[wrn] LV 'f30/fastvm-pool' not found
+[?] Generate or Import libguestfs appliance used by hack files for this system? ('Generate' will generate appliance localy, while 'import' allows to import pre-build Fedora 29 appliance from Internet. Some fast-vm images may require the Fedora 29 otherwise their hack files fails.)
+[import]: import
+~~~
+
+k) Configure default password for `fast-vm keydist` operation.
+~~~
+[?] Default password for fast-vm keydist operation (use 'none' to disable this feature) 
+[testtest]: testtest
+~~~
+
+l) (only if thinpool LV didn't existed) Configurator will ask if you wanna create the thinpool LV.
+~~~
+[wrn] LV 'f32/fastvm-pool' not found
 Following commands would be executed to create thin pool:
-  lvcreate -n fastvm-pool -L 20G f30
-  lvconvert --type thin-pool f30/fastvm-pool
+  lvcreate -n fastvm-pool -L 20G f32
+  lvconvert --type thin-pool f32/fastvm-pool
 [?] Create now? (y/n) y
 [inf] Creating ...
   Logical volume "fastvm-pool" created.
-  WARNING: Converting logical volume f30/fastvm-pool to thin pool's data volume with metadata wiping.
+  WARNING: Converting logical volume f32/fastvm-pool to thin pool's data volume with metadata wiping.
   THIS WILL DESTROY CONTENT OF LOGICAL VOLUME (filesystem etc.)
-Do you really want to convert f30/fastvm-pool? [y/n]: y
-  Converted f30/fastvm-pool to thin pool.
+Do you really want to convert f32/fastvm-pool? [y/n]: y
+  Converted f32/fastvm-pool to thin pool.
 [ok] LVM thinpool successfuly created
 ~~~
 
-k) (only if libvirt network didn't existed) Configurator will ask if to create libvirt network for fast-vm.
+m) (only if libvirt network didn't existed) Configurator will ask if to create libvirt network for fast-vm.
 ~~~
 [?] Network fastvm-nat is not defined in libvirt, define now? (y/n) y
 [inf] Creating ...
@@ -304,7 +316,27 @@ Network fastvm-nat started
 [inf] fast-vm libvirt network created and autostarted
 ~~~
 
-l) End of configuration
+n) libguestfs appliance check and import of appliance if it was selected (default).
+~~~
+[inf] Running appliance test (libguestfs-test-tool)...
+[err] Appliance test failed with error, check the '/tmp/tmp.wHdWOZfn3p' file for details
+[inf] Downloading appliance from http://ftp.linux.cz/pub/linux/people/ondrej_famera/fastvm-images/appliance-1.42.0.tar.xz
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+100  114M  100  114M    0     0  4897k      0  0:00:23  0:00:23 --:--:-- 7195k
+[inf] Extracting file into /var/lib/fast-vm
+appliance/
+appliance/capability_xfs_el8
+appliance/capability_btrfs
+appliance/kernel
+appliance/initrd
+appliance/root
+appliance/README.fixed
+[inf] Running appliance test (libguestfs-test-tool)...
+[inf] Appliance test looks OK
+~~~
+
+o) End of configuration
 ~~~
 [ok] fast-vm configured
 ~~~
@@ -334,28 +366,20 @@ To use libvirt with UEFI boot a special firmware is required. fast-vm` doesn't r
 
 To use images provided by the Author with UEFI on Fedora following steps needs to be taken.
 
-1a. (Fedora 24+) Install package `edk2-ovmf` containing firmware files.
-~~~
-# dnf install edk2-ovmf
-~~~
+1a. (Fedora 30+, Debian 10, Ubuntu 18/20) No action needed, needed packages are installed as dependency of `fast-vm`.
 
 1b. (CentOS/RHEL 7) Download the `edk2.git-ovmf-x64-xxxxx.noarch.rpm` from [OVMF generated RPMs](https://www.kraxel.org/repos/jenkins/edk2/) and install it manualy using `yum`.
 
 1c. (RHEL 8) While RHEL8 has package `edk2-ovmf` containing firmware files. This package at the moment provide only secure-boot version of firmware requiring different VM machine type (q35). To support images before q35 machines download the `edk2.git-ovmf-x64-xxxxx.noarch.rpm` from [OVMF generated RPMs](https://www.kraxel.org/repos/jenkins/edk2/) and install it manualy using `yum`. Check [GitHub Issue 48](https://github.com/OndrejHome/fast-vm/issues/48) for more details.
 
-1d. (Debian) Install package `ovmf` containing firmware files.
-~~~
-# apt-get install ovmf
-~~~
-
-2\. Ensure that `/etc/libvirt/qemu.conf` contains following variable with value below. On Fedora 30, CentOS 7.6 this is already present in default comment and does not need changing.
+2\. (CentOS/RHEL 8)Ensure that `/etc/libvirt/qemu.conf` contains following variable with value below.
 ~~~
 nvram = [
    "/usr/share/OVMF/OVMF_CODE.fd:/usr/share/OVMF/OVMF_VARS.fd"
       ]
 ~~~
 
-3a. (Fedora 30) Ensure that variable from previous steps is pointing to correct firmware files. With default installation on Fedora no additional commands are needed.
+3a. (Fedora 30+, Debian 10, Ubuntu 18/20) Ensure that variable from previous steps is pointing to correct firmware files. With default installation no additional commands are needed.
 ~~~
 # ls -l /usr/share/OVMF/OVMF_{CODE,VARS}.fd
 lrwxrwxrwx. 1 root root /usr/share/OVMF/OVMF_CODE.fd -> ../edk2/ovmf/OVMF_CODE.fd
@@ -377,13 +401,6 @@ lrwxrwxrwx. 1 root root /usr/share/OVMF/OVMF_VARS.fd -> ../edk2/ovmf/OVMF_VARS.f
 # ls -l /usr/share/OVMF/OVMF_{CODE,VARS}.fd
 lrwxrwxrwx. 1 root root /usr/share/OVMF/OVMF_CODE.fd -> /usr/share/edk2.git/ovmf-x64/OVMF_CODE-pure-efi.fd
 lrwxrwxrwx. 1 root root /usr/share/OVMF/OVMF_VARS.fd -> /usr/share/edk2.git/ovmf-x64/OVMF_VARS-pure-efi.fd
-~~~
-
-3d. (Debian) Ensure that variable from previous steps is pointing to correct firmware files. With default installation on Debian no additional commands are needed.
-~~~
-# ls -l /usr/share/OVMF/
--rw-r--r-- 1 root root 1966080 Mar 18 21:12 OVMF_CODE.fd
--rw-r--r-- 1 root root  131072 Mar 18 21:12 OVMF_VARS.fd
 ~~~
 
 ## 3. Basic operations in `fast-vm` {#basic_operations}
