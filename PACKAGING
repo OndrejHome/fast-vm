@@ -32,9 +32,9 @@ resulting files
 # rpmbuild -ba rpmbuild/SPECS/fast-vm.spec
 
 resulting files
-- rpmbuild/SRPMS/fast-vm-1.6-1.fc30.src.rpm
-- rpmbuild/RPMS/noarch/fast-vm-1.6-1.fc30.noarch.rpm
-- rpmbuild/RPMS/noarch/fast-vm-minimal-1.6-1.fc30.noarch.rpm
+- rpmbuild/SRPMS/fast-vm-1.6-1.fc31.src.rpm
+- rpmbuild/RPMS/noarch/fast-vm-1.6-1.fc31.noarch.rpm
+- rpmbuild/RPMS/noarch/fast-vm-minimal-1.6-1.fc31.noarch.rpm
 
 === fast-vm DEB for Debian 9/10
 # apt-get install dpkg-dev debhelper
