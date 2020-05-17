@@ -2,7 +2,7 @@
 permalink: /fast-vm/user_guide.html
 title: fast-vm User Guide
 layout: post
-date: 2019-11-07 22:26:00+0900
+date: 2020-05-17 23:17:00+0900
 categories: [ fast-vm ]
 ---
 * TOC
