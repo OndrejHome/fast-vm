@@ -544,6 +544,41 @@ Resizing the disk of `fast-vm` imported Image.
 
 If the Image disk size is changed the VMs newly created from it will have this new size. Old VMs will be unaffected by the Image disk size change.
 
+### 3.10. Verifying imported images and generating image checksums (from `fast-vm-1.7`) {#verifying_imported_images_and_generating_image_checksums}
+To ensure that imported images are same as ones distributed by Auther or other image creator, `fast-vm` is from version 1.7 automatically looking for file named `<ImageName>.part_00.sha512.txt` in same location as imported image (for both images imported from http/https links and localy). If such file is found, then `fast-vm verify <ImageName>` is automatically executed after import of image. If file is not present you will notice during image import error message below that is safe to ignore.
+
+~~~
+...
+[__][err] part_00 checksum file not found
+...
+~~~
+
+If the checksum files are present you will see output similar to one below during image import.
+
+~~~
+[__][ok] Verifying image ImageName (6) using checksums from xxxx
+[__][inf] part00 checksum OK
+[__][inf] part01 checksum OK
+[__][inf] part02 checksum OK
+[__][inf] part03 checksum OK
+[__][inf] part04 checksum OK
+[__][inf] part05 checksum OK
+[__][inf] part06 checksum OK
+[__][ok] CHECK SUMMARY:   OK: 7  FAIL: 0  MISSING: 0
+~~~
+
+You can also invoke image verification manually with command `fast-vm-image verify <ImageName> <ChecksumsLocation>`. Last provided argument should point to local directory or URL directory containing the checksum files. To create checksum files for existing image you can use command `fast-vm-image gen_checksums <ImageName>` that will generate checksum files for selected image.
+
+#### 3.10.1. What to do when image chacksums FAILS {#what_to_do_when_image_checksums_fails}
+First of all don't panic. There can be legimit reasons for checksums failure:
+- checksum file might be missing
+- after importing the image `fast-vm-image compact <ImageName>` was used on image
+- other **desirred** modification were made to image after it was imported (for example by using `base` VM to make modifications to image)
+
+If there are missing checksum files during import you can generaly continue using image and see if there are any issues.
+
+If there is `checksum failed` during image import then the image seems to be not same as one for which checksums were generated and there is risk that Image will not work properly or that it may contain something that shold not be there. If possible delete the image (`fast-vm-image delete <ImageName>`) and try to import image again to see if that resolves the situation.
+
 ## 4. Advanced operations {#advanced_operation}
 This part of guide covers some advanced use cases for `fast-vm`. Note that this is not exhaustive list of all possibilities and in general as long as you don't change the naming of VMs you can editing anything that libvirt allows to customize your VMs.
 
