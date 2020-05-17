@@ -10,9 +10,9 @@ categories: [ fast-vm ]
 
 ---
 
-- This is User Guide for `fast-vm` version 1.6.
+- This is User Guide for `fast-vm` version 1.7.
 - Did you find a mistake/inaccuracy/missing information and you think you
-know how to fix it or expand it? Then [edit this page on Github](https://github.com/OndrejHome/fast-vm/edit/master/docs/user_guide.txt) and once reviewed by author it will appear here.
+know how to fix it or expand it? Then [edit this page on Github](https://github.com/OndrejHome/fast-vm/edit/master/docs/user_guide.md) and once reviewed by author it will appear here.
 - Found a mistake but don't know how to fix it or you would like to request some part to be documented in this guide? Please get in touch with [the Author](https://www.famera.cz/blog/about.html).
 - While `fast-vm` allows most of operations to be run as normal user this guide uses the `#` symbol to indicate commands that can be run and doesn't necessarily require super user. This is for convenience when making copy&amp;paste of commands to terminal which leads to command being copied and not executed as `#` comments it out.
 
