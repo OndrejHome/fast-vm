@@ -106,9 +106,9 @@ From `fast-vm` version 1.5 the CentOS/RHEL/Fedora also provides RPM package `fas
 ~~~
 # curl -o /etc/yum.repos.d/fast-vm.repo https://copr.fedorainfracloud.org/coprs/ondrejhome/fast-vm/repo/epel-7/ondrejhome-fast-vm-epel-7.repo
 ~~~
-**NOTE:** Repository of fast-vm contains few additional packages from epel (`zstd`, `pv`) that are used by `fast-vm` for extra functionality. If you don't want to use them you can add line `exclude = zst pv` at the end of `/etc/yum.repos.d/fast-vm.repo` file before installing `fast-vm` package.
+**NOTE:** Repository of fast-vm contains few additional packages from epel (`zstd`, `pv`) that are used by `fast-vm` for extra functionality. If you don't want to use them you can add line `exclude = zstd pv` at the end of `/etc/yum.repos.d/fast-vm.repo` file before installing `fast-vm` package.
 ~~~
-# yum install fast-vm
+# yum install fast-vm zstd pv
 ~~~
 
 #### 2.1.5. CentOS 8.1 {#installation_centos8}
@@ -128,7 +128,7 @@ On RHEL system some of dependencies are present only in `rhel-7-server-optional-
 ~~~
 **NOTE:** Repository of fast-vm contains few additional packages from epel (`zstd`, `pv`) that are used by `fast-vm` for extra functionality. If you don't want to use them you can add line `exclude = zst pv` at the end of `/etc/yum.repos.d/fast-vm.repo` file before installing `fast-vm` package.
 ~~~
-# yum install fast-vm
+# yum install fast-vm zstd pv
 ~~~
 
 #### 2.1.7. RHEL 8.1 {#installation_rhel8}
@@ -153,14 +153,14 @@ If you plan using publically available images from Author then also `libguestfs-
 ~~~
 # apt-get install gdebi-core
 # wget https://github.com/OndrejHome/fast-vm/releases/download/1.7/fast-vm_1.7_all-ubuntu18.deb
-# gdebi fast-vm_1.7_all-debian10.deb
+# gdebi fast-vm_1.7_all-ubuntu18.deb
 ~~~
 
 #### 2.1.10. Ubuntu 20.04 {#installation_ubuntu20}
 ~~~
 # apt-get install gdebi-core
 # wget https://github.com/OndrejHome/fast-vm/releases/download/1.7/fast-vm_1.7_all-ubuntu20.deb
-# gdebi fast-vm_1.7_all-debian10.deb
+# gdebi fast-vm_1.7_all-ubuntu20.deb
 ~~~
 
 ### 2.2. Manual installation from source code {#installation_manual}

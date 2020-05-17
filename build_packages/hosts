@@ -1,19 +1,19 @@
 [rpm-systems]
-# fedora32
-192.168.22.50 spec_file=fast-vm-fedora.spec
+# fedora30
+192.168.2.120 spec_file=fast-vm-fedora.spec
 # fedora31
-192.168.22.51 spec_file=fast-vm-fedora.spec
+192.168.2.121 spec_file=fast-vm-fedora.spec
+# fedora32
+192.168.2.122 spec_file=fast-vm-fedora.spec
 # CentOS 7.8
-192.168.22.53 spec_file=fast-vm-el7.spec
+192.168.2.123 spec_file=fast-vm-el7.spec
 # CentOS 8.1
-192.168.22.54 spec_file=fast-vm-el8.spec
+192.168.2.124 spec_file=fast-vm-el8.spec
 
 [deb-systems]
 # Debian 10.3
-192.168.22.72 standards_ver=4.3.0
-# Debian 9.12
-192.168.22.71 standards_ver=3.9.8
+192.168.2.126 standards_ver=4.3.0
 # Ubuntu 18.04
-192.168.22.73 standards_ver=4.1.4
+192.168.2.127 standards_ver=4.1.4
 # Ubuntu 20.04
-192.168.22.74 standards_ver=4.5.0
+192.168.2.128 standards_ver=4.5.0
