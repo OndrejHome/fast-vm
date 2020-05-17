@@ -559,13 +559,13 @@ If the checksum files are present you will see output similar to one below durin
 
 ~~~
 [__][ok] Verifying image ImageName (6) using checksums from xxxx
-[__][inf] part00 checksum OK
-[__][inf] part01 checksum OK
-[__][inf] part02 checksum OK
-[__][inf] part03 checksum OK
-[__][inf] part04 checksum OK
-[__][inf] part05 checksum OK
-[__][inf] part06 checksum OK
+[__][inf] part_00 checksum OK
+[__][inf] part_01 checksum OK
+[__][inf] part_02 checksum OK
+[__][inf] part_03 checksum OK
+[__][inf] part_04 checksum OK
+[__][inf] part_05 checksum OK
+[__][inf] part_06 checksum OK
 [__][ok] CHECK SUMMARY:   OK: 7  FAIL: 0  MISSING: 0
 ~~~
 

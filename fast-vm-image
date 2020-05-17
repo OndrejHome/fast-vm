@@ -722,7 +722,7 @@ case "$1" in
 			check_file "$image_checksum_dir/${image_name}.part_${part}.sha512.txt" "part_${part} checksum"
 			if [ "$?" = 2 ]; then
 				parts_missing=$((parts_missing+1))
-				pmsg $P_WARNING "part${part} checksum file missing - $image_checksum_dir/${image_name}.part_${part}.sha512.txt\n"
+				pmsg $P_WARNING "part_${part} checksum file missing - $image_checksum_dir/${image_name}.part_${part}.sha512.txt\n"
 			else
 				# read the checksum from file
 				if [ "$file_local" = '1' ]; then
@@ -734,10 +734,10 @@ case "$1" in
 				checksum=$(dd if="/dev/$THINPOOL_VG/${VM_PREFIX}$image_name" skip="$part" bs=1G count=1 2>/dev/null|sha512sum |awk '{print $1}')
 				if [ "$part_checksum" = "$checksum" ]; then
 					parts_ok=$((parts_ok+1))
-					pmsg $P_DEBUG "part${part} checksum OK\n"
+					pmsg $P_DEBUG "part_${part} checksum OK\n"
 				else
 					parts_fail=$((parts_fail+1))
-					pmsg $P_ERROR "part${part} checksum failed\n"
+					pmsg $P_ERROR "part_${part} checksum failed\n"
 				fi
 
 			fi
