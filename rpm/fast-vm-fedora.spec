@@ -1,5 +1,5 @@
 Name:		fast-vm
-Version:	1.6
+Version:	1.7
 Release:	1%{?dist}
 Summary:	Script for defining VMs from images provided in thin LVM pool - with extra dependencies
 
@@ -55,7 +55,7 @@ Requires:	bc
 Requires:	libvirt-daemon-driver-storage
 Requires:	libvirt-daemon-driver-lxc
 Requires:	libvirt-daemon-driver-qemu
-Conflicts:	%{name} < 1.6
+Conflicts:	%{name} < 1.7
 
 %description minimal
 %{name} provides command-line interface to create virtual machines (VMs) in
@@ -93,6 +93,15 @@ drive of new machine before starting VM using the 'hack files'.
 %config(noreplace) %{_sysconfdir}/sudoers.d/%{name}-sudoers
 
 %changelog
+* Sun May 17 2020 Ondrej Famera <ondrej-xa2iel8u@famera.cz> 1.7-1
+- split command fast-vm to 'fast-vm' and 'fast-vm-image'
+- added oportunistic image checksum generation and verification
+- fix HTTP/2 support with https links
+- switch to use system-wide libguestfs appliance (by default import one from Internet)
+- add ability to define default password for 'keydist' operation
+- improve speed of 'list' operation for machines with many VMs
+- experimental support for showing real 'disk_usage' on thin LVs
+
 * Wed Oct 09 2019 Ondrej Famera <ondrej-xa2iel8u@famera.cz> 1.6-1
 - CentOS/RHEL 8 support
 - zst compression support (if installed)

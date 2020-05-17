@@ -1,3 +1,17 @@
+fast-vm (1.7) unstable; urgency=medium
+
+  * version bump to 1.7
+  * initial support for Ubuntu 18.04 and 20.04
+  * split command fast-vm to 'fast-vm' and 'fast-vm-image'
+  * added oportunistic image checksum generation and verification
+  * fix HTTP/2 support with https links
+  * switch to use system-wide libguestfs appliance (by default import one from Internet)
+  * add ability to define default password for 'keydist' operation
+  * improve speed of 'list' operation for machines with many VMs
+  * experimental support for showing real 'disk_usage' on thin LVs
+
+ -- Ondrej Famera <ondrej-xa2iel8u@famera.cz>  Sun, 17 May 2020 16:10:51 +0900
+
 fast-vm (1.6) unstable; urgency=medium
 
   * Debian 10 support
@@ -20,4 +34,3 @@ fast-vm (1.4) unstable; urgency=medium
   * Initial release for Debian 9
 
  -- Ondrej Famera <ondrej-xa2iel8u@famera.cz>  Tue, 08 May 2018 21:45:00 +0100
-

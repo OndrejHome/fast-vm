@@ -336,7 +336,7 @@ usage () {
 			echo "(deprecated) $FVM compact_image ImageName"
 			;;
 		*)
-			echo "== fast-vm version 1.6 <ondrej-xa2iel8u@famera.cz> =="
+			echo "== fast-vm version 1.7 <ondrej-xa2iel8u@famera.cz> =="
 			echo "$FVM <action> <options>"
 			for cmd in import_image import_custom_image export_image remove_image resize_image import_profile remove_profile list_images create delete edit_note resize info list list_profiles start stop console keydist ssh scp disk_usage compact compact_image;
 			do

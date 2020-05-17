@@ -168,7 +168,7 @@ usage () {
 			echo "$FVM gen_checksums ImageName"
 			;;
 		*)
-			echo "== fast-vm-image version 1.6 <ondrej-xa2iel8u@famera.cz> =="
+			echo "== fast-vm-image version 1.7 <ondrej-xa2iel8u@famera.cz> =="
 			echo "$FVM <action> <options>"
 			for cmd in import import_custom export remove resize import_profile remove_profile list list_profiles compact verify gen_checksums;
 			do
