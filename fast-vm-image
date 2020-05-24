@@ -407,6 +407,7 @@ case "$1" in
 		$0 verify "$image_name" "$(dirname $image_path)"
 
 		pmsg $P_INFO "Image $image_name imported\n"
+		rm -f -- $tmp_files # cleanup temporary files
 		# locked section - END
 		) 9<"/dev/$THINPOOL_VG/$VM_PREFIX$image_name"
 		if [ "$?" != "0" ]; then
@@ -562,7 +563,7 @@ case "$1" in
 			config_file_operation "chmod +rx" "${profile_name}/delete-hacks.sh"
 		fi
 
-		rm -f "$tmp_files" # cleanup temporary files
+		rm -f -- $tmp_files # cleanup temporary files
 		pmsg $P_INFO "Profile $profile_name based on Image $image_name imported\n"
 		;;
 	remove_profile)

@@ -566,7 +566,7 @@ case "$1" in
 				fi
 				pmsg $P_DEBUG "applying hacks finished\n" "$vm_number"
 			fi
-			rm -f "$tmp_files" # cleanup temporary files
+			rm -f -- $tmp_files # cleanup temporary files
 
 			pmsg $P_DEBUG "base image VM created, to start this VM use 'virsh --connect qemu:///system start $VM_PREFIX$image_name'.\n This VM is used for customizing the base image of '$image_name' VMs.\n All changes you make to this VM would be available in newly created VMs of that version, this will not affect already existing VMs of same version\n" "$vm_number"
 			exit 0
@@ -632,7 +632,7 @@ case "$1" in
 			exit 1
 		else
 			rm -f "/tmp/fast-vm.img.${image_name}.lock"
-			rm -f "$tmp_files" # cleanup temporary files
+			rm -f -- $tmp_files # cleanup temporary files
 		fi
 		;;
 
