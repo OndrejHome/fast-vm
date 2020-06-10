@@ -28,24 +28,28 @@ pmsg () {
 	message="$2"
 	vmn=${3:-__}
 	if [ "$LOG_LEVEL" -ge "$priority" ]; then
-		printf "$USER |$vmn| $message"|logger -p "$priority" --id -t fast-vm
+		printf "%s |%s| %s" "$USER" "$vmn" "$message"|logger -p "$priority" --id -t fast-vm
 	fi
 	if [ "$DISPLAY_LEVEL" -ge "$priority" ]; then
 		case "$priority" in
 			$P_DEBUG)
-				printf "[${c_cyan}inf${c_normal}] $message" | sed -e "s/^/\[$vmn\]/"
+				# shellcheck disable=SC2059
+				printf "[${c_cyan}inf${c_normal}] %b" "$message" | sed -e "s/^/\[$vmn\]/"
 				;;
 			$P_INFO)
-				printf "[${c_green}ok${c_normal}] $message" | sed -e "s/^/\[$vmn\]/"
+				# shellcheck disable=SC2059
+				printf "[${c_green}ok${c_normal}] %b" "$message" | sed -e "s/^/\[$vmn\]/"
 				;;
 			$P_WARNING)
-				printf "[${c_yellow}wrn${c_normal}] $message" | sed -e "s/^/\[$vmn\]/"
+				# shellcheck disable=SC2059
+				printf "[${c_yellow}wrn${c_normal}] %b" "$message" | sed -e "s/^/\[$vmn\]/"
 				;;
 			$P_ERROR)
-				printf "[${c_red}err${c_normal}] $message" | sed -e "s/^/\[$vmn\]/"
+				# shellcheck disable=SC2059
+				printf "[${c_red}err${c_normal}] %b" "$message" | sed -e "s/^/\[$vmn\]/"
 				;;
 			*)
-				printf "[unk] $message" | sed -e "s/^/\[$vmn\]/"
+				printf "[unk] %s" "$message" | sed -e "s/^/\[$vmn\]/"
 				;;
 		esac
 	fi
