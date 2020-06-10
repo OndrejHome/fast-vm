@@ -83,10 +83,10 @@ check_file () {
 	file_local=0
 	error_prefix="$2"
 	if [ -z "$file_path" ]; then pmsg $P_DEBUG "provided empty file path\n"; fi
-	if [ "$curl_ok" -eq 0 ] && [ "$(echo $file_path | awk  '{ s=substr($0, 0, 4); print s; }' )"  = "http" ]; then
+	if [ "$curl_ok" -eq 0 ] && [ "$(echo "$file_path" | awk  '{ s=substr($0, 0, 4); print s; }' )"  = "http" ]; then
 		curl_data=$(curl $CURL_OPTS --head "$file_path" 2>/dev/null)
 		curl_exit="$?"
-		curl_httpok=$(echo "$curl_data"|grep -E "(HTTP.*200 OK|HTTP/2 200)"|wc -l)
+		curl_httpok=$(echo "$curl_data"|grep -c -E "(HTTP.*200 OK|HTTP/2 200)")
 		if [ "$curl_httpok" -eq "1" ]; then
 			file_size=$(echo "$curl_data"|grep -i "Content-Length:"|awk '{print $2}'|sed 's/[^0-9]*//g')
 			if [ -z "$file_size" ]; then
@@ -113,8 +113,7 @@ download_file () {
 	file_url="$1"
 	tmp_file=$(mktemp)
 	pmsg $P_DEBUG "downloading $file_url\ninto $tmp_file\n" >&2
-	curl $CURL_OPTS -o "$tmp_file" -s "$file_url"
-	if [ "$?" -eq 0 ]; then
+	if curl $CURL_OPTS -o "$tmp_file" -s "$file_url"; then
 		echo "$tmp_file"
 	else
 		pmsg $P_ERROR "Download failed\n" >&2

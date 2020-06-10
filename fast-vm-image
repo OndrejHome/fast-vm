@@ -71,10 +71,10 @@ check_file () {
 	error_prefix="$2"
 	quiet_flag="$3"
 	if [ -z "$file_path" ]; then pmsg $P_DEBUG "provided empty file path\n"; fi
-	if [ "$curl_ok" -eq 0 ] && [ "$(echo $file_path | awk  '{ s=substr($0, 0, 4); print s; }' )"  = "http" ]; then
+	if [ "$curl_ok" -eq 0 ] && [ "$(echo "$file_path" | awk  '{ s=substr($0, 0, 4); print s; }' )"  = "http" ]; then
 		curl_data=$(curl $CURL_OPTS --head "$file_path" 2>/dev/null)
 		curl_exit="$?"
-		curl_httpok=$(echo "$curl_data"|grep -E "(HTTP.*200 OK|HTTP/2 200)"|wc -l)
+		curl_httpok=$(echo "$curl_data"|grep -c -E "(HTTP.*200 OK|HTTP/2 200)")
 		if [ "$curl_httpok" -eq "1" ]; then
 			file_size=$(echo "$curl_data"|grep -i "Content-Length:"|awk '{print $2}'|sed 's/[^0-9]*//g')
 			if [ -z "$file_size" ]; then
@@ -104,8 +104,7 @@ download_file () {
 	file_url="$1"
 	tmp_file=$(mktemp)
 	pmsg $P_DEBUG "downloading $file_url\ninto $tmp_file\n" >&2
-	curl $CURL_OPTS -o "$tmp_file" -s "$file_url"
-	if [ "$?" -eq 0 ]; then
+	if curl $CURL_OPTS -o "$tmp_file" -s "$file_url"; then
 		echo "$tmp_file"
 	else
 		pmsg $P_ERROR "Download failed\n" >&2
@@ -273,24 +272,21 @@ case "$1" in
 		image_extension="${image_path##*.}"
 		case "$image_extension" in
 			gz)
-				command -v gunzip >/dev/null 2>&1
-				if [ ! "$?" -eq 0 ]; then
+				if ! command -v gunzip >/dev/null 2>&1; then
 					pmsg $P_ERROR "'gunzip' binary missing, install it to have support for GZ\n"
 					exit 1
 				fi
 				decompress_cmd="gunzip -c"
 				;;
 			xz)
-				command -v xz >/dev/null 2>&1
-				if [ ! "$?" -eq 0 ]; then
+				if ! command -v xz >/dev/null 2>&1; then
 					pmsg $P_ERROR "'xz' binary missing, install it to have support for XZ\n"
 					exit 1
 				fi
 				decompress_cmd="xz -d -c"
 				;;
 			zst)
-				command -v zstd >/dev/null 2>&1
-				if [ ! "$?" -eq 0 ]; then
+				if ! command -v zstd >/dev/null 2>&1; then
 					pmsg $P_ERROR "'zstd' binary missing, install it to have support for ZST\n"
 					exit 1
 				fi
@@ -433,24 +429,21 @@ case "$1" in
 		if [ -z "$image_format" ]; then image_format='xz'; fi
 		case "$image_format" in
 			gz)
-				command -v gzip >/dev/null 2>&1
-				if [ ! "$?" -eq 0 ]; then
+				if ! command -v gzip >/dev/null 2>&1; then
 					pmsg $P_ERROR "'gzip' binary missing, install it to have support for GZ\n"
 					exit 1
 				fi
 				compress_cmd="gzip -c"
 				;;
 			xz)
-				command -v xz >/dev/null 2>&1
-				if [ ! "$?" -eq 0 ]; then
+				if ! command -v xz >/dev/null 2>&1; then
 					pmsg $P_ERROR "'xz' binary missing, install it to have support for XZ\n"
 					exit 1
 				fi
 				compress_cmd="xz -c -k --best --block-size=16777216 -T 0"
 				;;
 			zst)
-				command -v zstd >/dev/null 2>&1
-				if [ ! "$?" -eq 0 ]; then
+				if ! command -v zstd >/dev/null 2>&1; then
 					pmsg $P_ERROR "'zstd' binary missing, install it to have support for ZST\n"
 					exit 1
 				fi
@@ -592,8 +585,7 @@ case "$1" in
 
 		#FIXME due to handling of logging in fast-vm-helper we might not receive error code if something went wrong
 		pmsg $P_DEBUG "resizing image $image_name to ${new_size}G\n"
-		echo "lvresize" "/dev/$THINPOOL_VG/$VM_PREFIX$image_name" "$new_size" | sudo -n $FASTVM_HELPER
-		if [ "$?" = 0 ]; then
+		if echo "lvresize" "/dev/$THINPOOL_VG/$VM_PREFIX$image_name" "$new_size" | sudo -n $FASTVM_HELPER; then
 			pmsg $P_INFO "Only newly created VMs from this image will use new size.\n"
 			pmsg $P_INFO "Resize of image to ${new_size}G succeeded.\n"
 		else
