@@ -67,11 +67,11 @@ check_empty () {
 wait_for_ssh () {
 	vm_number="$1"
 	pmsg $P_DEBUG "checking the 192.168.$SUBNET_NUMBER.$vm_number for active SSH connection (ctrl+c to interrupt)\n" "$vm_number"
-	ssh_ready=$(ssh-keyscan -T 1 "192.168.$SUBNET_NUMBER.$vm_number" 2>/dev/null|grep -E '(ssh-|ecdsa-)'|wc -l)
+	ssh_ready=$(ssh-keyscan -T 1 "192.168.$SUBNET_NUMBER.$vm_number" 2>/dev/null|grep -c -E '(ssh-|ecdsa-)')
 	while [ "$ssh_ready" -eq "0" ];
 	do
 		if [ "$DISPLAY_LEVEL" = "$P_DEBUG" ]; then printf "."; fi
-		ssh_ready=$(ssh-keyscan -T 1 "192.168.$SUBNET_NUMBER.$vm_number" 2>/dev/null|grep -E '(ssh-|ecdsa-)'|wc -l)
+		ssh_ready=$(ssh-keyscan -T 1 "192.168.$SUBNET_NUMBER.$vm_number" 2>/dev/null|grep -c -E '(ssh-|ecdsa-)')
 		sleep 1
 	done
 	pmsg $P_DEBUG "\nSSH ready\n" "$vm_number"
@@ -140,11 +140,11 @@ list_vm () {
 check_vm_number () {
 	vm_number="$1"
 	vm_state="$2"
-	if [ $(list_vm all|grep -E "^$vm_number$"|wc -l) -eq 0 ]; then
+	if [ $(list_vm all|grep -c -E "^$vm_number$") -eq 0 ]; then
 		pmsg $P_ERROR "no VM with number '$vm_number' found\n" "$vm_number"
 		exit 1
 	fi
-	if [ -n "$vm_state" -a $(list_vm "$vm_state"|grep -E "^$vm_number$"|wc -l) -eq 1 ]; then
+	if [ -n "$vm_state" -a $(list_vm "$vm_state"|grep -c -E "^$vm_number$") -eq 1 ]; then
 		pmsg $P_ERROR "VM with number '$vm_number' is $vm_state\n" "$vm_number"
 		exit 1
 	fi
@@ -446,7 +446,7 @@ case "$1" in
 				pmsg $P_ERROR "VM number out of range (20-220)\n" "$vm_number"
 				usage create
 			fi
-			if [ $(list_vm all|grep -E "^$vm_number$"|wc -l) -gt 0 ]; then
+			if [ $(list_vm all|grep -c -E "^$vm_number$") -gt 0 ]; then
 				pmsg $P_ERROR "VM with this VM number already exists\n" "$vm_number"
 				exit 1
 			fi
@@ -735,7 +735,7 @@ case "$1" in
 		if $(echo "$vm_number"|grep -q ' '); then handle_multiple_requests $@; fi
 		tmp_files=""
 
-		if [ $(list_vm all|grep -E "^$vm_number$"|wc -l) -eq 0 ]; then
+		if [ $(list_vm all|grep -c -E "^$vm_number$") -eq 0 ]; then
 			pmsg $P_ERROR "no VM with number '$vm_number' found\n" "$vm_number"
 			exit 1
 		fi
@@ -777,7 +777,7 @@ case "$1" in
 		fi
 
 
-		if [ $(list_vm active|grep -E "^$vm_number$"|wc -l) -eq 1 ]; then
+		if [ $(list_vm active|grep -c -E "^$vm_number$") -eq 1 ]; then
 			pmsg $P_WARNING "VM $vm_name is active, forcefully stopping it\n" "$vm_number"
 			virsh --connect qemu:///system destroy "$vm_name"
 			if [ "$?" != '0' ]; then
@@ -836,7 +836,7 @@ case "$1" in
 		if [ -z "$vm_number" ]; then pmsg $P_ERROR "VM number missing\n"; usage edit_note; fi
 		if $(echo "$vm_number"|grep -q ' '); then handle_multiple_requests $@; fi
 
-		if [ $(list_vm all|grep -E "^$vm_number$"|wc -l) -eq 0 ]; then
+		if [ $(list_vm all|grep -c -E "^$vm_number$") -eq 0 ]; then
 			pmsg $P_ERROR "no VM with number '$vm_number' found\n"
 			exit 1
 		fi
