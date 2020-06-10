@@ -23,24 +23,28 @@ pmsg () {
 	priority="$1"
 	message="$2"
 	if [ "$LOG_LEVEL" -ge "$priority" ]; then
-		printf "$USER | $message"|logger -p "$priority" --id -t fast-vm-helper
+		printf "%s | %s" "$USER" "$message"|logger -p "$priority" --id -t fast-vm-helper
 	fi
 	if [ "$DISPLAY_LEVEL" -ge "$priority" ]; then
 		case "$priority" in
 			$P_DEBUG)
-				printf "[${c_cyan}inf${c_normal}] $message"
+				# shellcheck disable=SC2059
+				printf "[${c_cyan}inf${c_normal}] %b" "$message"
 				;;
 			$P_INFO)
-				printf "[${c_green}ok${c_normal}] $message"
+				# shellcheck disable=SC2059
+				printf "[${c_green}ok${c_normal}] %b" "$message"
 				;;
 			$P_WARNING)
-				printf "[${c_yellow}wrn${c_normal}] $message"
+				# shellcheck disable=SC2059
+				printf "[${c_yellow}wrn${c_normal}] %b" "$message"
 				;;
 			$P_ERROR)
-				printf "[${c_red}err${c_normal}] $message"
+				# shellcheck disable=SC2059
+				printf "[${c_red}err${c_normal}] %b" "$message"
 				;;
 			*)
-				printf "[unk] $message"
+				printf "[unk] %s" "$message"
 				;;
 		esac
 	fi
@@ -73,7 +77,7 @@ check_empty "LIBVIRT_NETWORK" "$LIBVIRT_NETWORK"
 check_empty "SUBNET_NUMBER" "$SUBNET_NUMBER"
 check_empty "FASTVM_GROUP" "$FASTVM_GROUP"
 
-read action arg1 arg2 arg3
+read -r action arg1 arg2 arg3
 
 case "$action" in
 	lvcreate)
@@ -108,7 +112,7 @@ case "$action" in
 		esac
 		;;
 	lvremove)
-		arg1=$(echo "$arg1" | grep -E "/dev/$THINPOOL_VG/$VM_PREFIX[a-zA-Z0-9.-]+$")
+		arg1=$(echo "$arg1" | grep -E "/dev/$THINPOOL_VG/${VM_PREFIX}[a-zA-Z0-9.-]+$")
 		if [ -z "$arg1" ] || [ ! -b "$arg1" ]; then
 			pmsg $P_ERROR "LV not found, not a block device or not allowed to be removed\n"
 			exit 1
@@ -117,7 +121,7 @@ case "$action" in
 		lvremove -f "$arg1" 2>&1|$DEBUG_LOG_CMD
 		;;
 	lvresize)
-		arg1=$(echo "$arg1" | grep -E "/dev/$THINPOOL_VG/$VM_PREFIX[a-zA-Z0-9.-]+$")
+		arg1=$(echo "$arg1" | grep -E "/dev/$THINPOOL_VG/${VM_PREFIX}[a-zA-Z0-9.-]+$")
 		if [ -z "$arg1" ] || [ ! -b "$arg1" ]; then
 			pmsg $P_ERROR "LV not found, not a block device or not allowed to be resized\n"
 			exit 1
@@ -153,7 +157,7 @@ case "$action" in
                 dmsetup message "$THINPOOL_PATH-tpool" 0 release_metadata_snap
                 ;;
 	chgrp)
-		arg1=$(echo "$arg1" | grep -E "/dev/$THINPOOL_VG/$VM_PREFIX[a-zA-Z0-9.-]+$")
+		arg1=$(echo "$arg1" | grep -E "/dev/$THINPOOL_VG/${VM_PREFIX}[a-zA-Z0-9.-]+$")
 		if [ -z "$arg1" ] || [ ! -b "$arg1" ]; then
 			pmsg $P_ERROR "LV not found, not a block device or not allowed to be chgrp\n"
 			exit 1
@@ -162,8 +166,7 @@ case "$action" in
 		chgrp "$FASTVM_GROUP" "$arg1" 2>&1|$DEBUG_LOG_CMD
 		;;
 	dhcp_release)
-		PATH="$PATH:/usr/sbin" command -v dhcp_release >/dev/null 2>&1
-		if [ "$?" -eq '0' ]; then
+		if PATH="$PATH:/usr/sbin" command -v dhcp_release >/dev/null 2>&1; then
 			arg2=$(echo "$arg2"| grep -E '^[0-9]+$')
 			arg3=$(echo "$arg3"| grep -E '^[a-f0-9]{2,2}:[a-f0-9]{2,2}:[a-f0-9]{2,2}:[a-f0-9]{2,2}:[a-f0-9]{2,2}:[a-f0-9]{2,2}$')
 			if [ -z "$arg2" ] || [ -z "$arg3" ] || [ "$arg2" -lt 20 ] || [ "$arg2" -gt 220 ]; then
@@ -173,7 +176,7 @@ case "$action" in
 
 			dhcp_release "$LIBVIRT_NETWORK" "192.168.$SUBNET_NUMBER.$arg2" "$arg3" 2>&1|$DEBUG_LOG_CMD
 		else
-			printf "[wrn] dhcp_release not found, to reuse the same VM number you would need to delete DHCP leases file for $LIBVIRT_NETWORK network and restart this network in the libvirt.\nhttp://lists.thekelleys.org.uk/pipermail/dnsmasq-discuss/2007q1/001094.html\n"
+			printf "[wrn] dhcp_release not found, to reuse the same VM number you would need to delete DHCP leases file for %s network and restart this network in the libvirt.\nhttp://lists.thekelleys.org.uk/pipermail/dnsmasq-discuss/2007q1/001094.html\n" "$LIBVIRT_NETWORK"
 		fi
 
 		;;
