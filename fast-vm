@@ -140,11 +140,11 @@ list_vm () {
 check_vm_number () {
 	vm_number="$1"
 	vm_state="$2"
-	if [ $(list_vm all|grep -c -E "^$vm_number$") -eq 0 ]; then
+	if [ "$(list_vm all|grep -c -E "^$vm_number$")" -eq 0 ]; then
 		pmsg $P_ERROR "no VM with number '$vm_number' found\n" "$vm_number"
 		exit 1
 	fi
-	if [ -n "$vm_state" -a $(list_vm "$vm_state"|grep -c -E "^$vm_number$") -eq 1 ]; then
+	if [ -n "$vm_state" ] && [ "$(list_vm "$vm_state"|grep -c -E "^$vm_number$")" -eq 1 ]; then
 		pmsg $P_ERROR "VM with number '$vm_number' is $vm_state\n" "$vm_number"
 		exit 1
 	fi
@@ -186,7 +186,7 @@ handle_multiple_requests () {
 	errors=0
 	for pid in $all_pids; do
 		wait "$pid"
-		if  [ "$?" != '0' ]; then errors=$(($errors+1)); fi
+		if  [ "$?" != '0' ]; then errors=$((errors+1)); fi
 	done
 	if [ "$errors" -gt '0' ]; then
 		pmsg $P_ERROR "Some ($errors) operations reported errors\n"
@@ -208,7 +208,7 @@ calculate_day_difference () {
 # receive 2 UNIX timestamps and return whole number difference in days between them (floor)
 	start="$1"
 	end="$2"
-	echo "$((($end-$start)/86400))d"
+	echo "$(((end-start)/86400))d"
 }
 
 ## VM metadata handling functions, metadata are stored in description field of VM in libvirt
@@ -237,7 +237,7 @@ update_vm_metadata () {
 	profile_name="$2"
 	description_text="$3"
 	get_vm_metadata "$vm_name"
-	if [ -n "$profile_name" -a "$profile_name" != '*no_change*' ]; then
+	if [ -n "$profile_name" ] && [ "$profile_name" != '*no_change*' ]; then
 		metadata_profile=$profile_name
 	fi
 	if [ -n "$description_text" ]; then
@@ -404,7 +404,7 @@ case "$1" in
 		image_xml_path=""
 		for path in "$4" "$FASTVM_USER_CONF_DIR/${profile_name}/config.xml" "$FASTVM_SYSTEM_CONF_DIR/${profile_name}/config.xml" "$FASTVM_USER_CONF_DIR/config-${image_name}.xml" "$FASTVM_SYSTEM_CONF_DIR/config-${image_name}.xml"
 		do
-			check_file "$path" "test XML file" 2>&1 >/dev/null
+			check_file "$path" "test XML file" >/dev/null 2>&1
 			if [ "$?" != 2 ]; then
 				if [ "$file_local" = '0' ]; then
 		                        image_xml_path=$(download_file "$path")
@@ -424,7 +424,7 @@ case "$1" in
 		hack_file=""
 		for path in "$5" "$FASTVM_USER_CONF_DIR/${profile_name}/hacks.sh" "$FASTVM_SYSTEM_CONF_DIR/${profile_name}/hacks.sh" "$FASTVM_USER_CONF_DIR/hacks-${image_name}.sh" "$FASTVM_SYSTEM_CONF_DIR/hacks-${image_name}.sh"
 		do
-			check_file "$path" "hack file at $path" 2>&1 >/dev/null
+			check_file "$path" "hack file at $path" >/dev/null 2>&1
 			if [ "$?" != 2 ]; then
 				if [ "$file_local" = '0' ]; then
 		                        hack_file=$(download_file "$path")
@@ -752,7 +752,7 @@ case "$1" in
 		delete_hack_file=""
 		for path in "$3" "$FASTVM_USER_CONF_DIR/${profile_name}/delete-hacks.sh" "$FASTVM_SYSTEM_CONF_DIR/${profile_name}/delete-hacks.sh" "$FASTVM_USER_CONF_DIR/delete-hacks-${image_name}.sh" "$FASTVM_SYSTEM_CONF_DIR/delete-hacks-${image_name}.sh"
 		do
-			check_file "$path" "delete hack file at $path" 2>&1 >/dev/null
+			check_file "$path" "delete hack file at $path" >/dev/null 2>&1
 			if [ "$?" != 2 ]; then
 				if [ "$file_local" = '0' ]; then
 		                        delete_hack_file=$(download_file "$path")
@@ -766,7 +766,7 @@ case "$1" in
 		done
 
 		if [ "$FASTVM_OWNER_ONLY_DELETE" = "yes" ]; then
-			if [ $(whoami) != "root" ] && [ $(whoami) != "$metadata_user" ]; then
+			if [ "$(whoami)" != "root" ] && [ "$(whoami)" != "$metadata_user" ]; then
 				if [ -z "$metadata_user" ]; then
 					pmsg $P_ERROR "only 'root' is allowed to delete this VM\n" "$vm_number"
 				else
@@ -777,7 +777,7 @@ case "$1" in
 		fi
 
 
-		if [ $(list_vm active|grep -c -E "^$vm_number$") -eq 1 ]; then
+		if [ "$(list_vm active|grep -c -E "^$vm_number$")" -eq 1 ]; then
 			pmsg $P_WARNING "VM $vm_name is active, forcefully stopping it\n" "$vm_number"
 			virsh --connect qemu:///system destroy "$vm_name"
 			if [ "$?" != '0' ]; then
@@ -941,7 +941,7 @@ case "$1" in
 			dev_shared_gb=$(echo "scale=3; $shared_blocks*$thin_block_size/1024/1024/2"|bc|sed 's/^\./0./;s/^0$/0.000/')
 			dev_unique_gb=$(echo "scale=3; $unique_blocks*$thin_block_size/1024/1024/2"|bc|sed 's/^\./0./;s/^0$/0.000/')
 			# print text results
-			printf "%-3d %-12s %-8s  %8s %7sg   %7sg  " "$vm" $(echo "$image_lv_name"|sed "s/${VM_PREFIX}//") "$metadata_user" "$dev_size" "$dev_shared_gb" "$dev_unique_gb"
+			printf "%-3d %-12s %-8s  %8s %7sg   %7sg  " "$vm" "$(echo "$image_lv_name"|sed "s/${VM_PREFIX}//")" "$metadata_user" "$dev_size" "$dev_shared_gb" "$dev_unique_gb"
 
 			# visual space usage representation (20 segment bar)
 			dev_size2=$(echo "$lvs_out"|grep snapshot|grep -E " ${VM_PREFIX}.*-[0-9]+ "|grep "\-$vm "|sed 's/\.00g//'|awk '{printf "%3s",$2}')
@@ -984,8 +984,8 @@ case "$1" in
 				metadata_last_action=$(echo "$desc_data"|cut -d, -f 3)
 				metadata_profile=$(echo "$desc_data"|cut -d, -f 4)
 				metadata_description=$(echo "$desc_data"|cut -d, -f 5-)
-				note=$(echo "$metadata_user: $metadata_description"|cut -c 1-$(($TERMINAL_WIDTH-38)))
-				last_activity=$(calculate_day_difference "$metadata_last_action" $(date +%s))
+				note=$(echo "$metadata_user: $metadata_description"|cut -c 1-$((TERMINAL_WIDTH-38)))
+				last_activity=$(calculate_day_difference "$metadata_last_action" "$(date +%s)")
 				last_activity="$last_activity ago"
 				## parse the size of VM
 				size=$(echo "$lvs_out"|grep snapshot|grep -E " ${VM_PREFIX}.*-[0-9]+ "|grep "\-$vm "|sed 's/\.00g//'|awk '{printf "%3sg(%6s%%)",$2,$3}')
