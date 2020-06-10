@@ -329,6 +329,7 @@ if [ -z "$1" ]; then usage; fi
 # locate and load fast-vm configuration
 if [ -f "/etc/fast-vm.conf" ]; then
 	# load and verify configuration
+	# shellcheck source=fast-vm.conf.defaults
 	. /etc/fast-vm.conf
 
 	check_empty "VM_PREFIX" "$VM_PREFIX"
@@ -343,7 +344,7 @@ else
 fi
 
 # check if we are in $FASTVM_GROUP group or if we are root
-if [ $(id |grep "($FASTVM_GROUP)"|wc -l) -eq 0 ] && [ $(whoami) != "root" ]; then
+if [ "$(id |grep -c "($FASTVM_GROUP)")" -eq 0 ] && [ "$(whoami)" != "root" ]; then
 	pmsg $P_ERROR "User running fast-vm must be member of group '$FASTVM_GROUP'. You can easily add user to this group using command below\n # usermod -a -G $FASTVM_GROUP $(whoami)\n"
 	exit 1
 fi
@@ -366,7 +367,7 @@ fi
 if [ ! -d "$FASTVM_USER_CONF_DIR" ]; then
 	mkdir "$FASTVM_USER_CONF_DIR" 2>&1 |$DEBUG_LOG_CMD
 fi
-if [ ! -d "$FASTVM_SYSTEM_CONF_DIR" ] && [ $(whoami) = "root" ]; then
+if [ ! -d "$FASTVM_SYSTEM_CONF_DIR" ] && [ "$(whoami)" = "root" ]; then
 	mkdir "$FASTVM_SYSTEM_CONF_DIR" 2>&1 |$DEBUG_LOG_CMD
 fi
 

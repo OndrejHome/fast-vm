@@ -191,6 +191,7 @@ if [ -z "$1" ]; then usage; fi
 # locate and load fast-vm configuration
 if [ -f "/etc/fast-vm.conf" ]; then
 	# load and verify configuration
+	# shellcheck source=fast-vm.conf.defaults
 	. /etc/fast-vm.conf
 
 	check_empty "VM_PREFIX" "$VM_PREFIX"
@@ -205,7 +206,7 @@ else
 fi
 
 # check if we are in $FASTVM_GROUP group or if we are root
-if [ $(id |grep "($FASTVM_GROUP)"|wc -l) -eq 0 ] && [ $(whoami) != "root" ]; then
+if [ "$(id |grep -c "($FASTVM_GROUP)")" -eq 0 ] && [ "$(whoami)" != "root" ]; then
 	pmsg $P_ERROR "User running fast-vm must be member of group '$FASTVM_GROUP'. You can easily add user to this group using command below\n # usermod -a -G $FASTVM_GROUP $(whoami)\n"
 	exit 1
 fi
@@ -228,7 +229,7 @@ fi
 if [ ! -d "$FASTVM_USER_CONF_DIR" ]; then
 	mkdir "$FASTVM_USER_CONF_DIR" 2>&1 |$DEBUG_LOG_CMD
 fi
-if [ ! -d "$FASTVM_SYSTEM_CONF_DIR" ] && [ $(whoami) = "root" ]; then
+if [ ! -d "$FASTVM_SYSTEM_CONF_DIR" ] && [ "$(whoami)" = "root" ]; then
 	mkdir "$FASTVM_SYSTEM_CONF_DIR" 2>&1 |$DEBUG_LOG_CMD
 fi
 
@@ -341,8 +342,7 @@ case "$1" in
 
 		else
 			pmsg $P_DEBUG "creating LV $VM_PREFIX$image_name ...\n"
-			echo "lvcreate" "base" "$image_name" "$unpacked_image_size" | sudo -n $FASTVM_HELPER
-			if [ "$?" != "0" ]; then
+			if ! echo "lvcreate" "base" "$image_name" "$unpacked_image_size" | sudo -n $FASTVM_HELPER; then
 				pmsg $P_ERROR "Error creating thin LV for VM image\n"
 				exit 1
 			fi
@@ -404,7 +404,7 @@ case "$1" in
 			config_file_operation "chmod +rx" "delete-hacks-${image_name}.sh"
 		fi
 		## run image verification after importing image and hacks files, user can interrupt this to skip it
-		$0 verify "$image_name" "$(dirname $image_path)"
+		$0 verify "$image_name" "$(dirname "$image_path")"
 
 		pmsg $P_INFO "Image $image_name imported\n"
 		rm -f -- $tmp_files # cleanup temporary files
@@ -464,7 +464,7 @@ case "$1" in
 		if [ "$pv_ok" -eq '0' ]; then
 			pv -N "Image reading" -s "${image_size}G" < "/dev/$THINPOOL_VG/$VM_PREFIX$image_name" | $compress_cmd > "$(pwd)/${image_name}.img.${image_format}"
 		else
-			cat "/dev/$THINPOOL_VG/$VM_PREFIX$image_name" | $compress_cmd > "$(pwd)/${image_name}.img.${image_format}"
+			$compress_cmd < "/dev/$THINPOOL_VG/$VM_PREFIX$image_name" > "$(pwd)/${image_name}.img.${image_format}"
 		fi
 		if [ "$?" -eq "0" ]; then
 			pmsg $P_INFO "Image compression finished\n"
@@ -595,9 +595,9 @@ case "$1" in
 	list)
 		short_output="$2" # if non-zero the output suitable for external processing
 		# lets get the dm-XX number of the thinpool
-		pool_dm=$(ls -l "$THINPOOL_PATH"|cut -d / -f 5)
+		pool_dm=$(basename "$(readlink "$THINPOOL_PATH")")
 		# from dm-XX of thinpool we can list the LVs inside the thinpool
-		holders=$(ls /sys/block/$pool_dm/holders)
+		holders=$(ls "/sys/block/$pool_dm/holders")
 		holder_regexp=""
 		for dm in $holders
 		do
@@ -609,7 +609,7 @@ case "$1" in
 		done
 		holder_regexp="($holder_regexp)"
 		# finaly parse the VM image versions from what we have
-		image_name_list=$(ls -l /dev/$THINPOOL_VG/ |grep -E "$holder_regexp"|awk '{print $9}'|grep "$VM_PREFIX"|sed -e "s/$VM_PREFIX//; s/-[0-9]\+$//"|uniq)
+		image_name_list=$(ls -l "/dev/$THINPOOL_VG/" |grep -E "$holder_regexp"|awk '{print $9}'|grep "$VM_PREFIX"|sed -e "s/$VM_PREFIX//; s/-[0-9]\+$//"|uniq)
 
 		if [ -n "$short_output" ] && [ "$short_output" = "short" ]; then
 			echo "$image_name_list"
