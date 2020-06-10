@@ -12,51 +12,6 @@ _fast-vm()
 		return 0
 	fi
 
-	if [ "$cword" -eq 3 ] && [ ${COMP_WORDS[1]} == "import_image" ]; then
-		_filedir '@(gz|xz|zst)'
-		return 0
-	fi
-	if [ "$cword" -eq 4 ] && [ ${COMP_WORDS[1]} == "import_custom_image" ]; then
-		_filedir '@(gz|xz|zst)'
-		return 0
-	fi
-	if [ "$cword" -eq 4 ] && [ ${COMP_WORDS[1]} == "import_image" ]; then
-		_filedir '@(xml)'
-		return 0
-	fi
-	if [ "$cword" -eq 5 ] && [ ${COMP_WORDS[1]} == "import_custom_image" ]; then
-		_filedir '@(xml)'
-		return 0
-	fi
-	if [ "$cword" -eq 5 ] || [ "$cword" -eq 6 ] && [ ${COMP_WORDS[1]} == "import_image" ]; then
-		_filedir '@(sh)'
-		return 0
-	fi
-	if [ "$cword" -eq 6 ] || [ "$cword" -eq 7 ] && [ ${COMP_WORDS[1]} == "import_custom_image" ]; then
-		_filedir '@(sh)'
-		return 0
-	fi
-	if [ "$cword" -eq 3 ] && [ ${COMP_WORDS[1]} == "import_profile" ]; then
-		local image_name
-
-		image_name=$(fast-vm-image list short)
-		COMPREPLY=( $( compgen -W "$image_name" -- "$cur" ) )
-		return 0
-	fi
-	if [ "$cword" -eq 4 ] && [ ${COMP_WORDS[1]} == "import_profile" ]; then
-		_filedir '@(xml)'
-		return 0
-	fi
-	if [ "$cword" -eq 5 ] || [ "$cword" -eq 6 ] && [ ${COMP_WORDS[1]} == "import_profile" ]; then
-		_filedir '@(sh)'
-		return 0
-	fi
-
-	if [ "$cword" -eq 3 ] && [ ${COMP_WORDS[1]} == "export_image" ]; then
-	        COMPREPLY=( $( compgen -W "zst xz gz" -- "$cur" ) )
-		return 0
-	fi
-
 	if [ "$cword" -eq 3 ] && [ ${COMP_WORDS[1]} == "start" ]; then
 	        COMPREPLY=( $( compgen -W "console ssh" -- "$cur" ) )
 		return 0
@@ -100,27 +55,13 @@ _fast-vm()
 	fi
 
 	case $prev in
-		import_image|import_custom_image|import_profile)
-			return 0
-			;;
-		create|remove_image|export_image|resize_image|compact_image)
+		create)
 			local image_name
 			local profile_name
 
 			image_name=$(fast-vm-image list short)
 			profile_name=$(fast-vm-image list_profiles short)
 			COMPREPLY=( $( compgen -W "$image_name $profile_name" -- "$cur" ) )
-			return 0
-			;;
-		remove_profile)
-			local profile_name
-
-			profile_name=$(fast-vm-image list_profiles short)
-			COMPREPLY=( $( compgen -W "$profile_name" -- "$cur" ) )
-			return 0
-			;;
-		list_images|list_profiles)
-			COMPREPLY=( $( compgen -W "short" -- "$cur" ) )
 			return 0
 			;;
 		list)
@@ -153,7 +94,7 @@ _fast-vm()
 
 	$split && return 0
 	if [ "$cword" -lt 2 ]; then
-		COMPREPLY=( $( compgen -W 'import_image import_custom_image export_image remove_image resize_image import_profile remove_profile edit_note keydist list_images list_profiles create start stop delete resize console scp ssh list info compact compact_image disk_usage' -- "$cur" ) )
+		COMPREPLY=( $( compgen -W 'edit_note keydist create start stop delete resize console scp ssh list info compact disk_usage' -- "$cur" ) )
 		return 0
 	fi
 

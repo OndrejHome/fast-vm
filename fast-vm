@@ -267,33 +267,6 @@ usage () {
 	part="$1"
 
 	case $part in
-		import_image)
-			echo "(deprecated) $FVM import_image ImageName <empty |PathToImage> PathToLibvirtXML [PathToHacksFile] [PathToDeleteHackFile]"
-			;;
-		import_custom_image)
-			echo "(deprecated) $FVM import_custom_image ImageSizeInGiB ImageName <empty |PathToImage> PathToLibvirtXML [PathToHacksFile] [PathToDeleteHackFile]"
-			;;
-		export_image)
-			echo "(deprecated) $FVM export_image ImageName [ <zst|xz|gz> ]"
-			;;
-		remove_image)
-			echo "(deprecated) $FVM remove_image ImageName"
-			;;
-		resize_image)
-			echo "(deprecated) $FVM resize_image ImageName NewImageSizeInGiB"
-			;;
-		import_profile)
-			echo "(deprecated) $FVM import_profile ProfileName ImageName PathToLibvirtXML [PathToHacksFile] [PathToDeleteHackFile]"
-			;;
-		remove_profile)
-			echo "(deprecated) $FVM remove_profile ProfileName"
-			;;
-		list_images)
-			echo "(deprecated) $FVM list_images [short]"
-			;;
-		list_profiles)
-			echo "(deprecated) $FVM list_profiles [short]"
-			;;
 		create)
 			echo "$FVM create <ImageName|ProfileName> <base|VmNumber|'VmNumber1 VmNumber2 ...'> [PathToLibvirtXML] [PathToHacksFile]"
 			;;
@@ -336,13 +309,10 @@ usage () {
 		compact)
 			echo "$FVM compact <VmNumber|'VmNumber1 VmNumber2 ...'>"
 			;;
-		compact_image)
-			echo "(deprecated) $FVM compact_image ImageName"
-			;;
 		*)
 			echo "== fast-vm version 1.7 <ondrej-xa2iel8u@famera.cz> =="
 			echo "$FVM <action> <options>"
-			for cmd in import_image import_custom_image export_image remove_image resize_image import_profile remove_profile list_images create delete edit_note resize info list list_profiles start stop console keydist ssh scp disk_usage compact compact_image;
+			for cmd in create delete edit_note resize info list start stop console keydist ssh scp disk_usage compact;
 			do
 				usage $cmd noexit
 			done
@@ -407,55 +377,6 @@ curl_ok="$?"
 
 #### main script
 case "$1" in
-	import_image)
-		# generate new command that will replace this action in next version
-		original_arguments=$(echo "$@"|sed -e "s/^$1//")
-		new_cmd="fast-vm-image import $original_arguments"
-		pmsg $P_WARNING "(deprecated) This action will be removed in next version. Using new command below:\n$new_cmd\n"
-		$new_cmd
-		;;
-	import_custom_image)
-		# generate new command that will replace this action in next version
-		original_arguments=$(echo "$@"|sed -e "s/^$1//")
-		new_cmd="fast-vm-image import_custom $original_arguments"
-		pmsg $P_WARNING "(deprecated) This action will be removed in next version. Using new command below:\n$new_cmd\n"
-		$new_cmd
-		;;
-	export_image)
-		# generate new command that will replace this action in next version
-		original_arguments=$(echo "$@"|sed -e "s/^$1//")
-		new_cmd="fast-vm-image export $original_arguments"
-		pmsg $P_WARNING "(deprecated) This action will be removed in next version. Using new command below:\n$new_cmd\n"
-		$new_cmd
-		;;
-	remove_image)
-		# generate new command that will replace this action in next version
-		original_arguments=$(echo "$@"|sed -e "s/^$1//")
-		new_cmd="fast-vm-image remove $original_arguments"
-		pmsg $P_WARNING "(deprecated) This action will be removed in next version. Using new command below:\n$new_cmd\n"
-		$new_cmd
-		;;
-	import_profile)
-		# generate new command that will replace this action in next version
-		original_arguments=$(echo "$@"|sed -e "s/^$1//")
-		new_cmd="fast-vm-image import_profile $original_arguments"
-		pmsg $P_WARNING "(deprecated) This action will be removed in next version. Using new command below:\n$new_cmd\n"
-		$new_cmd
-		;;
-	remove_profile)
-		# generate new command that will replace this action in next version
-		original_arguments=$(echo "$@"|sed -e "s/^$1//")
-		new_cmd="fast-vm-image remove_profile $original_arguments"
-		pmsg $P_WARNING "(deprecated) This action will be removed in next version. Using new command below:\n$new_cmd\n"
-		$new_cmd
-		;;
-	resize_image)
-		# generate new command that will replace this action in next version
-		original_arguments=$(echo "$@"|sed -e "s/^$1//")
-		new_cmd="fast-vm-image resize $original_arguments"
-		pmsg $P_WARNING "(deprecated) This action will be removed in next version. Using new command below:\n$new_cmd\n"
-		$new_cmd
-		;;
 	create)
 		image_name="$2"
 		if [ -z "$image_name" ]; then pmsg $P_ERROR "missing image or profile name\n"; usage create; fi
@@ -1075,20 +996,6 @@ case "$1" in
 
 		fi
 		;;
-	list_images)
-		# generate new command that will replace this action in next version
-		original_arguments=$(echo "$@"|sed -e "s/^$1//")
-		new_cmd="fast-vm-image list $original_arguments"
-		pmsg $P_WARNING "(deprecated) This action will be removed in next version. Using new command below:\n$new_cmd\n"
-		$new_cmd
-		;;
-	list_profiles)
-		# generate new command that will replace this action in next version
-		original_arguments=$(echo "$@"|sed -e "s/^$1//")
-		new_cmd="fast-vm-image list_profiles $original_arguments"
-		pmsg $P_WARNING "(deprecated) This action will be removed in next version. Using new command below:\n$new_cmd\n"
-		$new_cmd
-		;;
 	info)
 		vm_number="$2"
 		if [ -z "$vm_number" ]; then pmsg $P_ERROR "VM number missing\n"; usage info; fi
@@ -1114,13 +1021,6 @@ case "$1" in
 		pmsg $P_INFO "Compacting disk of VM $vm_number ....\n" "$vm_number"
 		pmsg $P_DEBUG "Running 'virt-sparsify -q --in-place /dev/$THINPOOL_VG/$vm_name'.\n" "$vm_number"
 		LIBGUESTFS_BACKEND=direct virt-sparsify -q --in-place "/dev/$THINPOOL_VG/$vm_name" 2>&1|$DEBUG_LOG_CMD
-		;;
-	compact_image)
-		# generate new command that will replace this action in next version
-		original_arguments=$(echo "$@"|sed -e "s/^$1//")
-		new_cmd="fast-vm-image compact $original_arguments"
-		pmsg $P_WARNING "(deprecated) This action will be removed in next version. Using new command below:\n$new_cmd\n"
-		$new_cmd
 		;;
 	*) 
 		pmsg $P_ERROR "unknown action\n"
