@@ -105,8 +105,9 @@ From `fast-vm` version 1.5 the CentOS/RHEL/Fedora also provides RPM package `fas
 #### 2.1.4. CentOS 7.8 {#installation_centos7}
 ~~~
 # curl -o /etc/yum.repos.d/fast-vm.repo https://copr.fedorainfracloud.org/coprs/ondrejhome/fast-vm/repo/epel-7/ondrejhome-fast-vm-epel-7.repo
+# curl -o /etc/yum.repos.d/fast-vm-epel-deps.repo https://raw.githubusercontent.com/OndrejHome/fast-vm/master/fast-vm-epel-deps.repo
 ~~~
-**NOTE:** Repository of fast-vm contains few additional packages from epel (`zstd`, `pv`) that are used by `fast-vm` for extra functionality. If you don't want to use them you can add line `exclude = zstd pv` at the end of `/etc/yum.repos.d/fast-vm.repo` file before installing `fast-vm` package.
+**NOTE:** fast-vm can use few additional packages from epel (`zstd`, `pv`) for extra functionality. If you don't want to use them you can remove `/etc/yum.repos.d/fast-vm-epel-deps.repo` file.
 ~~~
 # yum install fast-vm zstd pv
 ~~~
@@ -114,8 +115,9 @@ From `fast-vm` version 1.5 the CentOS/RHEL/Fedora also provides RPM package `fas
 #### 2.1.5. CentOS 8.1 {#installation_centos8}
 ~~~
 # curl -o /etc/yum.repos.d/fast-vm.repo https://copr.fedorainfracloud.org/coprs/ondrejhome/fast-vm/repo/epel-8/ondrejhome-fast-vm-epel-8.repo
+# curl -o /etc/yum.repos.d/fast-vm-epel-deps.repo https://raw.githubusercontent.com/OndrejHome/fast-vm/master/fast-vm-epel-deps.repo
 ~~~
-**NOTE:** Repository of fast-vm contains few additional packages from epel (`zstd`, `sshpass`, `pv`) that are used by `fast-vm` for extra functionality. If you don't want to use them you can add line `exclude = zstd sshpass pv` at the end of `/etc/yum.repos.d/fast-vm.repo` file before installing `fast-vm` package.
+**NOTE:** fast-vm can use few additional packages from epel (`zstd`, `sshpass`, `pv`) for extra functionality. If you don't want to use them you can remove `/etc/yum.repos.d/fast-vm-epel-deps.repo` file.
 ~~~
 # dnf install fast-vm
 ~~~
@@ -125,8 +127,9 @@ On RHEL system some of dependencies are present only in `rhel-7-server-optional-
 ~~~
 # subscription-manager repos --enable=rhel-7-server-optional-rpms --enable=rhel-7-server-extras-rpms
 # curl -o /etc/yum.repos.d/fast-vm.repo https://copr.fedorainfracloud.org/coprs/ondrejhome/fast-vm/repo/epel-7/ondrejhome-fast-vm-epel-7.repo
+# curl -o /etc/yum.repos.d/fast-vm-epel-deps.repo https://raw.githubusercontent.com/OndrejHome/fast-vm/master/fast-vm-epel-deps.repo
 ~~~
-**NOTE:** Repository of fast-vm contains few additional packages from epel (`zstd`, `pv`) that are used by `fast-vm` for extra functionality. If you don't want to use them you can add line `exclude = zst pv` at the end of `/etc/yum.repos.d/fast-vm.repo` file before installing `fast-vm` package.
+**NOTE:** fast-vm can use few additional packages from epel (`zstd`, `pv`) for extra functionality. If you don't want to use them you can remove `/etc/yum.repos.d/fast-vm-epel-deps.repo` file.
 ~~~
 # yum install fast-vm zstd pv
 ~~~
@@ -134,8 +137,9 @@ On RHEL system some of dependencies are present only in `rhel-7-server-optional-
 #### 2.1.7. RHEL 8.1 {#installation_rhel8}
 ~~~
 # curl -o /etc/yum.repos.d/fast-vm.repo https://copr.fedorainfracloud.org/coprs/ondrejhome/fast-vm/repo/epel-8/ondrejhome-fast-vm-epel-8.repo
+# curl -o /etc/yum.repos.d/fast-vm-epel-deps.repo https://raw.githubusercontent.com/OndrejHome/fast-vm/master/fast-vm-epel-deps.repo
 ~~~
-**NOTE:** Repository of fast-vm contains few additional packages from epel (`sshpass`, `pv`) that are used by `fast-vm` for extra functionality. If you don't want to use them you can add line `exclude = sshpass pv` at the end of `/etc/yum.repos.d/fast-vm.repo` file before installing `fast-vm` package.
+**NOTE:** fast-vm can use few additional packages from epel (`sshpass`, `pv`) for extra functionality. If you don't want to use them you can remove `/etc/yum.repos.d/fast-vm-epel-deps.repo` file.
 ~~~
 # dnf install fast-vm
 ~~~
