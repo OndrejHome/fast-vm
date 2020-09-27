@@ -2,7 +2,7 @@
 permalink: /fast-vm/user_guide.html
 title: fast-vm User Guide
 layout: post
-date: 2020-06-19 11:44:00+0900
+date: 2020-09-27 22:26:00+0900
 categories: [ fast-vm ]
 ---
 * TOC
@@ -127,7 +127,7 @@ On RHEL system some of dependencies are present only in `rhel-7-server-optional-
 ~~~
 # subscription-manager repos --enable=rhel-7-server-optional-rpms --enable=rhel-7-server-extras-rpms
 # curl -o /etc/yum.repos.d/fast-vm.repo https://copr.fedorainfracloud.org/coprs/ondrejhome/fast-vm/repo/epel-7/ondrejhome-fast-vm-epel-7.repo
-# curl -o /etc/yum.repos.d/fast-vm-epel-deps.repo https://raw.githubusercontent.com/OndrejHome/fast-vm/master/fast-vm-epel-deps.repo
+# curl -o /etc/yum.repos.d/fast-vm-epel-deps.repo https://raw.githubusercontent.com/OndrejHome/fast-vm/master/fast-vm-epel-deps-rhel7.repo
 ~~~
 **NOTE:** fast-vm can use few additional packages from epel (`zstd`, `pv`) for extra functionality. If you don't want to use them you can remove `/etc/yum.repos.d/fast-vm-epel-deps.repo` file.
 ~~~
