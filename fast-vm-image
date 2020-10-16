@@ -460,11 +460,11 @@ case "$1" in
 		(
 		# locked section - BEGIN
 		flock -s -n 9 || exit 4
-		pmsg $P_DEBUG "compressing the image $image_name into $(pwd)/${image_name}.img.${image_format}\n"
+		pmsg $P_DEBUG "compressing the image $image_name into $(pwd)/${image_size}g__${image_name}.img.${image_format}\n"
 		if [ "$pv_ok" -eq '0' ]; then
-			pv -N "Image reading" -s "${image_size}G" < "/dev/$THINPOOL_VG/$VM_PREFIX$image_name" | $compress_cmd > "$(pwd)/${image_name}.img.${image_format}"
+			pv -N "Image reading" -s "${image_size}G" < "/dev/$THINPOOL_VG/$VM_PREFIX$image_name" | $compress_cmd > "$(pwd)/${image_size}g__${image_name}.img.${image_format}"
 		else
-			$compress_cmd < "/dev/$THINPOOL_VG/$VM_PREFIX$image_name" > "$(pwd)/${image_name}.img.${image_format}"
+			$compress_cmd < "/dev/$THINPOOL_VG/$VM_PREFIX$image_name" > "$(pwd)/${image_size}g__${image_name}.img.${image_format}"
 		fi
 		if [ "$?" -eq "0" ]; then
 			pmsg $P_INFO "Image compression finished\n"
