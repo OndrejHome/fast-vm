@@ -27,19 +27,19 @@ pmsg () {
 	fi
 	if [ "$DISPLAY_LEVEL" -ge "$priority" ]; then
 		case "$priority" in
-			$P_DEBUG)
+			"$P_DEBUG")
 				# shellcheck disable=SC2059
 				printf "[${c_cyan}inf${c_normal}] %b" "$message"
 				;;
-			$P_INFO)
+			"$P_INFO")
 				# shellcheck disable=SC2059
 				printf "[${c_green}ok${c_normal}] %b" "$message"
 				;;
-			$P_WARNING)
+			"$P_WARNING")
 				# shellcheck disable=SC2059
 				printf "[${c_yellow}wrn${c_normal}] %b" "$message"
 				;;
-			$P_ERROR)
+			"$P_ERROR")
 				# shellcheck disable=SC2059
 				printf "[${c_red}err${c_normal}] %b" "$message"
 				;;
