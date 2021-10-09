@@ -225,9 +225,9 @@ do
 	else
 		case "$FASTVM_APPLIANCE" in
 		import)
-			printf "$o_inf Downloading appliance from http://ftp.linux.cz/pub/linux/people/ondrej_famera/fastvm-images/appliance-1.42.0.tar.xz\n"
+			printf "$o_inf Downloading appliance from http://ftp.linux.cz/pub/linux/people/ondrej_famera/fastvm-images/appliance-1.45.7.tar.xz\n"
 			tmp_file=$(mktemp)
-			curl http://ftp.linux.cz/pub/linux/people/ondrej_famera/fastvm-images/appliance-1.42.0.tar.xz > "$tmp_file"
+			curl http://ftp.linux.cz/pub/linux/people/ondrej_famera/fastvm-images/appliance-1.45.7.tar.xz > "$tmp_file"
 			printf "$o_inf Extracting file into /var/lib/fast-vm\n"
 			if [ ! -d "/var/lib/fast-vm" ]; then mkdir -p /var/lib/fast-vm; fi
 			tar xvf "$tmp_file" -C /var/lib/fast-vm

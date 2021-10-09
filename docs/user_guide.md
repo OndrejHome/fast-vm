@@ -324,14 +324,14 @@ n) libguestfs appliance check and import of appliance if it was selected (defaul
 ~~~
 [inf] Running appliance test (libguestfs-test-tool)...
 [err] Appliance test failed with error, check the '/tmp/tmp.wHdWOZfn3p' file for details
-[inf] Downloading appliance from http://ftp.linux.cz/pub/linux/people/ondrej_famera/fastvm-images/appliance-1.42.0.tar.xz
+[inf] Downloading appliance from http://ftp.linux.cz/pub/linux/people/ondrej_famera/fastvm-images/appliance-1.45.7.tar.xz
   % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
                                  Dload  Upload   Total   Spent    Left  Speed
-100  114M  100  114M    0     0  4897k      0  0:00:23  0:00:23 --:--:-- 7195k
+100  105M  100  105M    0     0  4897k      0  0:00:23  0:00:23 --:--:-- 7195k
 [inf] Extracting file into /var/lib/fast-vm
 appliance/
 appliance/capability_xfs_el8
-appliance/capability_btrfs
+appliance/capability_xfs_el9
 appliance/kernel
 appliance/initrd
 appliance/root
