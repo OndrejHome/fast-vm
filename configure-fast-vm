@@ -88,7 +88,7 @@ do
 	fi
 	ask_question "VM name prefix in libvirt\n Prefix is used in VM names and VM drive names." "$VM_PREFIX" "VM_PREFIX"
 
-	ask_question "Users that want to use fast-vm must be members of following group.\n WARNING: if this group is different from 'libivrt' you would have to adjust libvirt configuration.\n Please check the fast-vm.conf(5) if setting this to something else than 'libvirt'." "$FASTVM_GROUP" "FASTVM_GROUP"
+	ask_question "Users that want to use fast-vm must be members of following group.\n WARNING: if this group is different from 'libvirt' you would have to adjust libvirt configuration.\n Please check the fast-vm.conf(5) if setting this to something else than 'libvirt'." "$FASTVM_GROUP" "FASTVM_GROUP"
 	if [ "$FASTVM_GROUP" != "libvirt" ]; then
 		printf "$o_wrn You are using non-default group for FASTVM_GROUP.\n Please check the fast-vm.conf(5) on how to configure libvirtd for this to work properly.\n\n"
 	fi
