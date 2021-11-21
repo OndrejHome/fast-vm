@@ -252,7 +252,7 @@ e) Enter prefix that will be used for VMs created in libvirt.
 f) Enter system group name that will be allowed to use fast-vm. Only one group is allowed.
 ~~~
 [?] Users that want to use fast-vm must be members of following group.
- WARNING: if this group is different from 'libivrt' you would have to adjust libvirt configuration.
+ WARNING: if this group is different from 'libvirt' you would have to adjust libvirt configuration.
  Please check the fast-vm.conf(5) if setting this to something else than 'libvirt'.
 [libvirt]:
 ~~~

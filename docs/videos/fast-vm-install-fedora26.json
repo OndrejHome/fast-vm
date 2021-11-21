@@ -211,7 +211,7 @@
     ],
     [
       0.005984,
-      "[?] Users that want to use fast-vm must be members of following group.\r\n WARNING: if this group is different from 'libivrt' you would have to adjust libvirt configuration.\r\n Please check the fast-vm.conf(5) if setting this to something else than 'libvirt'. \r\n[libvirt]: "
+      "[?] Users that want to use fast-vm must be members of following group.\r\n WARNING: if this group is different from 'libvirt' you would have to adjust libvirt configuration.\r\n Please check the fast-vm.conf(5) if setting this to something else than 'libvirt'. \r\n[libvirt]: "
     ],
     [
       0.392244,
