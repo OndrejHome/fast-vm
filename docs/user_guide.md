@@ -217,11 +217,35 @@ You can run this script repeatedly and interrupt it with ctrl+c.
 Script will always recheck all configuration options. fast-vm system configuration will be saved in /etc/fast-vm.conf.
 ~~~
 
+a1) (Optional) On systemd systems, you can use fast-vm created loop device. This is useful when your system has no remaining free PEs on LVM that could be used for fast-vm. This step allows to create file in `/var/lib/fast-vm/loop/` that will act as block device for LVM VG used by fast-vm.
+~~~
+[inf] (Optional) On systemd systems fast-vm can automatically setup loop device to provide storage for fast-vm VG. 
+ This option is intended for uses where no VFree is available on system. 
+[?] Would you like to start the fast-vm-loop-device.service? (y/n) [n] y
+~~~
+~~~
+[?] Loop device (sparse file) size in GB: [51] 51
+~~~
+~~~
+[inf] Creating 51GB file /var/lib/fast-vm/loop/device.img with VG fastvm-loopdevice.
+[inf] Enabling on boot and starting now the 'fast-vm-loop-device.service' ...
+  Physical volume "/dev/loop100" successfully created.
+  Volume group "fastvm-loopdevice" successfully created
+[inf] You should see now the new VG named 'fastvm-loopdevice'.
+~~~
+
 b) Enter on which VG the fast-vm will have thinpool LV as storage.
 ~~~
 [?] VG for LVM thin pool
  fast-vm is using LVM thin LV to store VM images and data.
  On which existing VG should be this thin LV?
+  VG                Attr   VSize   VFree
+  ...
+ ====== 
+ Choose the VG with sufficient VFree space for fast-vm use (at least 10GB recommended).
+ If you lack sufficient VFree space you can use the 'fastvm-loopdevice'. 
+ ====== 
+ On which existing VG should be this thin LV? 
 []: f32
 ~~~
 
@@ -639,6 +663,95 @@ The process of creating custom Image can be summarized into following steps whic
 3. Creating base VM that can be used for accessing directly the empty Image.
 4. Export of Image into archive for sharing.
 5. (optional) Creation of scripts that are run on VM creation/deletion.
+
+### 4.4. Extending thinpool LV used by fast-vm
+NOTE: It is **NOT** possible to shrink the thinpool LV.
+
+There are 2 things that can be extended in thinpool LV - data LV and metadata LV. In both cases the procedure documented in `lvmthin` man page should be used. See the examples below:
+
+`man lvmthin` - **Manually manage free data space of thin pool LV**:
+~~~
+# vgs
+  VG                #PV #LV #SN Attr   VSize   VFree
+  c8vg                1   3   0 wz--n- 30.00g  20.00g
+~~~
+~~~
+# lvs
+  LV          VG   Attr       LSize   Pool Origin  Data%  Meta%  Move Log Cpy%Sync Convert
+  fastvm-pool c8vg twi-a-tz--  10.00g              30.02   10.55
+~~~
+~~~
+# lvextend -L+10G c8vg/fastvm-pool
+  Size of logical volume c8vg/fastvm-pool_tdata changed from 10.00 GiB (2560 extents) to 20.00 GiB (5120 extents).
+  Logical volume c8vg/fastvm-pool successfully resized.
+~~~
+~~~
+# lvs
+  LV          VG   Attr       LSize   Pool Origin  Data%  Meta%  Move Log Cpy%Sync Convert
+  fastvm-pool c8vg twi-a-tz--  20.00g              15.01   10.55
+~~~
+
+`man lvmthin` - **Manually manage free metadata space of a thin pool LV**:
+~~~
+# lvs -a
+  LV                  VG    Attr       LSize   Pool Origin  Data%  Meta%  Move Log Cpy%Sync Convert
+  fastvm-pool         c8vg  twi-a-tz--  20.00g              15.01   10.55
+  [fastvm-pool_tdata] c8vg  Twi-ao----  20.00g
+  [fastvm-pool_tmeta] c8vg  ewi-ao----  16.00m
+~~~
+~~~
+# lvextend --poolmetadatasize +16M c8vg/fastvm-pool
+  Size of logical volume c8vg/fastvm-pool_tmeta changed from 16.00 MiB (4 extents) to 32.00 MiB (8 extents).
+  Logical volume c8vg/fastvm-pool_tmeta successfully resized.
+~~~
+~~~
+# lvs -a
+  LV                  VG    Attr       LSize   Pool Origin  Data%  Meta%  Move Log Cpy%Sync Convert
+  fastvm-pool         c8vg  twi-a-tz--  20.00g              15.01   10.28
+  [fastvm-pool_tdata] c8vg  Twi-ao----  20.00g
+  [fastvm-pool_tmeta] c8vg  ewi-ao----  32.00m
+~~~
+
+#### 4.4.1. Extending loop device provided by `fast-vm-loop-device.service`
+If you are using `fast-vm-loop-device.service` to provide loop device for fast-vm storage, the before previous procedure for extending thin pool can be used the loop device needs to be extended. To extend the loop device you can follow procedure below.
+
+1) Stop the VG on top of loop device
+~~~
+# vgchange -an fastvm-loopdevice
+  0 logical volume(s) in volume group "fastvm-loopdevice" now active
+~~~
+2) Stop the `fast-vm-loop-device.service` service.
+~~~
+# systemctl stop fast-vm-loop-device.service
+~~~
+3) Extend the loop device size. **WARNING:** Be careful, you need to specify new device size that is bigger than previous one!
+~~~
+# du --apparent-size -h /var/lib/fast-vm/loop/device.img
+51G	/var/lib/fast-vm/loop/device.img
+~~~
+~~~
+# truncate -s 61G /var/lib/fast-vm/loop/device.img
+~~~
+~~~
+# du --apparent-size -h /var/lib/fast-vm/loop/device.img
+61G	/var/lib/fast-vm/loop/device.img
+~~~
+4) Start the `fast-vm-loop-device.service` service.
+~~~
+# systemctl start fast-vm-loop-device.service
+~~~
+5) Resize the PV and check that new size is visible.
+~~~
+# pvresize /dev/loop100
+  Physical volume "/dev/loop100" changed
+  1 physical volume(s) resized or updated / 0 physical volume(s) not resized
+~~~
+~~~
+# pvs /dev/loop100
+  PV           VG                Fmt  Attr PSize   PFree  
+  /dev/loop100 fastvm-loopdevice lvm2 a--  <61.00g 10.00g
+~~~
+6) Continue with procedure in [4.4. Extending thinpool LV used by fast-vm](#44-extending-thinpool-lv-used-by-fast-vm) to extend the thinpool.
 
 ## 5. Detailed `fast-vm` architecture {#architecture}
 Below you will find some more technical aspects of fast-vm that are aimed at providing information for those who would like to interact with `fast-vm` on low level or tighten up its security aspects. Author believes that for example access to libvirt could be configured using rules from policykit and would gladly accept any contribution in this area if someone is interested.

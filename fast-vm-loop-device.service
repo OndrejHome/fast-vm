@@ -1,0 +1,20 @@
+[Unit]
+Description=Manages loop device that can be used with fast-vm
+# Make sure that we have local file system where the needed file is
+Requires=local-fs.target
+After=local-fs.target
+# Depend on existence of file
+ConditionFileNotEmpty=/var/lib/fast-vm/loop/device.img
+
+[Service]
+Type=oneshot
+ExecStart=/sbin/losetup /dev/loop100 /var/lib/fast-vm/loop/device.img
+ExecStop=/sbin/losetup -d /dev/loop100
+# set reasonable timeout (by default timeout for 'oneshot' is disabled)
+TimeoutSec=20
+# keep service looking 'active' after start
+RemainAfterExit=yes
+
+[Install]
+# should start as part of multi-user target (way after local-fs.target)
+WantedBy=multi-user.target

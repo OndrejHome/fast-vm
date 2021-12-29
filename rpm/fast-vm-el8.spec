@@ -90,6 +90,7 @@ drive of new machine before starting VM using the 'hack files'.
 %{_mandir}/man8/%{name}*
 %{_mandir}/man8/configure-%{name}*
 %config(noreplace) %{_sysconfdir}/sudoers.d/%{name}-sudoers
+/usr/lib/systemd/system/fast-vm-loop-device.service
 
 %changelog
 * Sun May 17 2020 Ondrej Famera <ondrej-xa2iel8u@famera.cz> 1.7-1

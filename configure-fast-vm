@@ -77,9 +77,30 @@ fi
 success=0
 while [ "$success" -eq 0 ];
 do
+	if command -v systemctl >/dev/null && command -v losetup >/dev/null && command -v truncate >/dev/null; then
+		printf "$o_inf (Optional) On systemd systems fast-vm can automatically setup loop device to provide storage for fast-vm VG. \n This option is intended for uses where no VFree is available on system. \n"
+		printf "[?] Would you like to start the fast-vm-loop-device.service? (y/n) [n] "
+		read answer
+		if [ "$answer" = "y" ]; then
+			if [ ! -f "/var/lib/fast-vm/loop/device.img" ]; then
+				printf "[?] Loop device (sparse file) size in GB: [51] "
+				read loopdev_size
+				if [ -z "$loopdev_size" ]; then loopdev_size='51'; fi
+			        if [ ! -d "/var/lib/fast-vm/loop" ]; then mkdir -p /var/lib/fast-vm/loop; fi
+				printf "$o_inf Creating ${loopdev_size}GB file /var/lib/fast-vm/loop/device.img with VG fastvm-loopdevice.\n"
+				truncate -s "${loopdev_size}G" /var/lib/fast-vm/loop/device.img
+                        fi
+			printf "$o_inf Enabling on boot and starting now the 'fast-vm-loop-device.service' ...\n"
+			systemctl enable --now fast-vm-loop-device.service
+			vgcreate fastvm-loopdevice /dev/loop100
+			printf "$o_inf You should see now the new VG named 'fastvm-loopdevice'.\n This VG can be used for fast-vm storage in next steps. \n\n"
+		else
+			printf "$o_inf If it turns out you don't have any VFree in system, \n you can re-run config and choose to start the 'fast-vm-loop-device.service'. \n\n"
+		fi
+	fi
 
 	available_vgs=$(vgs -o vg_name,vg_attr,vg_size,vg_free)
-	ask_question "VG for LVM thin pool\n fast-vm is using LVM thin LV to store VM images and data.\n Available VGs on your system are: \n $available_vgs\n On which existing VG should be this thin LV?" "$THINPOOL_VG" "THINPOOL_VG"
+	ask_question "VG for LVM thin pool\n fast-vm is using LVM thin LV to store VM images and data.\n Available VGs on your system are: \n $available_vgs\n ====== \n Choose the VG with sufficient VFree space for fast-vm use (at least 10GB recommended).\n If you lack sufficient VFree space you can use the 'fastvm-loopdevice'. \n ====== \n On which existing VG should be this thin LV?" "$THINPOOL_VG" "THINPOOL_VG"
 	ask_question "LVM thin pool name\n Name the thin LV on which data would be stored.\n NOTE: This can be both 'name of existing thinpool LV' or 'name for a new one'.\n If LV with this name doesn't exists, it will get created by this setup." "$THINPOOL_LV" "THINPOOL_LV"
 
 	lvdisplay "$THINPOOL_VG/$THINPOOL_LV" >/dev/null 2>&1
