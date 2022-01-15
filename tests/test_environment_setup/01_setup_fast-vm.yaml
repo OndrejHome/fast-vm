@@ -1,0 +1,48 @@
+---
+- hosts: all
+  remote_user: root
+  serial: 3
+  pre_tasks:
+    - name: create vg_test
+      lvg:
+        vg: 'vg_test'
+        pvs: '/dev/sdb'
+    - name: enable fastestmirror for Fedora
+      ini_file:
+        path: '/etc/dnf/dnf.conf'
+        section: 'main'
+        option: 'fastestsmirror'
+        value: '1'
+      when: ansible_distribution == 'Fedora'
+    - name: Only run "update_cache=yes" if the last one is more than 3600 seconds ago
+      apt:
+        update_cache: yes
+        cache_valid_time: 3600
+      when: ansible_distribution == 'Debian'
+    - name: enable local RHEL7 repos
+      get_url:
+        url: "{{ item.url }}"
+        dest: "{{ item.dest }}"
+      loop:
+        - { url: 'http://192.168.5.31/rpms/rhel-7-server-rpms.repo', dest: '/etc/yum.repos.d/rhel-7-server-rpms.repo' }
+        - { url: 'http://192.168.5.31/rpms/rhel-7-server-optional-rpms.repo', dest: '/etc/yum.repos.d/rhel-7-server-optional-rpms.repo' }
+        - { url: 'http://192.168.5.31/rpms/rhel-7-server-extras-rpms.repo', dest: '/etc/yum.repos.d/rhel-7-server-extras-rpms.repo' }
+      when:
+        - ansible_distribution == 'RedHat'
+        - ansible_distribution_major_version == '7'
+    - name: enable local RHEL8 repos
+      get_url:
+        url: "{{ item.url }}"
+        dest: "{{ item.dest }}"
+      loop:
+        - { url: 'http://192.168.5.31/rpms/rhel-8-for-x86_64-baseos-rpms.repo', dest: '/etc/yum.repos.d/rhel-8-for-x86_64-baseos-rpms.repo' }
+        - { url: 'http://192.168.5.31/rpms/rhel-8-for-x86_64-appstream-rpms.repo', dest: '/etc/yum.repos.d/rhel-8-for-x86_64-appstream-rpms.repo' }
+      when:
+        - ansible_distribution == 'RedHat'
+        - ansible_distribution_major_version == '8'
+
+  roles:
+    - role: ondrejhome.fast-vm-server
+      vars:
+        fastvm_vg: 'vg_test'
+        fastvm_lv_size: '10G'

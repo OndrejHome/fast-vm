@@ -1,3 +1,6 @@
+## Setting up test environment for fast-vm
+Check the [tests/test_environment_setup/README.md](tests/test_environment_setup/README.md) for more details.
+
 ## Contributing to fast-vm
 Here is list of general guidelines on how to contribute to this repository.
 
@@ -18,7 +21,7 @@ If you happen to already have some code prepared for the feature that you have u
 ### Hosting the pre-build fast-vm images
 If you would like to host fast-vm images on your server Contact the author via email ondrej-xa2iel8u@famera.cz. 
 
-### working on Issues marked as 'help wanted'
+### Working on Issues marked as 'help wanted'
 Before starting to work on such issue either comment into issue that you plan working on it or send emall with your intention to work on Issue.
 
 ### Creating articles about fast-vm
