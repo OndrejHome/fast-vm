@@ -724,13 +724,13 @@ If you are using `fast-vm-loop-device.service` to provide loop device for fast-v
 ~~~
 # systemctl stop fast-vm-loop-device.service
 ~~~
-3) Extend the loop device size. **WARNING:** Be careful, you need to specify new device size that is bigger than previous one!
+3) Extend the loop device size. Following commands will make device 10GB larger than it was before. **IMPORTANT:** Make sure that `+` (plus sign) is present, otherwise the `truncate` command will change the size instead of extending it and DATA LOSS may occur!
 ~~~
 # du --apparent-size -h /var/lib/fast-vm/loop/device.img
 51G	/var/lib/fast-vm/loop/device.img
 ~~~
 ~~~
-# truncate -s 61G /var/lib/fast-vm/loop/device.img
+# truncate -s +10G /var/lib/fast-vm/loop/device.img
 ~~~
 ~~~
 # du --apparent-size -h /var/lib/fast-vm/loop/device.img
