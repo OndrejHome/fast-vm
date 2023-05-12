@@ -130,6 +130,17 @@ check_image_existance () {
 	fi
 }
 
+check_appliance_presence () {
+	# export LIBGUESTFS_PATH to custom appliance if it looks to be present
+	# this doesn't check if appliance is usable (configure-fast-vm does that)
+	ap_path="/var/lib/fast-vm/appliance"
+	if [ -f "$ap_path/kernel" ] && [ -f "$ap_path/initrd" ] && [ -f "$ap_path/root" ]; then
+		export LIBGUESTFS_PATH="$ap_path"
+		pmsg $P_DEBUG "Using system appliance ($ap_path) with following capabilities:\n"
+                ls "$ap_path"/capability_* 2>/dev/null
+	fi
+}
+
 usage () {
 	part="$1"
 
@@ -687,6 +698,7 @@ case "$1" in
 		image_name="$2"
 		if [ -z "$image_name" ]; then pmsg $P_ERROR "missing image name\n"; usage compact; fi
 		check_image_existance "$image_name"
+		check_appliance_presence
 
 		# change group of LV so we can clean it up
 		echo "chgrp" "/dev/$THINPOOL_VG/$VM_PREFIX$image_name" | sudo -n $FASTVM_HELPER

@@ -1012,6 +1012,7 @@ case "$1" in
 		if $(echo "$vm_number"|grep -q ' '); then handle_multiple_requests $@; fi
 
 		check_vm_number "$vm_number" "active"
+		check_appliance_presence
 
 		vm_name=$(virsh --connect qemu:///system list --all |grep "$VM_PREFIX"|awk '{print $2}'|grep -E "\-$vm_number$")
 
