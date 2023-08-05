@@ -135,7 +135,7 @@ case "$action" in
 		lvresize -f -L "${arg2}G" "$arg1" 2>&1|$DEBUG_LOG_CMD
 		;;
 	lvs)
-		lvs $THINPOOL_VG -o lv_name,lv_size,data_percent,role,thin_id --separator ' ' --units g |grep -E "($THINPOOL_LV|$VM_PREFIX)"
+		LC_NUMERIC=C.UTF-8 lvs $THINPOOL_VG -o lv_name,lv_size,data_percent,role,thin_id --separator ' ' --units g |grep -E "($THINPOOL_LV|$VM_PREFIX)"
 		;;
         thin_dump)
                 ## try to detect if the defined thin pool is available
