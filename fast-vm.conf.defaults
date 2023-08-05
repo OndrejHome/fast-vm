@@ -9,3 +9,4 @@ FASTVM_GROUP=libvirt
 FASTVM_OWNER_ONLY_DELETE=no
 FASTVM_APPLIANCE=import
 FASTVM_KEYDIST_PASSWORD=testtest
+FASTVM_APPLIANCE_URL="http://ftp.linux.cz/pub/linux/people/ondrej_famera/fastvm-images/appliance-1.50.1-$(uname -m).tar.xz"
