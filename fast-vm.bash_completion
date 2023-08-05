@@ -53,6 +53,11 @@ _fast-vm()
 		COMPREPLY=( $( compgen -W "vm:" -f -- "$cur" ) )
 		return 0
 	fi
+	if [ "$cword" -gt 2 ] && [ ${COMP_WORDS[1]} == "rsync" ]; then
+		# offer any file or keyword 'vm:'
+		COMPREPLY=( $( compgen -W "vm:" -f -- "$cur" ) )
+		return 0
+	fi
 
 	case $prev in
 		create)
@@ -68,7 +73,7 @@ _fast-vm()
 			COMPREPLY=( $( compgen -W "all active inactive" -- "$cur" ) )
 			return 0
 			;;
-		start|stop|delete|console|keydist|scp|ssh|info|resize|edit_note|compact)
+		start|stop|delete|console|keydist|scp|rsync|ssh|info|resize|edit_note|compact)
 			local vm_numbers
 			case $prev in
 				start|resize|compact)
@@ -77,7 +82,7 @@ _fast-vm()
 				delete|edit_note|info)
 					vm_numbers=$(fast-vm list all short)
 				;;
-				console|keydist|scp|ssh|stop)
+				console|keydist|scp|rsync|ssh|stop)
 					vm_numbers=$(fast-vm list active short)
 				;;
 			esac
@@ -94,7 +99,7 @@ _fast-vm()
 
 	$split && return 0
 	if [ "$cword" -lt 2 ]; then
-		COMPREPLY=( $( compgen -W 'edit_note keydist create start stop delete resize console scp ssh list info compact disk_usage' -- "$cur" ) )
+		COMPREPLY=( $( compgen -W 'edit_note keydist create start stop delete resize console scp rsync ssh list info compact disk_usage' -- "$cur" ) )
 		return 0
 	fi
 

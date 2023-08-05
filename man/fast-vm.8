@@ -67,6 +67,11 @@ fast-vm \(em script for creating VMs from images on top of thin LVM pool
 .RI < "vm:/remote/sourcefile ... /local/destfile" | "/local/sourcefile ... vm:/remote/destfile" >
 
 .B fast-vm
+.B rsync
+.RI < VmNumber | "'VmNumber1 VmNumber2 ...'" >
+.RI < "vm:/remote/sourcefile ... /local/destfile" | "/local/sourcefile ... vm:/remote/destfile" >
+
+.B fast-vm
 .B compact
 .RI < VmNumber | "'VmNumber1 VmNumber2 ...'" >
 
@@ -228,6 +233,10 @@ Create machine with custom definition and hack file. Start it and after it's SSH
 .RB "scp a script to VMs 41 and 42. By default this goes in root's home directory, or specify a path instead"
 .sp
 .BI "fast-vm scp " "'41 42' script.sh vm:"
+
+.RB "rsync directory to VMs 41 and 42. By default this goes in root's home directory, or specify a path instead"
+.sp
+.BI "fast-vm rsync " "'41 42' my-directory vm:"
 
 .RB "Compact the disks of inactive VMs 41 and 42 ( using " "virt-sparsify" " ) to reclaim unused free space from VMs."
 .sp

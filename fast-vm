@@ -169,7 +169,7 @@ handle_multiple_requests () {
 	operation="$1"
 	# VM number is in other position in 'create' operation, change the operation so we don't loose the image_name
 	if [ "$operation" = 'create' ]; then operation="$operation $2"; fi
-	if [ "$operation" = 'scp' ] || [ "$operation" = "keydist" ]; then SERIALIZE=1; fi
+	if [ "$operation" = 'scp' ] || [ "$operation" = 'rsync' ] || [ "$operation" = "keydist" ]; then SERIALIZE=1; fi
 	# get the rest of the command line for calling it later
 	original_arguments=$(echo "$@"|sed -e "s/$operation $vm_number//")
 	pmsg $P_DEBUG "Starting to handle multiple operations\n"
@@ -284,6 +284,9 @@ usage () {
 		scp)
 			echo "$FVM scp <VmNumber|'VmNumber1 VmNumber2 ...'> < vm:/remote/sourcefile|/local/sourcefile /local/destfile|vm:/remote/destfile ...>"
 			;;
+		rsync)
+			echo "$FVM rsync <VmNumber|'VmNumber1 VmNumber2 ...'> < vm:/remote/sourcefile|/local/sourcefile /local/destfile|vm:/remote/destfile ...>"
+			;;
 		keydist)
 			echo "$FVM keydist <VmNumber|'VmNumber1 VmNumber2 ...'>"
 			;;
@@ -311,7 +314,7 @@ usage () {
 		*)
 			echo "== fast-vm version 1.7 <ondrej-xa2iel8u@famera.cz> =="
 			echo "$FVM <action> <options>"
-			for cmd in create delete edit_note resize info list start stop console keydist ssh scp disk_usage compact;
+			for cmd in create delete edit_note resize info list start stop console keydist ssh scp rsync disk_usage compact;
 			do
 				usage $cmd noexit
 			done
@@ -682,6 +685,23 @@ case "$1" in
 		shift 2
 		arguments=$(echo "$@"|sed "s/\bvm:/root@192.168.$SUBNET_NUMBER.$vm_number:/g")
 		scp -i "$FASTVM_USER_CONF_DIR/id_fastvm" -o GlobalKnownHostsFile=/dev/null -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -r $arguments
+		;;
+	rsync)
+		vm_number="$2"
+		if [ -z "$vm_number" ]; then pmsg $P_ERROR "VM number missing\n"; usage rsync; fi
+		if $(echo "$vm_number"|grep -q ' '); then handle_multiple_requests $@;	fi
+		check_vm_number "$vm_number" "inactive"
+		update_access_time "$vm_number"
+
+		if [ -z "$4" ]; then
+			pmsg $P_ERROR "rsync requires a sourcepath and destination path to copy\n" "$vm_number"
+			exit 1
+		fi
+
+		wait_for_ssh "$vm_number"
+		shift 2
+		arguments=$(echo "$@"|sed "s/\bvm:/root@192.168.$SUBNET_NUMBER.$vm_number:/g")
+		rsync --progress -avhe "ssh -i "$FASTVM_USER_CONF_DIR/id_fastvm" -o GlobalKnownHostsFile=/dev/null -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no" $arguments
 		;;
 	keydist)
 		vm_number="$2"
