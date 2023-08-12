@@ -41,7 +41,7 @@ fast-vm \(em script for creating VMs from images on top of thin LVM pool
 .B fast-vm
 .B start
 .RI < VmNumber | "'VmNumber1 VmNumber2 ...'" >
-.RB [ console | ssh 
+.RB [ console | keydist | ssh
 .RI [ /path/to/custom/script ]]
 
 .B fast-vm
@@ -191,6 +191,10 @@ Start VM number 42 and connect to it's serial console
 Start VM number 42 connect to it via SSH as root when SSH to machine is ready
 .sp
 .BI "fast-vm start " "42 ssh"
+
+Start VM number 42 and distribute an ssh key it via SSH as root when SSH to machine is ready
+.sp
+.BI "fast-vm start " "42 keydist"
 
 Send ACPI poweroff signal to VM 42 to tell VM OS to gracefully shut down. Note that not all OSes will react to this.
 .sp

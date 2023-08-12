@@ -13,7 +13,7 @@ _fast-vm()
 	fi
 
 	if [ "$cword" -eq 3 ] && [ ${COMP_WORDS[1]} == "start" ]; then
-	        COMPREPLY=( $( compgen -W "console ssh" -- "$cur" ) )
+	        COMPREPLY=( $( compgen -W "console keydist ssh" -- "$cur" ) )
 		return 0
 	fi
 	if [ "$cword" -eq 3 ] && [ ${COMP_WORDS[1]} == "stop" ]; then

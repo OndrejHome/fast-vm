@@ -270,7 +270,7 @@ usage () {
 			echo "$FVM create <ImageName|ProfileName> <base|VmNumber|'VmNumber1 VmNumber2 ...'> [PathToLibvirtXML] [PathToHacksFile]"
 			;;
 		start)
-			echo "$FVM start <VmNumber|'VmNumber1 VmNumber2 ...'> [console|ssh [/path/to/custom/script]]"
+			echo "$FVM start <VmNumber|'VmNumber1 VmNumber2 ...'> [console|keydist|ssh [/path/to/custom/script]]"
 			;;
 		stop)
 			echo "$FVM stop <VmNumber|'VmNumber1 VmNumber2 ...'> [graceful]"
@@ -612,6 +612,38 @@ case "$1" in
 						else
 							ssh -i "$FASTVM_USER_CONF_DIR/id_fastvm" -o GlobalKnownHostsFile=/dev/null -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no "root@192.168.$SUBNET_NUMBER.$vm_number"
 						fi
+					fi
+				;;
+				keydist)
+					pmsg $P_DEBUG "starting VM $vm_name\n" "$vm_number"
+					virsh --connect qemu:///system start "$vm_name"
+					if [ "$?" != '0' ]; then
+						pmsg $P_ERROR "failed to start VM $vm_name, check syslog for more information\n" "$vm_number"
+					else
+						if [ ! -f "$FASTVM_USER_CONF_DIR/id_fastvm" ]; then
+							pmsg $P_WARNING "Generating new ssh key with empty passphrase for fast-vm use at $FASTVM_USER_CONF_DIR/id_fastvm\n" "$vm_number"
+							ssh-keygen -P '' -f "$FASTVM_USER_CONF_DIR/id_fastvm"
+						fi
+						wait_for_ssh "$vm_number"
+
+						pmsg $P_DEBUG "Adding SSH key fingerprints of VM to ~/.ssh/known_hosts\n" "$vm_number"
+						ssh-keyscan -T 1 "192.168.$SUBNET_NUMBER.$vm_number" 2>/dev/null|grep -E '(ssh-|ecdsa-)' >> ~/.ssh/known_hosts
+						pmsg $P_DEBUG "Copy SSH key to VM\n" "$vm_number"
+						if [ -n "$FASTVM_KEYDIST_PASSWORD" ]; then
+							pmsg $P_DEBUG "Attempting to use password from /etc/fast-vm.conf\n" "$vm_number"
+							if sshpass -p"$FASTVM_KEYDIST_PASSWORD" -- ssh-copy-id -i "$FASTVM_USER_CONF_DIR/id_fastvm"\
+								-o GlobalKnownHostsFile=/dev/null -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no\
+								"root@192.168.$SUBNET_NUMBER.$vm_number" >/dev/null 2>&1; then
+								pmsg $P_INFO "Installed SSH key using default password.\n Now try logging into the machine with: '$FVM ssh $vm_number'\n" "$vm_number"
+								exit 0
+							else
+								pmsg $P_DEBUG "Couldn't copy SSH key using password from /etc/fast-vm.conf (FASTVM_KEYDIST_PASSWORD)\n" "$vm_number"
+							fi
+						fi
+
+						ssh-copy-id -i "$FASTVM_USER_CONF_DIR/id_fastvm" \
+							-o GlobalKnownHostsFile=/dev/null -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no \
+							"root@192.168.$SUBNET_NUMBER.$vm_number" | grep -E '(password|Now try logging into the machine)' | sed "s@with:.*@with: $FVM ssh $vm_number@"
 					fi
 				;;
 				*)
