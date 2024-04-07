@@ -2,6 +2,7 @@ bindir=/usr/bin
 sbindir=/usr/sbin
 datadir=/usr/share
 libexecdir=/usr/libexec
+libdir=/usr/lib
 sysconfdir=/etc
 
 install:
@@ -29,5 +30,5 @@ install:
 	install -pm 644 man/fast-vm-net-cleanup.8 ${DESTDIR}/${datadir}/man/man8/
 	mkdir -p ${DESTDIR}/${datadir}/man/man5
 	install -pm 644 man/fast-vm.conf.5 ${DESTDIR}/${datadir}/man/man5/
-	mkdir -p /usr/lib/systemd/system
-	install -pm 644 fast-vm-loop-device.service /usr/lib/systemd/system/
+	mkdir -p ${DESTDIR}/${libdir}/systemd/system
+	install -pm 644 fast-vm-loop-device.service ${DESTDIR}/${libdir}/systemd/system/
