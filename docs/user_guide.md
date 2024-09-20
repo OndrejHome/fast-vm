@@ -2,7 +2,7 @@
 permalink: /fast-vm/user_guide.html
 title: fast-vm User Guide
 layout: post
-date: 2020-09-27 22:26:00+0900
+date: 2024-09-20 00:00:00+0900
 categories: [ fast-vm ]
 ---
 * TOC
@@ -84,38 +84,89 @@ This type of installation is supported on latest releases of CentOS/RHEL/Fedora 
 
 From `fast-vm` version 1.5 the CentOS/RHEL/Fedora also provides RPM package `fast-vm-minimal` with less dependencies. From that time by default the `fast-vm` package will pull in also the dependencies needed for some VM images and other useful packages to simplify the installation.
 
-#### 2.1.1. Fedora 30 {#installation_fedora30}
+#### 2.1.1. Fedora {#installation_fedora}
+The RPM builds for Fedora systems are done via COPR repositories and each Fedora release has a separate repository.The list of currently available Fedora repositories can be found in 'Active Releases' table at [COPR: ondrejhome/fast-vm](https://copr.fedorainfracloud.org/coprs/ondrejhome/fast-vm/).
+
+Example of enabling Fedora 40 fast-vm copr repository and installing fast-vm:
 ~~~
-# curl -o /etc/yum.repos.d/fast-vm.repo https://copr.fedorainfracloud.org/coprs/ondrejhome/fast-vm/repo/fedora-30/ondrejhome-fast-vm-fedora-30.repo
+# curl -o /etc/yum.repos.d/fast-vm.repo https://copr.fedorainfracloud.org/coprs/ondrejhome/fast-vm/repo/fedora-40/ondrejhome-fast-vm-fedora-40.repo
+# cat /etc/yum.repos.d/fast-vm.repo
+[copr:copr.fedorainfracloud.org:ondrejhome:fast-vm]
+name=Copr repo for fast-vm owned by ondrejhome
+baseurl=https://download.copr.fedorainfracloud.org/results/ondrejhome/fast-vm/fedora-$releasever-$basearch/
+type=rpm-md
+skip_if_unavailable=True
+gpgcheck=1
+gpgkey=https://download.copr.fedorainfracloud.org/results/ondrejhome/fast-vm/pubkey.gpg
+repo_gpgcheck=0
+enabled=1
+enabled_metadata=1
 # dnf install fast-vm
 ~~~
 
-#### 2.1.2. Fedora 31 {#installation_fedora31}
-~~~
-# curl -o /etc/yum.repos.d/fast-vm.repo https://copr.fedorainfracloud.org/coprs/ondrejhome/fast-vm/repo/fedora-31/ondrejhome-fast-vm-fedora-31.repo
-# dnf install fast-vm
-~~~
-
-#### 2.1.3. Fedora 32 {#installation_fedora32}
-~~~
-# curl -o /etc/yum.repos.d/fast-vm.repo https://copr.fedorainfracloud.org/coprs/ondrejhome/fast-vm/repo/fedora-32/ondrejhome-fast-vm-fedora-32.repo
-# dnf install fast-vm
-~~~
-
-#### 2.1.4. CentOS 7.8 {#installation_centos7}
+#### 2.1.2. CentOS 7.9 {#installation_centos7}
+**NOTE:** CentOS 7.x is in EOL (end-of-life) phase. If you still plan installing fast-vm then make sure to use the latest version (`7.9.2009`) of repositories from vault.centos.org.
 ~~~
 # curl -o /etc/yum.repos.d/fast-vm.repo https://copr.fedorainfracloud.org/coprs/ondrejhome/fast-vm/repo/epel-7/ondrejhome-fast-vm-epel-7.repo
+# cat /etc/yum.repos.d/fast-vm.repo
+[copr:copr.fedorainfracloud.org:ondrejhome:fast-vm]
+name=Copr repo for fast-vm owned by ondrejhome
+baseurl=https://download.copr.fedorainfracloud.org/results/ondrejhome/fast-vm/epel-7-$basearch/
+type=rpm-md
+skip_if_unavailable=True
+gpgcheck=1
+gpgkey=https://download.copr.fedorainfracloud.org/results/ondrejhome/fast-vm/pubkey.gpg
+repo_gpgcheck=0
+enabled=1
+enabled_metadata=1
+~~~
+~~~
 # curl -o /etc/yum.repos.d/fast-vm-epel-deps.repo https://raw.githubusercontent.com/OndrejHome/fast-vm/master/fast-vm-epel-deps.repo
+# cat /etc/yum.repos.d/fast-vm-epel-deps.repo
+[fast-vm-epel-deps]
+name=fast-vm dependencies from Extra Packages for Enterprise Linux $releasever - $basearch
+metalink=https://mirrors.fedoraproject.org/metalink?repo=epel-$releasever&arch=$basearch&infra=$infra&content=$contentdir
+enabled=1
+gpgcheck=1
+gpgkey=https://dl.fedoraproject.org/pub/epel/RPM-GPG-KEY-EPEL-$releasever
+includepkgs=
+ zstd
+ sshpass
+ pv
 ~~~
 **NOTE:** fast-vm can use few additional packages from epel (`zstd`, `pv`) for extra functionality. If you don't want to use them you can remove `/etc/yum.repos.d/fast-vm-epel-deps.repo` file.
 ~~~
 # yum install fast-vm zstd pv
 ~~~
 
-#### 2.1.5. CentOS 8.1 {#installation_centos8}
+#### 2.1.3. Alma Linux 8.10 {#installation_alma_linux8}
 ~~~
 # curl -o /etc/yum.repos.d/fast-vm.repo https://copr.fedorainfracloud.org/coprs/ondrejhome/fast-vm/repo/epel-8/ondrejhome-fast-vm-epel-8.repo
+# cat /etc/yum.repos.d/fast-vm.repo
+[copr:copr.fedorainfracloud.org:ondrejhome:fast-vm]
+name=Copr repo for fast-vm owned by ondrejhome
+baseurl=https://download.copr.fedorainfracloud.org/results/ondrejhome/fast-vm/epel-8-$basearch/
+type=rpm-md
+skip_if_unavailable=True
+gpgcheck=1
+gpgkey=https://download.copr.fedorainfracloud.org/results/ondrejhome/fast-vm/pubkey.gpg
+repo_gpgcheck=0
+enabled=1
+enabled_metadata=1
+~~~
+~~~
 # curl -o /etc/yum.repos.d/fast-vm-epel-deps.repo https://raw.githubusercontent.com/OndrejHome/fast-vm/master/fast-vm-epel-deps.repo
+# cat /etc/yum.repos.d/fast-vm-epel-deps.repo
+[fast-vm-epel-deps]
+name=fast-vm dependencies from Extra Packages for Enterprise Linux $releasever - $basearch
+metalink=https://mirrors.fedoraproject.org/metalink?repo=epel-$releasever&arch=$basearch&infra=$infra&content=$contentdir
+enabled=1
+gpgcheck=1
+gpgkey=https://dl.fedoraproject.org/pub/epel/RPM-GPG-KEY-EPEL-$releasever
+includepkgs=
+ zstd
+ sshpass
+ pv
 ~~~
 **NOTE:** fast-vm can use few additional packages from epel (`zstd`, `sshpass`, `pv`) for extra functionality. If you don't want to use them you can remove `/etc/yum.repos.d/fast-vm-epel-deps.repo` file.
 ~~~
@@ -134,7 +185,7 @@ On RHEL system some of dependencies are present only in `rhel-7-server-optional-
 # yum install fast-vm zstd pv
 ~~~
 
-#### 2.1.7. RHEL 8.1 {#installation_rhel8}
+#### 2.1.5. RHEL 8.10 {#installation_rhel8}
 ~~~
 # curl -o /etc/yum.repos.d/fast-vm.repo https://copr.fedorainfracloud.org/coprs/ondrejhome/fast-vm/repo/epel-8/ondrejhome-fast-vm-epel-8.repo
 # curl -o /etc/yum.repos.d/fast-vm-epel-deps.repo https://raw.githubusercontent.com/OndrejHome/fast-vm/master/fast-vm-epel-deps.repo
@@ -144,32 +195,34 @@ On RHEL system some of dependencies are present only in `rhel-7-server-optional-
 # dnf install fast-vm
 ~~~
 
-#### 2.1.8. Debian 10.4 {#installation_debian10}
-
-If you plan using publically available images from Author then also `libguestfs-tools` package is required for correct application of creation scripts and their proper functionality.
+#### 2.1.6. Debian 12.7 {#installation_debian12}
+If you plan using publicly available images from Author then also `libguestfs-tools` package is required for correct application of creation scripts and their proper functionality.
 ~~~
 # apt-get install gdebi-core
 # wget https://github.com/OndrejHome/fast-vm/releases/download/1.7/fast-vm_1.7_all-debian10.deb
 # gdebi fast-vm_1.7_all-debian10.deb
 ~~~
 
-#### 2.1.9. Ubuntu 18.04 {#installation_ubuntu18}
-~~~
-# apt-get install gdebi-core
-# wget https://github.com/OndrejHome/fast-vm/releases/download/1.7/fast-vm_1.7_all-ubuntu18.deb
-# gdebi fast-vm_1.7_all-ubuntu18.deb
-~~~
-
-#### 2.1.10. Ubuntu 20.04 {#installation_ubuntu20}
+#### 2.1.7. Ubuntu 20.04 {#installation_ubuntu20}
 ~~~
 # apt-get install gdebi-core
 # wget https://github.com/OndrejHome/fast-vm/releases/download/1.7/fast-vm_1.7_all-ubuntu20.deb
 # gdebi fast-vm_1.7_all-ubuntu20.deb
 ~~~
 
-### 2.2. Manual installation from source code {#installation_manual}
-On system that doesn't use RPM you can install `fast-vm` using traditional Makefile that is available in the Git repository. To install use command below.
+#### 2.1.8. Gentoo {#installation_gentoo}
+Ebuilds with fast-vm are provided in [ondrejhome-gentoo-overlay](https://github.com/OndrejHome/ondrejhome-gentoo-overlay). Once you have enabled the overlay, you can install fast-vm with emerge.
+
 ~~~
+# emerge -av app-emulation/fast-vm
+~~~
+
+### 2.2. Manual installation from source code {#installation_manual}
+On system that doesn't use RPM, DEB or other packaging method that fast-vm is provided in you can install `fast-vm` using traditional Makefile that is available in the Git repository. To install use command below to get versioned version of repository and run installation.
+
+~~~
+# git clone --depth 1 --branch 1.7 https://github.com/OndrejHome/fast-vm/
+# cd fast-vm/
 # make install
 ~~~
 
@@ -180,7 +233,6 @@ When using repository in Fedora/CentOS/RHEL just use the update command as show 
 
 ~~~
 # dnf update fast-vm
-# yum update fast-vm
 ~~~
 
 There is currently no update support for fast-vm on Debian/Ubuntu systems.
@@ -207,8 +259,7 @@ After initial installation or update of `fast-vm` it is highly recommended to ru
 
 Script will create and validate configuration file `/etc/fast-vm.conf`. Further it will allow during initial configuration the creation of storage for `fast-vm` and libvirt network that will provide networking to VMs.
 
-#### 2.5.1. `configure-fast-vm` walkthrough with examples {#configure-fast-vm-example}
-
+#### 2.5.1. `configure-fast-vm` walk-through with examples {#configure-fast-vm-example}
 a) Start configuration script.
 ~~~
 [root@mypc ~]# configure-fast-vm
@@ -463,7 +514,7 @@ This command provides following advantages over normal SSH connection:
 - Waits for SSH on your VM to become available and probe for availability every second. Once SSH is ready then connect (this is equivalent of trying `ssh root@>your_machine_ip<` manually until you succeed).
 - Ignore any SSH keys stored in 'known_hosts' file - especially useful if you re-use same VM_number and you don't want to be bothered with updating 'known_hosts' file.`fast-vm` bypasses saving of the SSH key into 'known_hosts' file.
 
-#### 3.1.2. Accessing VMs using serial console {#accesing_vm_using_serial_console}
+#### 3.1.2. Accessing VMs using serial console {#accessing_vm_using_serial_console}
 Most of images provided by Author for `fast-vm` are pre-configured to provide serial console access. This allows you to connect via virtual serial port to text console of your VM. This is useful when VM network is not working and provides you also with access to GRUB boot menu. Compared with graphical console access discussed in next section you have ability to copy and paste text easily from serial console.
 
 To access serial console of machine use command below
