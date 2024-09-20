@@ -23,32 +23,32 @@ know how to fix it or expand it? Then [edit this page on Github](https://github.
 `fast-vm` needs several things for proper operation, the minimum is:
 
 - running and functional libvirt daemon (pulled in as dependency from `fast-vm` RPM packages)
-- user with access to libvirt (root or normal user with unrestricted read-write access to libvirt)
+- user with access to libvirt (root or normal user with unrestricted read-write access to libvirt `qemu:///system`)
 - some templates to start with (you can also create your own, check the section [Creating custom images](#creating_custom_images))
-- LVM tools with thinpool capabilities (most of todays distributions has this)
+- LVM tools with thinpool capabilities (most of today's distributions has this)
 - some space on LVM for `fast-vm` data (you can create also LVM on top of loopback device if you are out of space, check ADVANCED USAGE part)
 
 ### 1.2. How `fast-vm` works {#how_fast-vm_works}
-Once configured, `fast-vm` stores the templates of VM disk drives (**"images"**) in LVM thinpool LV for space efficiency. Templates for VMs (**"libvirt XML"**) are just libvirt XMLs with few macros from `fast-vm` (full listing in man page).
+Once configured, `fast-vm` stores the templates of VM disk drives (**"images"**) in LVM thinpool LV for space efficiency. Templates for VMs (**"libvirt XML"**) are just libvirt XMLs with few macros from `fast-vm` (full listing in `fast-vm-image` man page under title `TEMPLATE MACROS`).
 
 When `fast-vm` is requested to create a VM, it will:
 
-1. create new writable LVM snapshot of disk drive
-2. define libvirt VM for it (taking the libvirt XML, replacing macros and defining the VM using `virsh define`)
-3. make a static DHCP reservation for libvirt network on which VM will be. (so you can have predictable IPv4 address of the VM)
-4. (optionally) after VM was defined in libvirt and all other tasks were done it can run so called 'hack file' that customize the image of VM further (one of use cases is to run guestfish tools to alter needed files on VM disk drive to achieve additional level of customization)
+1. Create new writable LVM snapshot of disk drive.
+2. Define libvirt VM for it (taking the libvirt XML, replacing macros and defining the VM using `virsh define`).
+3. Make a static DHCP reservation for libvirt network on which VM will be. (so you can have predictable IPv4 address of the VM).
+4. (optionally) After VM was defined in libvirt and all other tasks were done it can run so called 'hack file' that customize the image of VM further (one of use cases is to run guestfish tools to alter needed files on VM disk drive to achieve additional level of customization).
 
 When `fast-vm` is requested to delete a VM, it will:
 
-1. stop the VM forcefully if it is running
-2. remove static DHCP reservation from libvirt and send dhcp_release request when `dnsmasq-tools` are present.
-3. remove the writable snaphot of machine
-4. (optionally) before undefining the VM from libvirt the so called 'delete hack file' can be run to do cleanup which can be a counter part to 'hack file' from VM creation time
-5. undefine the VM from libvirt
+1. Stop the VM forcefully if it is running.
+2. Remove static DHCP reservation from libvirt and send dhcp_release request when `dnsmasq-tools` are present.
+3. Remove the writable snapshot of machine.
+4. (optionally) Before undefining the VM from libvirt the so called 'delete hack file' can be run to do cleanup which can be a counter part to 'hack file' from VM creation time.
+5. Undefine the VM from libvirt.
 
 ### 1.3. What is `fast-vm server`? {#what_is_fast-vm_server}
 From version 1.0, `fast-vm` provides feature that helps to identify which user on system created the VM. This allows for basic prevention of accidental removal of VMs by other users and enables the use in multi-user environment.
-`fast-vm server` in this document refers to any machine running `fast-vm` accessible by normal users that are in group allowed to use `fast-vm`. While the `fast-vm` can be used by individual it is often also used to provide access to multiple user so they can collaborativelly access the VMs.
+`fast-vm server` in this document refers to any machine running `fast-vm` accessible by normal users that are in group allowed to use `fast-vm`. While the `fast-vm` can be used by individual it is can also used to provide access to multiple user so they can collaboratively access the VMs.
 
 **SECURITY NOTE:** Typical installation of `fast-vm` suggest giving users full read/write access to libvirt daemon and several commands using 'sudo'. Check the chapter [Security information](#security_information) of this document to see why the `fast-vm` needs such access and feel free to further restrict actions you find appropriate.
 
@@ -64,13 +64,13 @@ Not very suitable use cases:
 - secure systems - `fast-vm` is trying to allow many users to access shared pool of images and VMs - this is going against preventing any users from access drives of other machines. By design it might not be easy or possible to guarantee the usage of `fast-vm` in environment where users must be strictly separated.
 
 ### 1.5. Concepts: Images, VM_number and VMs {#concepts_images_vm_numbers_and_vms}
-Fast-vm is trying to simplify work with pre-prepared virtual machines and therefore most of the time you will already use machine that has some system installed on it. What system will be pre-installed on VM is determined by **Image** from which the VM was created. Images are usually named the way that it is easy to guess what system they contain (for example image name 'r73' will most probably contain RHEL 7.3 system).
+Fast-vm is trying to simplify work with pre-prepared virtual machines and therefore most of the time you will already use machine that has some system installed on it. What system will be pre-installed on VM is determined by **Image** from which the VM was created. Images are usually named the way that it is easy to guess what system they contain (for example image name 'debian-12.1' will most probably contain Debian 12.1 system).
 
 To identify the VMs, `fast-vm` uses **VM_number** as the name of your virtual machine. Number from range 20 to 220 (currently). So you don't need to remember how have you named your VM you just need to remember the VM_number which is used with all VM operations to identify your VM.
 
 Note: You can add notes/descriptions to VMs if you desire to have something like name (check `fast-vm edit_note` command).
 
-## 2. Where to download and how to install `fast-vm` {#installation_updates_unistallation}
+## 2. Where to download and how to install `fast-vm` {#installation_updates_uninstallation}
 Currently there are several methods for installation that are described below. If you are interested into making package for your distribution check out with [the Author](https://www.famera.cz/blog/about.html).
 
 Useful links for `fast-vm` project:
@@ -122,7 +122,7 @@ From `fast-vm` version 1.5 the CentOS/RHEL/Fedora also provides RPM package `fas
 # dnf install fast-vm
 ~~~
 
-#### 2.1.6. RHEL 7.8 {#instalaation_rhel7}
+#### 2.1.4. RHEL 7.9 {#instalation_rhel7}
 On RHEL system some of dependencies are present only in `rhel-7-server-optional-rpms` and `rhel-7-server-extras-rpms` repository that needs to be activated before `fast-vm` installation.
 ~~~
 # subscription-manager repos --enable=rhel-7-server-optional-rpms --enable=rhel-7-server-extras-rpms
@@ -183,12 +183,12 @@ When using repository in Fedora/CentOS/RHEL just use the update command as show 
 # yum update fast-vm
 ~~~
 
-There is currently no update support for fast-vm on Debian systems.
+There is currently no update support for fast-vm on Debian/Ubuntu systems.
 
 ### 2.4. Uninstalling `fast-vm` {#uninstall}
-If you don't like `fast-vm` please consider leaving me a feedback on what you don't like or what could get improved so you can use it.
+If you don't like `fast-vm` please consider leaving me a feedback on what you didn't like or what could be improved so you can use it.
 
-If you have installed `fast-vm` from RPM then just uninstall the package.
+If you have installed `fast-vm` from RPM or DEB then just uninstall the package.
 
 ~~~
 # dnf remove fast-vm fast-vm-minimal
@@ -196,7 +196,7 @@ If you have installed `fast-vm` from RPM then just uninstall the package.
 # apt-get remove fast-vm
 ~~~
 
-If you have used manual installation there is currently no automated way of unistalling but in general it is enough to check the `Makefile`and remove all files it creates in system. Additionally you can remove the directories `/etc/fast-vm/`, `$HOME/.fast-vm/`. Since version 1.4 the notes for fast-vm are not stored anymore in separate files and they are part of the description of VM in libvirt.
+If you have used manual installation there is currently no automated way of uninstalling but in general it is enough to check the `Makefile`and remove all files it creates in system. Additionally you can remove the directories `/etc/fast-vm/`, `$HOME/.fast-vm/`. Since version 1.4 the notes for fast-vm are not stored anymore in separate files and they are part of the description of VM in libvirt.
 
 ### 2.5. Configuring `fast-vm` {#configuring_fast-vm}
 After initial installation or update of `fast-vm` it is highly recommended to run command below to perform configuration with validation.
@@ -387,7 +387,7 @@ devices {
 }
 ...
 ~~~
-NOTE: Final filter configuration depends heavilly on your environment/system.
+NOTE: Final filter configuration depends heavily on your environment/system.
 
 ### 2.6. UEFI boot support with OVMF {#ovmf_uefi_support}
 To use libvirt with UEFI boot a special firmware is required. fast-vm` doesn't require any special configuration for UEFI boot except of having needed firmware and image that was pre-installed with UEFI support. More on how to install UEFI firmware into libvirt check [Fedora: Using UEFI with QEMU](https://fedoraproject.org/wiki/Using_UEFI_with_QEMU) article.
@@ -434,16 +434,29 @@ lrwxrwxrwx. 1 root root /usr/share/OVMF/OVMF_VARS.fd -> /usr/share/edk2.git/ovmf
 ## 3. Basic operations in `fast-vm` {#basic_operations}
 
 ### 3.1. Accessing the VMs {#accessing_vm}
-There are 3 ways discussed in this guide on how to access your VM created by `fast-vm`. In most cases you will need to know password of some user on VM to which you are connecting. To find which user and password to used with such VMs check with provider of **Image**. Author of `fast-vm` uses most commonly user 'root' with password 'testtest' in images that he provides, however it doesn't apply to all systems so check carefully with provider of Image to know how to access the VMs. This guide will assume the use of account 'root' with password 'testtest' as account information for VMs.
+There are 3 ways discussed in this guide on how to access your VM created by `fast-vm`. In most cases you will need to know password of some user on VM to which you are connecting. To find which user and password to use with such VMs check with provider of **Image**. Author of `fast-vm` uses most commonly user 'root' with password 'testtest' in images that he provides, however it doesn't apply to all systems so check carefully with provider of Image to know how to access the VMs. This guide will assume the use of account 'root' with password 'testtest'.
 
 #### 3.1.1. Accessing VMs using SSH or other remote connection protocols running on VM {#accessing_vm_using_ssh_or_remote_connection}
 Each VM will be assigned IP address by DHCP from local subnet that ends with VM_number. For example if your VM_number is `42` and the subnet used by `fast-vm` is `192.168.11.0/24`, then your VM will be assigned address `192.168.11.42` by DHCP. To figure out which address is assigned to your VM you can also use command below to print the IP of your VM.
 ~~~
 # fast-vm info <VM_number>
 ~~~
+~~~
+# fast-vm info 42
+[42][inf] IP: 192.168.11.42
+...
+~~~
 If you would like to login using SSH as root to your VM you can use shortcut command below.
 ~~~
 # fast-vm ssh <VM_number> 
+~~~
+~~~
+# fast-vm ssh 42
+[42][inf] checking the 192.168.11.42 for active SSH connection (ctrl+c to interrupt)
+.....
+[42]SSH ready
+Warning: Permanently added '192.168.11.42' (ED25519) to the list of known hosts.
+root@192.168.11.42's password:
 ~~~
 This command provides following advantages over normal SSH connection:
 
@@ -457,6 +470,12 @@ To access serial console of machine use command below
 ~~~
 # fast-vm console <VM_number>
 ~~~
+~~~
+# fast-vm console 42
+Connected to domain 'fastvm-alma-8.8-42'
+Escape character is ^] (Ctrl + ])
+...
+~~~
 To get out of serial console of machine use escape sequence `ctrl + ]`('ctrl' key and 'right squared bracket' key)
 
 #### 3.1.3. Accessing VMs using graphical console (Spice/VNC) {#accessing_vm_using_graphical_console}
@@ -466,10 +485,8 @@ The simplest way on how to get access to graphical console even when the `fast-v
 
 ### 3.2. Creating VMs {#creating_vm}
 To create VM you need to know 2 things:
-<ul>
-<li>name of image or profile you want to use</li>
-<li>know one VM_number on `fast-vm server` that is not in use</li>
-</ul>
+- name of image or profile you want to use
+- know one VM_number on `fast-vm server` that is not in use
 
 To list available images and profiles you can use commands below
 ~~~
@@ -490,20 +507,43 @@ Once you have needed information the creation of VM is done using command below
 Once VM exists you can start it using command below.
 ~~~
 # fast-vm start <VM_number>
+[42][inf] starting VM fastvm-alma-8.8-42 (192.168.11.42)
+Domain 'fastvm-alma-8.8-42' started
 ~~~
 To forcefully stop VM you can use command below.
 ~~~
 # fast-vm stop <VM_number>
 ~~~
-To gracefully stop your VM you can add word 'graceful' to the end of stop command like below. This will send ACPI shutdown signal to VM instead of forcefully killing it. If OS can recognize this ACPI singal it will initiate appropriate action (usually grafeul shutdown of system).
+~~~
+# fast-vm stop 42
+[99][inf] Stopping VM fastvm-alma-8.8-42 now
+Domain 'fastvm-alma-8.8-42' destroyed
+~~~
+To gracefully stop your VM you can add word 'graceful' to the end of stop command like below. This will send ACPI shutdown signal to VM instead of forcefully killing it. If OS can recognize this ACPI singal it will initiate appropriate action (usually graceful shutdown of system).
 ~~~
 # fast-vm stop <VM_number> graceful
+~~~
+~~~
+# fast-vm stop 42 graceful
+[42][inf] Sending ACPI shutdown event to fastvm-alma-8.8-42
+Domain 'fastvm-alma-8.8-42' is being shutdown
 ~~~
 
 ### 3.4. Deleting VMs {#deleting_vm}
 If you don't need the VM any more then you can delete it using command below.
 ~~~
 # fast-vm delete <VM_number>
+~~~
+~~~
+# fast-vm delete 42
+[42][inf] removing DHCP reservation 192.168.4.42 for 52:54:00:0f:a2:28
+Updated network fastvm-nat persistent config and live state
+[42][inf] removing VM drive
+[42][inf] removing SSH keys for this machine from ~/.ssh/known_hosts
+[42][inf] undefining VM fastvm-alma-8.8-42 from libvirt
+Domain 'fastvm-alma-8.8-42' has been undefined
+
+[42][ok] VM 'fastvm-alma-8.8-42' deleted
 ~~~
 **WARNING:** You will NOT be prompted to confirm the VM deletion. VM can be deleted anytime - regardless if it is running or not.
 
@@ -531,8 +571,8 @@ Sometimes VM_numbers might not be enough to contain enough information to identi
 ~~~
 This note will be shown in listing of VMs and also it will be included in the libvirt 'visible name' so some clients such as 'virt-manager' can show it to help you to identify your VM.
 
-### 3.7. Importing images into `fast-vm` {#importing_images}
-**Note:** from `fast-vm-1.7` the image operations moved from `fast-vm` command to `fast-vm-image` command. While there is temporarily compatibility layer that will automatically reflect this change, make sure to adjust to new syntax documeted here.
+### 3.7. Importing images into `fast-vm` using `fast-vm-image` {#importing_images}
+**Note:** from `fast-vm-1.7` the image operations moved from `fast-vm` command to `fast-vm-image` command. 
 
 The main thing in `fast-vm` are **Images** which provides the templates upon which we create new VMs. It is possible to create you own Image or you can import some premade ones. Below is link for some images pre-made by Author.
 
@@ -599,7 +639,7 @@ If the checksum files are present you will see output similar to one below durin
 
 You can also invoke image verification manually with command `fast-vm-image verify <ImageName> <ChecksumsLocation>`. Last provided argument should point to local directory or URL directory containing the checksum files. To create checksum files for existing image you can use command `fast-vm-image gen_checksums <ImageName>` that will generate checksum files for selected image.
 
-#### 3.10.1. What to do when image chacksums FAILS {#what_to_do_when_image_checksums_fails}
+#### 3.10.1. What to do when image checksums FAILS {#what_to_do_when_image_checksums_fails}
 First of all don't panic. There can be legimit reasons for checksums failure:
 - checksum file might be missing
 - after importing the image `fast-vm-image compact <ImageName>` was used on image
@@ -636,7 +676,7 @@ Other features and limitations using `virt-manager`
 
 - `virt-manager` doesn't provide ability to create VMs same way as `fast-vm` does.
 - VM names are shown in format `<VM_number> <VM note containing VM owner>`
-- When upgrading from older version of fast-vm some VMs might not have populated the names correctly which can be fixed by assigning them notes from `fast-vm`
+- When upgrading from very old version of fast-vm some VMs might not have populated the names correctly which can be fixed by assigning them notes from `fast-vm`
 - VM visible names are not propagated to `fast-vm server` and are always overwritten by `fast-vm edit_note` command.
 - From version 1.4 `fast-vm` stores metadata in the **description** field provided by libvirt in the VM. If this data are inconsistent the `fast-vm` will replace them and make VM owner to be 'root'.
 
@@ -653,8 +693,14 @@ For remote `fast-vm server` you can use the command below
 ~~~
 Same limitation as for `virt-manager` applies here.
 
+Example of accessing serial console of VM on local and remote hypervisor using virsh:
+~~~
+# virsh --connect qemu:///system console fastvm-alma-8.8-42
+# virsh --connect qemu+ssh://user@remote_system/system console fastvm-alma-8.8-42
+~~~
+
 ### 4.3. Creating custom Images for `fast-vm` {#creating_custom_images}
-`fast-vm` is made the way that it provides support for creating your own Images for use and sharing with others and aims at making this one of its main features. Before `fast-vm-1.2` it was possible to create only Images with disk size of 10GB. From `fast-vm-1.2` you are able to specify custom size of Image in GB and to resize any existing Image.
+`fast-vm` is made the way that it provides support for creating your own Images for use and sharing with others and aims at making this one of its main features.
 
 The process of creating custom Image can be summarized into following steps which are described more in detail in man page (`man fast-vm`) section 'CREATING CUSTOM IMAGES'.
 
