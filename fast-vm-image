@@ -705,7 +705,14 @@ case "$1" in
 
 		pmsg $P_INFO "Compacting disk of image $image_name ....\n"
 		pmsg $P_DEBUG "Running 'virt-sparsify -q --in-place /dev/$THINPOOL_VG/$VM_PREFIX$image_name.\n"
-		LIBGUESTFS_BACKEND=direct virt-sparsify -q --in-place "/dev/$THINPOOL_VG/$VM_PREFIX$image_name" 2>&1|$DEBUG_LOG_CMD
+
+                pipefail=$(mktemp)
+                if { LIBGUESTFS_BACKEND=direct virt-sparsify -q --in-place "/dev/$THINPOOL_VG/$VM_PREFIX$image_name" 2>&1 || echo > $pipefail; } | $DEBUG_LOG_CMD && [ ! -s "$pipefail" ]; then
+                        pmsg $P_INFO "Image disk compaction completed.\n"
+                else
+                        pmsg $P_ERROR "virt-sparsify command failed, check logs for details.\n"
+                fi
+                rm -f "$pipefail"
 
 		;;
 	verify)

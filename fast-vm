@@ -1073,7 +1073,15 @@ case "$1" in
 
 		pmsg $P_INFO "Compacting disk of VM $vm_number ....\n" "$vm_number"
 		pmsg $P_DEBUG "Running 'virt-sparsify -q --in-place /dev/$THINPOOL_VG/$vm_name'.\n" "$vm_number"
-		LIBGUESTFS_BACKEND=direct virt-sparsify -q --in-place "/dev/$THINPOOL_VG/$vm_name" 2>&1|$DEBUG_LOG_CMD
+
+		pipefail=$(mktemp)
+                if { LIBGUESTFS_BACKEND=direct virt-sparsify -q --in-place "/dev/$THINPOOL_VG/$vm_name" 2>&1 || echo > $pipefail; } | $DEBUG_LOG_CMD && [ ! -s "$pipefail" ]; then
+                        pmsg $P_INFO "Disk compaction completed.\n" "$vm_number"
+                else
+                        pmsg $P_ERROR "virt-sparsify command failed, check logs for details.\n" "$vm_number"
+                fi
+                rm -f "$pipefail"
+
 		;;
 	*) 
 		pmsg $P_ERROR "unknown action\n"
