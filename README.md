@@ -59,6 +59,7 @@ Distribution    Installation method
 - (optional) OVMF UEFI image for UEFI support in images
 - (optional) `libguestfs-make-fixed-appliance` to generate system-wide libguestfs appliance
 - (optional) `sshpass` to try default password first in keydist operation
+- (optional) `taskset` to set CPU affinity for some actions (required on systems with multiple CPU core types)
 
 ### How to contribute {#contribute}
 check [CONTRIBUTING.md](CONTRIBUTING.md)

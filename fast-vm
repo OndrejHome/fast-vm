@@ -4,6 +4,7 @@ FASTVM_HELPER=/usr/libexec/fast-vm-helper.sh
 FASTVM_USER_CONF_DIR="$HOME/.fast-vm"
 FASTVM_SYSTEM_CONF_DIR="/etc/fast-vm"
 CURL_OPTS=""
+TASKSET_CPULIST="0"
 LOG_LEVEL=7
 DISPLAY_LEVEL=7
 FVM=$(basename "$0")
@@ -1071,11 +1072,17 @@ case "$1" in
 		# change group of LV so we can clean it up
 		echo "chgrp" "/dev/$THINPOOL_VG/$vm_name" | sudo -n $FASTVM_HELPER
 
+		# set CPU afifnity when 'taskset' is present to make this work on systems with several CPU core types
+		TASKSET=""
+		if command -v taskset >/dev/null 2>&1; then
+			TASKSET="taskset -c $TASKSET_CPULIST"
+		fi
+
 		pmsg $P_INFO "Compacting disk of VM $vm_number ....\n" "$vm_number"
-		pmsg $P_DEBUG "Running 'virt-sparsify -q --in-place /dev/$THINPOOL_VG/$vm_name'.\n" "$vm_number"
+		pmsg $P_DEBUG "Running '$TASKSET virt-sparsify -q --in-place /dev/$THINPOOL_VG/$vm_name'.\n" "$vm_number"
 
 		pipefail=$(mktemp)
-                if { LIBGUESTFS_BACKEND=direct virt-sparsify -q --in-place "/dev/$THINPOOL_VG/$vm_name" 2>&1 || echo > $pipefail; } | $DEBUG_LOG_CMD && [ ! -s "$pipefail" ]; then
+                if { LIBGUESTFS_BACKEND=direct $TASKSET virt-sparsify -q --in-place "/dev/$THINPOOL_VG/$vm_name" 2>&1 || echo > $pipefail; } | $DEBUG_LOG_CMD && [ ! -s "$pipefail" ]; then
                         pmsg $P_INFO "Disk compaction completed.\n" "$vm_number"
                 else
                         pmsg $P_ERROR "virt-sparsify command failed, check logs for details.\n" "$vm_number"
