@@ -2,7 +2,7 @@
 permalink: /fast-vm/user_guide.html
 title: fast-vm User Guide
 layout: post
-date: 2024-09-20 00:00:00+0900
+date: 2026-01-31 15:43:00+0900
 categories: [ fast-vm ]
 ---
 * TOC
@@ -71,154 +71,284 @@ To identify the VMs, `fast-vm` uses **VM_number** as the name of your virtual ma
 Note: You can add notes/descriptions to VMs if you desire to have something like name (check `fast-vm edit_note` command).
 
 ## 2. Where to download and how to install `fast-vm` {#installation_updates_uninstallation}
-Currently there are several methods for installation that are described below. If you are interested into making package for your distribution check out with [the Author](https://www.famera.cz/blog/about.html).
+`fast-vm` is distributed in several forms such as RPM/DEB package, gentoo ebuild file and source code with simple Makefile. Based on system you use choose one of following to continue:
 
-Useful links for `fast-vm` project:
+- [2.1. Installation from RPM package (Fedora, EL)](#installation_from_rpm_package)
+- [2.2. Installation from DEB package (Debian, Ubuntu)](#installation_from_deb_package)
+- [2.3. Gentoo](#installation_gentoo)
+- [2.4. Manual installation from source code](#installation_manual)
 
-- Source codes cat be found at [GitHub](https://github.com/OndrejHome/fast-vm)
-- RPM packages are in [GitHub Release](https://github.com/OndrejHome/fast-vm/releases)
-- Bugs/RFEs can be reported at [GitHub issues](https://github.com/OndrejHome/fast-vm/issues)
+### 2.1. Installation from RPM package (Fedora, EL) {#installation_from_rpm_package}
+**Note:** Previously the `fast-vm` was distributed from COPR RPM repositories which were different for each Fedora and EL version.
 
-### 2.1. Installation from package (RPM, DEB) {#installation_from_package}
-This type of installation is supported on latest releases of CentOS/RHEL/Fedora and Debian. Below are examples on how to install the current release on these distribution.
+For improved comfort the RPMs are now distributed via two RPM repositories:
+- the `unified-rpm-fedora` for all Fedora systems and
+- the `unified-rpm-el` for all EL systems (such as AlmaLinux or RHEL)
 
-From `fast-vm` version 1.5 the CentOS/RHEL/Fedora also provides RPM package `fast-vm-minimal` with less dependencies. From that time by default the `fast-vm` package will pull in also the dependencies needed for some VM images and other useful packages to simplify the installation.
+Depending on your system continue with one of following:
+- [2.1.1. Fedora 41/42/43](#installation_fedora)
+- [2.1.2. Fedora CoreOS 43](#installation_fedora_coreos)
+- [2.1.3. AlmaLinux 8/9/10](#installation_alma_linux)
+- [2.1.4. RHEL 8/9/10](#installation_rhel)
 
-#### 2.1.1. Fedora {#installation_fedora}
-The RPM builds for Fedora systems are done via COPR repositories and each Fedora release has a separate repository.The list of currently available Fedora repositories can be found in 'Active Releases' table at [COPR: ondrejhome/fast-vm](https://copr.fedorainfracloud.org/coprs/ondrejhome/fast-vm/).
+From `fast-vm` version 1.5 the RPM package `fast-vm-minimal` with less dependencies is also available. From that time by default the `fast-vm` package will pull in also the dependencies needed for some VM images and other useful packages to simplify the installation. If you are installing fast-vm for first time using `fast-vm` package is recommended.
 
-Example of enabling Fedora 40 fast-vm copr repository and installing fast-vm:
+#### 2.1.1. Fedora 41/42/43 {#installation_fedora}
+On Fedora systems start by adding fast-vm `unified-rpm-fedora` RPM repository to get access to `fast-vm` packages as shown below.
 ~~~
-# curl -o /etc/yum.repos.d/fast-vm.repo https://copr.fedorainfracloud.org/coprs/ondrejhome/fast-vm/repo/fedora-40/ondrejhome-fast-vm-fedora-40.repo
-# cat /etc/yum.repos.d/fast-vm.repo
-[copr:copr.fedorainfracloud.org:ondrejhome:fast-vm]
-name=Copr repo for fast-vm owned by ondrejhome
-baseurl=https://download.copr.fedorainfracloud.org/results/ondrejhome/fast-vm/fedora-$releasever-$basearch/
-type=rpm-md
-skip_if_unavailable=True
-gpgcheck=1
-gpgkey=https://download.copr.fedorainfracloud.org/results/ondrejhome/fast-vm/pubkey.gpg
-repo_gpgcheck=0
+# cat > /etc/yum.repos.d/fast-vm.repo <<EOF
+[fast-vm]
+name=fast-vm
+baseurl=https://www.famera.cz/fast-vm-repo/unified-rpm-fedora/
 enabled=1
-enabled_metadata=1
+repo_gpgcheck=1
+gpgcheck=1
+gpgkey=https://www.famera.cz/fast-vm-repo/fast-vm-repo-2026-2031-eddsa.gpg.txt
+EOF
+~~~
+Verify that fast-vm repository is available.
+~~~
+# dnf repolist fast-vm
+repo id                                            repo name
+fast-vm                                            fast-vm
+~~~
+Install `fast-vm` package.
+**Note:** First time you access the 'unified-rpm-fedora' RPM repository you will have to confirm correctness of attached GPG key, make sure to check the Fingerprint matches one shown in example below.
+~~~
 # dnf install fast-vm
+...
+Importing OpenPGP key 0xB90A34DF:
+ UserID     : "fast-vm-repo-2026-2031-eddsa <fast-vm-repo@famera.cz>"
+ Fingerprint: 2A3836FF3C8DA8130455EC79EB3E6FCBB90A34DF
+ From       : https://www.famera.cz/fast-vm-repo/fast-vm-repo-2026-2031-eddsa.gpg.txt
+Is this ok [y/N]: y
+...
 ~~~
 
-#### 2.1.2. CentOS 7.9 {#installation_centos7}
-**NOTE:** CentOS 7.x is in EOL (end-of-life) phase. If you still plan installing fast-vm then make sure to use the latest version (`7.9.2009`) of repositories from vault.centos.org.
+Fedora systems have the files needed for UEFI images in correct places and no further steps for their use is needed.
+
+Once installation is complete continue with [2.7. Configuring `fast-vm`](#configuring_fast-vm).
+
+#### 2.1.2. Fedora CoreOS 43 {#installation_fedora_coreos}
+Fedora CoreOS systems, at time of writing, needs slightly different repository definition with GPG key present locally and `repo_gpgcheck` disabled to work properly. On Fedora CoreOS systems therefor start with downloading the GPG key.
 ~~~
-# curl -o /etc/yum.repos.d/fast-vm.repo https://copr.fedorainfracloud.org/coprs/ondrejhome/fast-vm/repo/epel-7/ondrejhome-fast-vm-epel-7.repo
-# cat /etc/yum.repos.d/fast-vm.repo
-[copr:copr.fedorainfracloud.org:ondrejhome:fast-vm]
-name=Copr repo for fast-vm owned by ondrejhome
-baseurl=https://download.copr.fedorainfracloud.org/results/ondrejhome/fast-vm/epel-7-$basearch/
-type=rpm-md
-skip_if_unavailable=True
-gpgcheck=1
-gpgkey=https://download.copr.fedorainfracloud.org/results/ondrejhome/fast-vm/pubkey.gpg
-repo_gpgcheck=0
+# curl -o /etc/pki/rpm-gpg/fast-vm-repo-2026-2031-rsa.gpg.txt https://www.famera.cz/fast-vm-repo/fast-vm-repo-2026-2031-rsa.gpg.txt
+~~~
+Then add fast-vm `unified-rpm-fedora` RPM repository
+~~~
+# cat > /etc/yum.repos.d/fast-vm.repo <<EOF
+[fast-vm]
+name=fast-vm
+baseurl=https://www.famera.cz/fast-vm-repo/unified-rpm-fedora/
 enabled=1
-enabled_metadata=1
+repo_gpgcheck=0
+gpgcheck=1
+gpgkey=file:///etc/pki/rpm-gpg/fast-vm-repo-2026-2031-rsa.gpg.txt
+EOF
 ~~~
+Verify that fast-vm repository is available.
 ~~~
-# curl -o /etc/yum.repos.d/fast-vm-epel-deps.repo https://raw.githubusercontent.com/OndrejHome/fast-vm/master/fast-vm-epel-deps.repo
-# cat /etc/yum.repos.d/fast-vm-epel-deps.repo
+# dnf repolist fast-vm
+repo id                                            repo name
+fast-vm                                            fast-vm
+~~~
+Install `fast-vm` package.
+~~~
+# rpm-ostree install -A fast-vm
+~~~
+
+Fedora CoreOS systems have the files needed for UEFI images in correct places and no further steps for their use is needed.
+
+Once installation is complete continue with [2.7. Configuring `fast-vm`](#configuring_fast-vm).
+
+#### 2.1.3. AlmaLinux 8/9/10 {#installation_alma_linux}
+On AlmaLinux systems start by adding fast-vm `unified-rpm-el` RPM repository to get access to `fast-vm` packages as shown below.
+~~~
+# cat > /etc/yum.repos.d/fast-vm.repo <<EOF
+[fast-vm]
+name=fast-vm
+baseurl=https://www.famera.cz/fast-vm-repo/unified-rpm-el/
+enabled=1
+repo_gpgcheck=1
+gpgcheck=1
+gpgkey=https://www.famera.cz/fast-vm-repo/fast-vm-repo-2026-2031-rsa.gpg.txt
+EOF
+~~~
+In case you are not already using EPEL repositories and want to install recommended `pv` package for `fast-vm` you can use command below to enable EPEL repository for package `pv`. **Note:** `fast-vm` will work without `pv` command, but won't show progress bars on image import/export.
+~~~
+# cat > /etc/yum.repos.d/fast-vm-epel-deps.repo <<EOF
 [fast-vm-epel-deps]
-name=fast-vm dependencies from Extra Packages for Enterprise Linux $releasever - $basearch
-metalink=https://mirrors.fedoraproject.org/metalink?repo=epel-$releasever&arch=$basearch&infra=$infra&content=$contentdir
+name=fast-vm dependencies from Extra Packages for Enterprise Linux $releasever - \$basearch
+metalink=https://mirrors.fedoraproject.org/metalink?repo=epel-\$releasever&arch=\$basearch&infra=\$infra&content=\$contentdir
 enabled=1
 gpgcheck=1
-gpgkey=https://dl.fedoraproject.org/pub/epel/RPM-GPG-KEY-EPEL-$releasever
+gpgkey=https://dl.fedoraproject.org/pub/epel/RPM-GPG-KEY-EPEL-\$releasever
 includepkgs=
- zstd
- sshpass
  pv
+EOF
 ~~~
-**NOTE:** fast-vm can use few additional packages from epel (`zstd`, `pv`) for extra functionality. If you don't want to use them you can remove `/etc/yum.repos.d/fast-vm-epel-deps.repo` file.
+Verify that fast-vm repository is available.
 ~~~
-# yum install fast-vm zstd pv
+# dnf repolist fast-vm fast-vm-epel-deps
+repo id             repo name                                                                  status
+fast-vm             fast-vm                                                                    enabled
+fast-vm-epel-deps   fast-vm dependencies from Extra Packages for Enterprise Linux  - x86_64    enabled
+~~~
+Install `fast-vm` package.
+**Note:** First time you access the 'unified-rpm-el' RPM repository you will have to confirm correctness of attached GPG key, make sure to check the Fingerprint matches one shown in example below.
+~~~
+# dnf install fast-vm
+...
+Importing GPG key 0x5A884762:
+ Userid     : "fast-vm-repo-2026-2031-rsa <fast-vm-repo@famera.cz>"
+ Fingerprint: 950C D4D4 20EB 3BC6 7E90 E60C 97C9 FED8 5A88 4762
+ From       : https://www.famera.cz/fast-vm-repo/fast-vm-repo-2026-2031-rsa.gpg.txt
+Is this ok [y/N]: y
+...
 ~~~
 
-#### 2.1.3. Alma Linux 8.10 {#installation_alma_linux8}
+If you plan using fast-vm images booting from UEFI, make sure to also install `ovmf-symlink` package. More details on verifying the package installation can be found in [2.8.1. Installing `ovmf-symlink` RPM package on EL](#installing_ovmf_symlink_rpm).
 ~~~
-# curl -o /etc/yum.repos.d/fast-vm.repo https://copr.fedorainfracloud.org/coprs/ondrejhome/fast-vm/repo/epel-8/ondrejhome-fast-vm-epel-8.repo
-# cat /etc/yum.repos.d/fast-vm.repo
-[copr:copr.fedorainfracloud.org:ondrejhome:fast-vm]
-name=Copr repo for fast-vm owned by ondrejhome
-baseurl=https://download.copr.fedorainfracloud.org/results/ondrejhome/fast-vm/epel-8-$basearch/
-type=rpm-md
-skip_if_unavailable=True
-gpgcheck=1
-gpgkey=https://download.copr.fedorainfracloud.org/results/ondrejhome/fast-vm/pubkey.gpg
-repo_gpgcheck=0
+# dnf install ovmf-symlink
+~~~
+
+Once installation is complete continue with [2.7. Configuring `fast-vm`](#configuring_fast-vm).
+
+#### 2.1.4. RHEL 8/9/10 {#installation_rhel}
+On RHEL systems you must ensure that you have access to `baseos` and `appstream` repositories before proceeding.
+Then continue by adding fast-vm `unified-rpm-el` RPM repository to get access to `fast-vm` packages as shown below.
+~~~
+# cat > /etc/yum.repos.d/fast-vm.repo <<EOF
+[fast-vm]
+name=fast-vm
+baseurl=https://www.famera.cz/fast-vm-repo/unified-rpm-el/
 enabled=1
-enabled_metadata=1
+repo_gpgcheck=1
+gpgcheck=1
+gpgkey=https://www.famera.cz/fast-vm-repo/fast-vm-repo-2026-2031-rsa.gpg.txt
+EOF
 ~~~
+In case you are not already using EPEL repositories and want to install recommended `pv` package for `fast-vm` you can use command below to enable EPEL repository for package `pv`. **Note:** `fast-vm` will work without `pv` command, but won't show progress bars on image import/export.
 ~~~
-# curl -o /etc/yum.repos.d/fast-vm-epel-deps.repo https://raw.githubusercontent.com/OndrejHome/fast-vm/master/fast-vm-epel-deps.repo
-# cat /etc/yum.repos.d/fast-vm-epel-deps.repo
+# cat > /etc/yum.repos.d/fast-vm-epel-deps.repo <<EOF
 [fast-vm-epel-deps]
-name=fast-vm dependencies from Extra Packages for Enterprise Linux $releasever - $basearch
-metalink=https://mirrors.fedoraproject.org/metalink?repo=epel-$releasever&arch=$basearch&infra=$infra&content=$contentdir
+name=fast-vm dependencies from Extra Packages for Enterprise Linux $releasever - \$basearch
+metalink=https://mirrors.fedoraproject.org/metalink?repo=epel-\$releasever&arch=\$basearch&infra=\$infra&content=\$contentdir
 enabled=1
 gpgcheck=1
-gpgkey=https://dl.fedoraproject.org/pub/epel/RPM-GPG-KEY-EPEL-$releasever
+gpgkey=https://dl.fedoraproject.org/pub/epel/RPM-GPG-KEY-EPEL-\$releasever
 includepkgs=
- zstd
- sshpass
  pv
+EOF
 ~~~
-**NOTE:** fast-vm can use few additional packages from epel (`zstd`, `sshpass`, `pv`) for extra functionality. If you don't want to use them you can remove `/etc/yum.repos.d/fast-vm-epel-deps.repo` file.
+Verify that fast-vm repository is available.
 ~~~
-# dnf install fast-vm
+# dnf repolist fast-vm fast-vm-epel-deps
+repo id             repo name                                                                  status
+fast-vm             fast-vm                                                                    enabled
+fast-vm-epel-deps   fast-vm dependencies from Extra Packages for Enterprise Linux  - x86_64    enabled
 ~~~
-
-#### 2.1.4. RHEL 7.9 {#instalation_rhel7}
-On RHEL system some of dependencies are present only in `rhel-7-server-optional-rpms` and `rhel-7-server-extras-rpms` repository that needs to be activated before `fast-vm` installation.
-~~~
-# subscription-manager repos --enable=rhel-7-server-optional-rpms --enable=rhel-7-server-extras-rpms
-# curl -o /etc/yum.repos.d/fast-vm.repo https://copr.fedorainfracloud.org/coprs/ondrejhome/fast-vm/repo/epel-7/ondrejhome-fast-vm-epel-7.repo
-# curl -o /etc/yum.repos.d/fast-vm-epel-deps.repo https://raw.githubusercontent.com/OndrejHome/fast-vm/master/fast-vm-epel-deps-rhel7.repo
-~~~
-**NOTE:** fast-vm can use few additional packages from epel (`zstd`, `pv`) for extra functionality. If you don't want to use them you can remove `/etc/yum.repos.d/fast-vm-epel-deps.repo` file.
-~~~
-# yum install fast-vm zstd pv
-~~~
-
-#### 2.1.5. RHEL 8.10 {#installation_rhel8}
-~~~
-# curl -o /etc/yum.repos.d/fast-vm.repo https://copr.fedorainfracloud.org/coprs/ondrejhome/fast-vm/repo/epel-8/ondrejhome-fast-vm-epel-8.repo
-# curl -o /etc/yum.repos.d/fast-vm-epel-deps.repo https://raw.githubusercontent.com/OndrejHome/fast-vm/master/fast-vm-epel-deps.repo
-~~~
-**NOTE:** fast-vm can use few additional packages from epel (`sshpass`, `pv`) for extra functionality. If you don't want to use them you can remove `/etc/yum.repos.d/fast-vm-epel-deps.repo` file.
+Install `fast-vm` package.
+**Note:** First time you access the 'unified-rpm-el' RPM repository you will have to confirm correctness of attached GPG key, make sure to check the Fingerprint matches one shown in example below.
 ~~~
 # dnf install fast-vm
+...
+Importing GPG key 0x5A884762:
+ Userid     : "fast-vm-repo-2026-2031-rsa <fast-vm-repo@famera.cz>"
+ Fingerprint: 950C D4D4 20EB 3BC6 7E90 E60C 97C9 FED8 5A88 4762
+ From       : https://www.famera.cz/fast-vm-repo/fast-vm-repo-2026-2031-rsa.gpg.txt
+Is this ok [y/N]: y
+...
 ~~~
 
-#### 2.1.6. Debian 12.7 {#installation_debian12}
-If you plan using publicly available images from Author then also `libguestfs-tools` package is required for correct application of creation scripts and their proper functionality.
+If you plan using fast-vm images booting from UEFI, make sure to also install `ovmf-symlink` package. More details on verifying the package installation can be found in [2.8.1. Installing `ovmf-symlink` RPM package on EL](#installing_ovmf_symlink_rpm).
 ~~~
-# apt-get install gdebi-core
-# wget https://github.com/OndrejHome/fast-vm/releases/download/1.7/fast-vm_1.7_all-debian10.deb
-# gdebi fast-vm_1.7_all-debian10.deb
+# dnf install ovmf-symlink
 ~~~
 
-#### 2.1.7. Ubuntu 20.04 {#installation_ubuntu20}
+Once installation is complete continue with [2.7. Configuring `fast-vm`](#configuring_fast-vm).
+
+### 2.2. Installation from DEB package (Debian, Ubuntu) {#installation_from_deb_package}
+**Note:** Previously `fast-vm` was distributed as standalone DEB package without APT repository.
+For improved comfort the signed APT repository is now provided.
+
+Depending on your system continue with one of following:
+- [2.2.1. Debian 12/13](#installation_debian)
+- [2.2.2. Ubuntu 22.04/24.04](#installation_ubuntu)
+
+#### 2.2.1. Debian 12/13 {#installation_debian}
+On Debian systems start with downloading GPG key of fast-vm `unified-deb` APT signed repository.
 ~~~
-# apt-get install gdebi-core
-# wget https://github.com/OndrejHome/fast-vm/releases/download/1.7/fast-vm_1.7_all-ubuntu20.deb
-# gdebi fast-vm_1.7_all-ubuntu20.deb
+# wget -O /etc/apt/keyrings/fast-vm-repo-2026-2031.gpg https://www.famera.cz/fast-vm-repo/fast-vm-repo-2026-2031-eddsa.gpg
+# file /etc/apt/keyrings/fast-vm-repo-2026-2031.gpg
+/etc/apt/keyrings/fast-vm-repo-2026-2031.gpg: OpenPGP Public Key Version 4, Created Sat Jan 24 05:52:42 2026, EdDSA; User ID; Signature; OpenPGP Certificate
+~~~
+Then add APT repository configuration
+~~~
+# echo 'deb [signed-by=/etc/apt/keyrings/fast-vm-repo-2026-2031.gpg] https://www.famera.cz/fast-vm-repo unified-deb/' > /etc/apt/sources.list.d/fast-vm.list
+~~~
+Refresh metadata and install `fast-vm` along with recommended `libguestfs-tools` package.
+~~~
+# apt-get update
+...
+Get:5 https://www.famera.cz/fast-vm-repo unified-deb/ InRelease [977 B]
+Get:6 https://www.famera.cz/fast-vm-repo unified-deb/ Packages [1,834 B]
+...
+# apt-get install fast-vm libguestfs-tools
 ~~~
 
-#### 2.1.8. Gentoo {#installation_gentoo}
-Ebuilds with fast-vm are provided in [ondrejhome-gentoo-overlay](https://github.com/OndrejHome/ondrejhome-gentoo-overlay). Once you have enabled the overlay, you can install fast-vm with emerge.
+Note: `libguestfs-tools` package is needed by publicly provided images by author.
 
+On Debian 13 also install `ovmf-symlink` if you plan to use UEFI images. More details on verifying the package installation can be found in [2.6.2. Installing `ovmf-symlink` DEB package on Debian/Ubuntu](#installing_ovmf_symlink_deb).
+~~~
+# apt-get install ovmf-symlink
+~~~
+
+Once installation is complete continue with [2.7. Configuring `fast-vm`](#configuring_fast-vm).
+
+#### 2.2.2. Ubuntu 22.04/24.04 {#installation_ubuntu}
+On Ubuntu systems start with downloading GPG key of fast-vm `unified-deb` APT signed repository.
+~~~
+# wget -O /etc/apt/keyrings/fast-vm-repo-2026-2031.gpg https://www.famera.cz/fast-vm-repo/fast-vm-repo-2026-2031-eddsa.gpg
+~~~
+Then add APT repository configuration
+~~~
+# echo 'deb [signed-by=/etc/apt/keyrings/fast-vm-repo-2026-2031.gpg] https://www.famera.cz/fast-vm-repo unified-deb/' > /etc/apt/sources.list.d/fast-vm.list
+~~~
+Refresh metadata and install `fast-vm` along with recommended `libguestfs-tools` package.
+~~~
+# apt-get update
+...
+Get:4 https://www.famera.cz/fast-vm-repo unified-deb/ InRelease [977 B]
+Get:5 https://www.famera.cz/fast-vm-repo unified-deb/ Packages [1834 B]
+...
+# apt-get install fast-vm libguestfs-tools
+~~~
+
+Note: `libguestfs-tools` package is needed by publicly provided images by author.
+
+On Ubuntu 24.04 also install `ovmf-symlink` if you plan to use UEFI images. More details on verifying the package installation can be found in [2.6.2. Installing `ovmf-symlink` DEB package on Debian/Ubuntu](#installing_ovmf_symlink_deb).
+~~~
+# apt-get install ovmf-symlink
+~~~
+
+Once installation is complete continue with [2.7. Configuring `fast-vm`](#configuring_fast-vm).
+
+### 2.3. Gentoo {#installation_gentoo}
+For Gentoo systems ebuilds with fast-vm are provided in [ondrejhome-gentoo-overlay](https://github.com/OndrejHome/ondrejhome-gentoo-overlay). Once you have enabled the overlay, you can install fast-vm with emerge.
+
+~~~
+# eselect repository add ondrejhome git https://github.com/OndrejHome/ondrejhome-gentoo-overlay.git
+# emaint sync -r ondrejhome
+~~~
 ~~~
 # emerge -av app-emulation/fast-vm
 ~~~
 
-### 2.2. Manual installation from source code {#installation_manual}
-On system that doesn't use RPM, DEB or other packaging method that fast-vm is provided in you can install `fast-vm` using traditional Makefile that is available in the Git repository. To install use command below to get versioned version of repository and run installation.
+Once installation is complete continue with [2.7. Configuring `fast-vm`](#configuring_fast-vm).
+
+### 2.4. Manual installation from source code {#installation_manual}
+On system that doesn't use RPM, DEB, ebuilds or other packaging method you can install `fast-vm` using traditional Makefile that is available in the Git repository. To install use commands below to get versioned version of repository and run installation.
 
 ~~~
 # git clone --depth 1 --branch 1.7 https://github.com/OndrejHome/fast-vm/
@@ -226,31 +356,41 @@ On system that doesn't use RPM, DEB or other packaging method that fast-vm is pr
 # make install
 ~~~
 
-### 2.3. Updating `fast-vm` {#updates}
-Always check the notes in [GitHub Release](https://github.com/OndrejHome/fast-vm/releases) before updating to see if there were any changes requiring additional steps after update.
+Once installation is complete continue with [2.7. Configuring `fast-vm`](#configuring_fast-vm).
 
-When using repository in Fedora/CentOS/RHEL just use the update command as show below.
+### 2.5. Updating `fast-vm` {#updates}
+Always check the release notes in [GitHub Release](https://github.com/OndrejHome/fast-vm/releases) before updating to see if there were any changes requiring additional steps after update.
 
+When using RPM repository in Fedora/EL just use the update command as show below.
 ~~~
 # dnf update fast-vm
 ~~~
 
-There is currently no update support for fast-vm on Debian/Ubuntu systems.
+When using APT repository in Debian/Ubuntu just use the upgrade command as show below.
+~~~
+# apt-get upgrade fast-vm
+~~~
 
-### 2.4. Uninstalling `fast-vm` {#uninstall}
+### 2.6. Uninstalling `fast-vm` {#uninstall}
 If you don't like `fast-vm` please consider leaving me a feedback on what you didn't like or what could be improved so you can use it.
 
 If you have installed `fast-vm` from RPM or DEB then just uninstall the package.
 
 ~~~
 # dnf remove fast-vm fast-vm-minimal
-# yum remove fast-vm fast-vm-minimal
+~~~
+~~~
 # apt-get remove fast-vm
 ~~~
 
+During use of fast-vm following additional directories are created/used and may need manual cleanup after uninstallation:
+- `/var/lib/fast-vm/` - guestfs appliance used by fast-vm when running hack files
+- `/etc/fast-vm/` - fast-vm global configuration directory with XML configs and hack files for system-wide use
+- `$HOME/.fast-vm/` - fast-vm user configuration directory with XML configs and hack files for given user
+
 If you have used manual installation there is currently no automated way of uninstalling but in general it is enough to check the `Makefile`and remove all files it creates in system. Additionally you can remove the directories `/etc/fast-vm/`, `$HOME/.fast-vm/`. Since version 1.4 the notes for fast-vm are not stored anymore in separate files and they are part of the description of VM in libvirt.
 
-### 2.5. Configuring `fast-vm` {#configuring_fast-vm}
+### 2.7. Configuring `fast-vm` {#configuring_fast-vm}
 After initial installation or update of `fast-vm` it is highly recommended to run command below to perform configuration with validation.
 ~~~
 # configure-fast-vm
@@ -259,7 +399,7 @@ After initial installation or update of `fast-vm` it is highly recommended to ru
 
 Script will create and validate configuration file `/etc/fast-vm.conf`. Further it will allow during initial configuration the creation of storage for `fast-vm` and libvirt network that will provide networking to VMs.
 
-#### 2.5.1. `configure-fast-vm` walk-through with examples {#configure-fast-vm-example}
+#### 2.7.1. `configure-fast-vm` walk-through with examples {#configure-fast-vm-example}
 a) Start configuration script.
 ~~~
 [root@mypc ~]# configure-fast-vm
@@ -354,7 +494,7 @@ i) Decide if fast-vm should prevent delete of machines created by other users.
 [no]:
 ~~~
 
-j) Decide if libguestfs appliance should be imported from Internet or generated on local machine. **Note:** On some systems the localy generate appliance will lack support for features that some images may require (like XFS support in EL8, SELinux support, etc.). It is recommended to **import** appliance provided with fast-vm for best results.
+j) Decide if libguestfs appliance should be imported from Internet or generated on local machine. **Note:** On some systems the locally generate appliance will lack support for features that some images may require (like XFS support in EL8, SELinux support, etc.). It is recommended to **import** appliance provided with fast-vm for best results.
 ~~~
 [?] Generate or Import libguestfs appliance used by hack files for this system? ('Generate' will generate appliance localy, while 'import' allows to import pre-build Fedora 29 appliance from Internet. Some fast-vm images may require the Fedora 29 otherwise their hack files fails.)
 [import]: import
@@ -420,7 +560,7 @@ o) End of configuration
 [ok] fast-vm configured
 ~~~
 
-#### 2.5.2. (optional) Configure LVM filters {#configure_lvm_filters}
+#### 2.7.2. (optional) Configure LVM filters {#configure_lvm_filters}
 Optional but recommended is to filter out detection of LVM on the VG that holds the thinpool LV for fast-vm. For example if you use VG `f30` then following entries can be add into LVM `filter =`.
 
 ~~~
@@ -440,46 +580,72 @@ devices {
 ~~~
 NOTE: Final filter configuration depends heavily on your environment/system.
 
-### 2.6. UEFI boot support with OVMF {#ovmf_uefi_support}
-To use libvirt with UEFI boot a special firmware is required. fast-vm` doesn't require any special configuration for UEFI boot except of having needed firmware and image that was pre-installed with UEFI support. More on how to install UEFI firmware into libvirt check [Fedora: Using UEFI with QEMU](https://fedoraproject.org/wiki/Using_UEFI_with_QEMU) article.
+### 2.8. UEFI boot support with OVMF {#ovmf_uefi_support}
+To use libvirt with UEFI boot a special firmware is required. `fast-vm` doesn't require any special configuration for UEFI boot except of having needed firmware in the right place and fast-vm image that was pre-installed with UEFI support. For simplicity fast-vm images assumes there is a single place where UEFI firmware is located (`/usr/share/OVMF/OVMF_{CODE,VARS}.fd`) but some systems may not use the same location for these files. If that is the case you can either:
+- adjust the configuration in the XML of fast-vm or
+- install special package named `ovmf-symlink` provided from fast-vm RPM/APT repository on selected system to create the symlink to appropriate location
 
-To use images provided by the Author with UEFI on Fedora following steps needs to be taken.
-
-1a. (Fedora 30+, Debian 10, Ubuntu 18/20) No action needed, needed packages are installed as dependency of `fast-vm`.
-
-1b. (CentOS/RHEL 7) Download the `edk2.git-ovmf-x64-xxxxx.noarch.rpm` from [OVMF generated RPMs](https://www.kraxel.org/repos/jenkins/edk2/) and install it manualy using `yum`.
-
-1c. (CentOS/RHEL 8) While CentOS/RHEL 8 has package `edk2-ovmf` containing firmware files. This package at the moment provide only secure-boot version of firmware requiring different VM machine type (q35). To support images before q35 machines download the `edk2.git-ovmf-x64-xxxxx.noarch.rpm` from [OVMF generated RPMs](https://www.kraxel.org/repos/jenkins/edk2/) and install it manualy using `yum`. Check [GitHub Issue 48](https://github.com/OndrejHome/fast-vm/issues/48) for more details.
-
-2\. (CentOS/RHEL 8)Ensure that `/etc/libvirt/qemu.conf` contains following variable with value below.
-~~~
-nvram = [
-   "/usr/share/OVMF/OVMF_CODE.fd:/usr/share/OVMF/OVMF_VARS.fd"
-      ]
-~~~
-
-3a. (Fedora 30+, Debian 10, Ubuntu 18/20) Ensure that variable from previous steps is pointing to correct firmware files. With default installation no additional commands are needed.
+You do **NOT** need to install `ovmf-symlink` if both `/usr/share/OVMF/OVMF_{CODE,VARS}.fd` files exists and points to UEFI firmware without forced secure boot feature as shown in examples below.
 ~~~
 # ls -l /usr/share/OVMF/OVMF_{CODE,VARS}.fd
-lrwxrwxrwx. 1 root root /usr/share/OVMF/OVMF_CODE.fd -> ../edk2/ovmf/OVMF_CODE.fd
-lrwxrwxrwx. 1 root root /usr/share/OVMF/OVMF_VARS.fd -> ../edk2/ovmf/OVMF_VARS.fd
+lrwxrwxrwx. 1 root root 25 Nov 27  2024 /usr/share/OVMF/OVMF_CODE.fd -> ../edk2/ovmf/OVMF_CODE.fd
+lrwxrwxrwx. 1 root root 25 Nov 27  2024 /usr/share/OVMF/OVMF_VARS.fd -> ../edk2/ovmf/OVMF_VARS.fd
 ~~~
-
-3b. (CentOS/RHEL 7) Ensure that variable from previous steps is pointing to correct firmware files. When using package from [OVMF generated RPMs](https://www.kraxel.org/repos/jenkins/edk2/). the following additional commands are needed.
 ~~~
-# mkdir /usr/share/OVMF  # as this directory is usually not present on system
-# ln -s /usr/share/edk2.git/ovmf-x64/OVMF_CODE-pure-efi.fd /usr/share/OVMF/OVMF_CODE.fd
-# ln -s /usr/share/edk2.git/ovmf-x64/OVMF_VARS-pure-efi.fd /usr/share/OVMF/OVMF_VARS.fd
-~~~
-
-3c. (CentOS/RHEL 8) Adjust links in `/usr/share/OVMF/` with commands below. **Note** that steps will need to be repeated when the `edk2-ovmf` package is updated or reinstalled.
-~~~
-# rm /usr/share/OVMF/OVMF_VARS.fd
-# ln -s /usr/share/edk2.git/ovmf-x64/OVMF_CODE-pure-efi.fd /usr/share/OVMF/OVMF_CODE.fd
-# ln -s /usr/share/edk2.git/ovmf-x64/OVMF_VARS-pure-efi.fd /usr/share/OVMF/OVMF_VARS.fd
 # ls -l /usr/share/OVMF/OVMF_{CODE,VARS}.fd
-lrwxrwxrwx. 1 root root /usr/share/OVMF/OVMF_CODE.fd -> /usr/share/edk2.git/ovmf-x64/OVMF_CODE-pure-efi.fd
-lrwxrwxrwx. 1 root root /usr/share/OVMF/OVMF_VARS.fd -> /usr/share/edk2.git/ovmf-x64/OVMF_VARS-pure-efi.fd
+lrwxrwxrwx 1 root root 15 Jan 20 23:18 /usr/share/OVMF/OVMF_CODE.fd -> OVMF_CODE_4M.fd
+lrwxrwxrwx 1 root root 15 Jan 20 23:18 /usr/share/OVMF/OVMF_VARS.fd -> OVMF_VARS_4M.fd
+~~~
+In case one or both of expected files (`/usr/share/OVMF/OVMF_{CODE,VARS}.fd`) are **NOT** present on system, you **SHOULD** rectify this if you plan to use UEFI fast-vm images. On systems missing one or both symlink the `ovmf-symlink` package, distributed from same RPM/APT repository as fast-vm, is available.
+~~~
+# ls -l /usr/share/OVMF/OVMF_{CODE,VARS}.fd
+ls: cannot access '/usr/share/OVMF/OVMF_CODE.fd': No such file or directory
+ls: cannot access '/usr/share/OVMF/OVMF_VARS.fd': No such file or directory
+~~~
+~~~
+# ls -l /usr/share/OVMF/OVMF_{CODE,VARS}.fd
+ls: cannot access '/usr/share/OVMF/OVMF_CODE.fd': No such file or directory
+lrwxrwxrwx. 1 root root 25 Nov 27  2024 /usr/share/OVMF/OVMF_VARS.fd -> ../edk2/ovmf/OVMF_VARS.fd
+~~~
+
+If your systems is missing one of or both `/usr/share/OVMF/OVMF_{CODE,VARS}.fd` files, follow one of following links to install `ovmf-symlink` on system.
+- [2.8.1. Installing `ovmf-symlink` RPM package on EL](#installing_ovmf_symlink_rpm)
+- [2.8.2. Installing `ovmf-symlink` DEB package on Debian/Ubuntu](#installing_ovmf_symlink_deb)
+
+**Note:** Previously this documentation recommended installation of `edk2-ovmf` package from additional repository and manual steps to setup proper symlinks. This issue prone process was replaced with use of `ovmf-symlink` package that installs just symlinks into system and can be installed/removed/updated in same way as fast-vm package installed on system.
+
+#### 2.8.1. Installing `ovmf-symlink` RPM package on EL {#installing_ovmf_symlink_rpm}
+**Note:** `ovmf-symlink` package is **NOT** needed on Fedora and Fedora CoreOS systems where fast-vm UEFI images should work without additional steps needed.
+
+Verify that fast-vm repository is available.
+~~~
+# dnf repolist fast-vm
+repo id                                            repo name
+fast-vm                                            fast-vm
+~~~
+Install `ovmf-symlink` package.
+~~~
+# dnf install ovmf-symlink
+~~~
+Confirm that both `/usr/share/OVMF/OVMF_{CODE,VARS}.fd` files exists.
+~~~
+# ls -l /usr/share/OVMF/OVMF_{CODE,VARS}.fd
+lrwxrwxrwx. 1 root root 28 Jan 31 10:58 /usr/share/OVMF/OVMF_CODE.fd -> ../edk2/ovmf/OVMF_CODE.cc.fd
+lrwxrwxrwx. 1 root root 25 Jun 30  2025 /usr/share/OVMF/OVMF_VARS.fd -> ../edk2/ovmf/OVMF_VARS.fd
+~~~
+
+#### 2.8.2. Installing `ovmf-symlink` DEB package on Debian/Ubuntu {#installing_ovmf_symlink_deb}
+**Note:** `ovmf-symlink` package is **NOT** needed on Debian 12 and Ubuntu 22.04 systems where fast-vm UEFI images should work without additional steps needed.
+
+Install `ovmf-symlink` package.
+~~~
+# apt-get install ovmf-symlink
+~~~
+Confirm that both `/usr/share/OVMF/OVMF_{CODE,VARS}.fd` files exists.
+~~~
+# ls -l /usr/share/OVMF/OVMF_{CODE,VARS}.fd
+lrwxrwxrwx 1 root root 15 Jan 20 23:18 /usr/share/OVMF/OVMF_CODE.fd -> OVMF_CODE_4M.fd
+lrwxrwxrwx 1 root root 15 Jan 20 23:18 /usr/share/OVMF/OVMF_VARS.fd -> OVMF_VARS_4M.fd
 ~~~
 
 ## 3. Basic operations in `fast-vm` {#basic_operations}
